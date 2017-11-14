@@ -13,4 +13,10 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+# Setting the default dronekit connection options
+
+ENV CXN_STR=0.0.0.0:14550 \
+    BAUD_RATE=115200 \
+    TIMEOUT=120
+
 CMD FLASK_APP=telemetry.py flask run --host 0.0.0.0
