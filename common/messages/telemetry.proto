@@ -1,0 +1,29 @@
+/*
+ * Telemetry message definitions
+ * 
+ * Note that all units will be in meters, meters/second, seconds,
+ * degrees, etc. unless otherwise noted.
+ */
+
+syntax = "proto3";
+
+package telemetry;
+
+// Time is from 1970 epoch
+message Time {
+    float time = 1;
+}
+
+// Camera telemtry
+message CameraTelem {
+    Time  time  = 1;
+    float lat   = 2;
+    float lon   = 3;
+    // Relative to ground
+    float alt   = 4;
+    float yaw   = 5;
+    // 0 pitch points to the front of the plane, 90 points down
+    float pitch = 6;
+    // 0 roll points down, 90 points to the right
+    float roll  = 7;
+}
