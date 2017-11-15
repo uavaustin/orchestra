@@ -5,12 +5,15 @@ import dronekit
 from flask import Flask, jsonify, request
 
 from messages import telemetry_pb2
-from util import all_exist, meters_to_feet, mod_deg, protobuf_resp, rad_to_deg
+from util import all_exist, meters_to_feet, mod_deg, mod_deg_2, \
+        protobuf_resp, rad_to_deg
 
 
 cxn_str = os.environ['CXN_STR']
-baud_rate = os.environ['BAUD_RATE']
-timeout = os.environ['TIMEOUT']
+baud_rate = int(os.environ['BAUD_RATE'])
+timeout = int(os.environ['TIMEOUT'])
+
+term = Terminal()
 
 # We'll connect to the plane before we serve the endpoints
 print('Connecting to ' + cxn_str + '.')
@@ -51,7 +54,7 @@ def get_interop_telem():
         lat=lat,
         lon=lon,
         alt_feet_msl=meters_to_feet(alt_msl),
-        yaw=yaw
+        yaw=mod_deg(rad_to_deg(yaw))
     )
 
     return protobuf_resp(msg, json=request.args.get('json') == 'true')
@@ -76,21 +79,25 @@ def get_camera_telem():
     g_pitch = gimbal.pitch
     g_roll = gimbal.roll
 
-    # This telemetry is only useful if it's all here
-    if (not all_exist(lat, lon, alt, yaw, p_pitch, p_roll, g_pitch, g_roll)):
-        return '', 204
+    # This telemetry is only useful if we at least have the basic
+    # plane telemetry
+    if (not all_exist(lat, lon, alt, yaw, p_pitch, p_roll)):
+        return '', 204    
 
-    pitch = mod_deg(rad_to_deg(p_pitch) + g_pitch)
-    roll = mod_deg(rad_to_deg(-p_roll) + g_roll)
+    # Setting default gimbal position to be orthagonal to the plane
+    if g_pitch is None or g_roll is None:
+        g_pitch = -90
+        g_roll = 0
+
 
     msg = telemetry_pb2.CameraTelem(
         time=time.time(),
         lat=lat,
         lon=lon,
         alt=alt,
-        yaw=yaw,
-        pitch=pitch,
-        roll=roll
+        yaw=mod_deg(rad_to_deg(yaw)),
+        pitch=mod_deg_2(rad_to_deg(p_pitch) + g_pitch),
+        roll=mod_deg_2(rad_to_deg(-p_roll) + g_roll)
     )
 
     return protobuf_resp(msg, json=request.args.get('json') == 'true')
