@@ -1,4 +1,4 @@
-from math import pi
+from math import fmod, pi
 
 from flask import make_response
 from google.protobuf import json_format
@@ -15,8 +15,13 @@ def rad_to_deg(rad):
 
 
 def mod_deg(deg):
-    """Make sure a reading of degrees is between 0 and 360"""
-    return (deg + 360) % 360
+    """Make sure a reading of degrees is in [0, 360)"""
+    return fmod(fmod(deg, 360) + 360, 360)
+
+
+def mod_deg_2(deg):
+    """Make sure a reading of degrees is in (-180, 180]"""
+    return -mod_deg(-deg - 180) + 180
 
 
 def all_exist(*args):
@@ -30,6 +35,7 @@ def protobuf_resp(msg, json=False):
     Optionally, this can return a human-readable JSON response 
     instead.
     """
+
     resp = make_response()
 
     if not json:
