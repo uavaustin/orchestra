@@ -1,6 +1,7 @@
 import os
 import time
 
+from blessings import Terminal
 import dronekit
 from flask import Flask, jsonify, request
 
@@ -16,12 +17,12 @@ timeout = int(os.environ['TIMEOUT'])
 term = Terminal()
 
 # We'll connect to the plane before we serve the endpoints
-print('Connecting to ' + cxn_str + '.')
+print(term.green('Connecting to ' + cxn_str + '.'))
 
 vehicle = dronekit.connect(cxn_str, baud=baud_rate, heartbeat_timeout=timeout,
         wait_ready=True)
 
-print('Connection successful.')
+print(term.green('Connection successful.'))
 
 app = Flask(__name__)
 
@@ -89,6 +90,9 @@ def get_camera_telem():
         g_pitch = -90
         g_roll = 0
 
+        print(term.yellow(
+            'Camera telemetry requested but no gimbal detected.'
+        ))
 
     msg = telemetry_pb2.CameraTelem(
         time=time.time(),
