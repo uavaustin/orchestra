@@ -1,7 +1,6 @@
 import os
 import time
 
-from blessings import Terminal
 import dronekit
 from flask import Flask, jsonify, request
 
@@ -14,15 +13,13 @@ cxn_str = os.environ['CXN_STR']
 baud_rate = int(os.environ['BAUD_RATE'])
 timeout = int(os.environ['TIMEOUT'])
 
-term = Terminal()
-
 # We'll connect to the plane before we serve the endpoints
-print(term.green('Connecting to ' + cxn_str + '.'))
+print('Connecting to ' + cxn_str + '.')
 
 vehicle = dronekit.connect(cxn_str, baud=baud_rate, heartbeat_timeout=timeout,
-        wait_ready=True)
+        status_printer=False, wait_ready=True)
 
-print(term.green('Connection successful.'))
+print('\x1b[32mConnection successful.\x1b[0m')
 
 app = Flask(__name__)
 
@@ -90,9 +87,8 @@ def get_camera_telem():
         g_pitch = -90
         g_roll = 0
 
-        print(term.yellow(
-            'Camera telemetry requested but no gimbal detected.'
-        ))
+        print('\x1b[33mCamera telemetry requested but no gimbal detected.'
+                '\x1b[0m')
 
     msg = telemetry_pb2.CameraTelem(
         time=time.time(),
@@ -109,5 +105,8 @@ def get_camera_telem():
 
 @app.route('/api/alive')
 def get_alive():
-    """Sanity check to make sure the rest server is up"""
-    return 'yes, I\'m alive'
+    """Sanity check to make sure the server is up"""
+    return 'Yes, I\'m alive!\n'
+
+
+app.run(host='0.0.0.0')
