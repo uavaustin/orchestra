@@ -9,9 +9,11 @@
         "build": "npm run clean && babel src --out-dir lib"
     },
     "dependencies": {
+        "async": "^2.6.0",
         "auvsisuas-client": "0.1.1",
-        "colors": "^1.1.2",
-        "google-protobuf": "3.4.0"
+        "google-protobuf": "3.4.0",
+        "request": "^2.83.0",
+        "request-promise-native": "^1.0.5"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
