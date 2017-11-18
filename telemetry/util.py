@@ -1,4 +1,6 @@
+from contextlib import contextmanager
 from math import fmod, pi
+import signal
 
 from flask import make_response
 from google.protobuf import json_format
@@ -46,3 +48,32 @@ def protobuf_resp(msg, json=False):
         resp.set_data(json_format.MessageToJson(msg))
 
     return resp
+
+
+class TimeoutException(Exception):
+    """Raised when time_limit() excedes time alloted."""
+    pass
+
+
+@contextmanager
+def time_limit(seconds):
+    """Context manager to limit the time a block can run.
+
+    This is intended to be used with the with statement.
+
+    Note that this will not work on Windows as it doesn't have SIGALRM
+    """
+
+    def raise_timeout(signum, frame):
+        raise TimeoutException()
+
+    # Raise SIGALRM in the provided amount of seconds. This will be
+    # canceled if the block completes.
+    signal.signal(signal.SIGALRM, raise_timeout)
+    signal.alarm(seconds)
+
+    try:
+        yield
+    finally:
+        # This cancels the alarm.
+        signal.alarm(0)

@@ -1,23 +1,34 @@
 import os
+import sys
 import time
 
 import dronekit
 from flask import Flask, jsonify, request
 
 from messages import telemetry_pb2
-from util import all_exist, meters_to_feet, mod_deg, mod_deg_2, \
-        protobuf_resp, rad_to_deg
+import util
 
 
 cxn_str = os.environ['CXN_STR']
 baud_rate = int(os.environ['BAUD_RATE'])
-timeout = int(os.environ['TIMEOUT'])
+timeout = int(os.environ['CXN_TIMEOUT'])
 
 # We'll connect to the plane before we serve the endpoints
-print('Connecting to ' + cxn_str + '.')
+print('Connecting to ' + cxn_str + '...')
 
-vehicle = dronekit.connect(cxn_str, baud=baud_rate, heartbeat_timeout=timeout,
-        status_printer=False, wait_ready=True)
+
+# Limiting the amount of time dronekit can load to the timeout
+# provided.
+try:
+    with util.time_limit(timeout):
+        vehicle = dronekit.connect(cxn_str, baud=baud_rate, wait_ready=True)
+except util.TimeoutException as e:
+    # We'll exit with code 30, and a shell script will start the
+    # script again if desired.
+    print('\x1b[31mConnection timed out after ' + str(timeout) + ' seconds.'
+            '\x1b[0m')
+    sys.exit(30)
+
 
 print('\x1b[32mConnection successful.\x1b[0m')
 
@@ -29,7 +40,7 @@ def get_time():
     """Gets the time since epoch in seconds"""
     msg = telemetry_pb2.Time(time=time.time())
 
-    return protobuf_resp(msg, json=request.args.get('json') == 'true')
+    return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
 
 
 @app.route('/api/interop-telem')
@@ -44,18 +55,18 @@ def get_interop_telem():
     yaw = attitude.yaw
 
     # This telemetry is only useful if it's all here
-    if (not all_exist(lat, lon, alt_msl, yaw)):
+    if (not util.all_exist(lat, lon, alt_msl, yaw)):
         return '', 204
 
     msg = telemetry_pb2.InteropTelem(
         time=time.time(),
         lat=lat,
         lon=lon,
-        alt_feet_msl=meters_to_feet(alt_msl),
-        yaw=mod_deg(rad_to_deg(yaw))
+        alt_feet_msl=util.meters_to_feet(alt_msl),
+        yaw=util.mod_deg(this.rad_to_deg(yaw))
     )
 
-    return protobuf_resp(msg, json=request.args.get('json') == 'true')
+    return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
 
 
 @app.route('/api/camera-telem')
@@ -79,7 +90,7 @@ def get_camera_telem():
 
     # This telemetry is only useful if we at least have the basic
     # plane telemetry
-    if (not all_exist(lat, lon, alt, yaw, p_pitch, p_roll)):
+    if (not util.all_exist(lat, lon, alt, yaw, p_pitch, p_roll)):
         return '', 204    
 
     # Setting default gimbal position to be orthagonal to the plane
@@ -95,12 +106,12 @@ def get_camera_telem():
         lat=lat,
         lon=lon,
         alt=alt,
-        yaw=mod_deg(rad_to_deg(yaw)),
-        pitch=mod_deg_2(rad_to_deg(p_pitch) + g_pitch),
-        roll=mod_deg_2(rad_to_deg(-p_roll) + g_roll)
+        yaw=util.mod_deg(this.rad_to_deg(yaw)),
+        pitch=util.mod_deg_2(this.rad_to_deg(p_pitch) + g_pitch),
+        roll=util.mod_deg_2(this.rad_to_deg(-p_roll) + g_roll)
     )
 
-    return protobuf_resp(msg, json=request.args.get('json') == 'true')
+    return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
 
 
 @app.route('/api/alive')
@@ -109,4 +120,5 @@ def get_alive():
     return 'Yes, I\'m alive!\n'
 
 
+# Host the Flask app to where outside connections are allowed
 app.run(host='0.0.0.0')

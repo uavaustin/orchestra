@@ -29,12 +29,15 @@ COPY telemetry .
 # Adding in the output from the builder above
 COPY --from=builder /dist messages
 
-# Setting the default dronekit connection options
+# Setting the default dronekit connection string and baud rate as
+# well as the maximum time dronekit can fully establish its
+# connection and whether it should retry connecting
 ENV CXN_STR=0.0.0.0:14550 \
     BAUD_RATE=115200 \
-    TIMEOUT=120
+    CXN_TIMEOUT=120 \
+    RETRY_CXN=0
 
 # 5000 is the default port for Flask
 EXPOSE 5000
 
-CMD python -u telemetry.py
+CMD ./run.sh
