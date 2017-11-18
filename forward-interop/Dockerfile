@@ -49,10 +49,12 @@ COPY --from=protobuf-builder /dist lib/messages
 
 ENV INTEROP_URL='0.0.0.0:8080' \
     USERNAME='testuser' \
-    PASSWORD='testpass'
+    PASSWORD='testpass' \
+    TELEMETRY_URL='0.0.0.0:8080'
 
 # Waiting for a response from the interop server first
 CMD ./wait-for-it.sh "http://$INTEROP_URL/api/login" "interop server" && \
+    ./wait-for-it.sh "http://$TELEMETRY_URL/api/alive" "telemetry service" && \
     printf 'Starting.' && \
     npm start
 
