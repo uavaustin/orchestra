@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import time
@@ -63,7 +64,7 @@ def get_interop_telem():
         lat=lat,
         lon=lon,
         alt_feet_msl=util.meters_to_feet(alt_msl),
-        yaw=util.mod_deg(this.rad_to_deg(yaw))
+        yaw=util.mod_deg(util.rad_to_deg(yaw))
     )
 
     return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
@@ -106,9 +107,9 @@ def get_camera_telem():
         lat=lat,
         lon=lon,
         alt=alt,
-        yaw=util.mod_deg(this.rad_to_deg(yaw)),
-        pitch=util.mod_deg_2(this.rad_to_deg(p_pitch) + g_pitch),
-        roll=util.mod_deg_2(this.rad_to_deg(-p_roll) + g_roll)
+        yaw=util.mod_deg(util.rad_to_deg(yaw)),
+        pitch=util.mod_deg_2(util.rad_to_deg(p_pitch) + g_pitch),
+        roll=util.mod_deg_2(util.rad_to_deg(-p_roll) + g_roll)
     )
 
     return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
@@ -119,6 +120,9 @@ def get_alive():
     """Sanity check to make sure the server is up"""
     return 'Yes, I\'m alive!\n'
 
+
+# Silence logging from sucessful requests
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
 
 # Host the Flask app to where outside connections are allowed
 app.run(host='0.0.0.0')
