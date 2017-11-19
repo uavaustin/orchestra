@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 # This script will block until a response it received from a server.
 # Pass the url (host:port) as the first argment.
