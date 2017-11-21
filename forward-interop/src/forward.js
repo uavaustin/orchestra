@@ -1,4 +1,5 @@
 import async from 'async';
+import express from 'express';
 import request from 'request-promise-native';
 
 import AUVSIClient from 'auvsisuas-client';
@@ -30,6 +31,8 @@ function sendTelem() {
         });
 }
 
+// Logging into the competition server and continuously sending
+// telmetry.
 client.login('http://' + interopUrl, username, password, 5000)
     .then(() => console.log('Login Sucessful.'))
     .then(() => console.log('Now forwarding telemetry...'))
@@ -50,3 +53,13 @@ client.login('http://' + interopUrl, username, password, 5000)
         console.log(err);
         process.exit(1);
     });
+
+// Making a simple api to check how often telemetry is being sent and
+// how much of that is unique.
+let app = express();
+
+app.get('/api/alive', (req, res) => {
+    res.send('Yo dude, I\'m good.\n');
+});
+
+app.listen(4000);
