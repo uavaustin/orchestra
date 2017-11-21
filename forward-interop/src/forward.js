@@ -3,7 +3,9 @@ import express from 'express';
 import request from 'request-promise-native';
 
 import AUVSIClient from 'auvsisuas-client';
-import { InteropTelem } from './messages/telemetry_pb.js';
+
+import { InteropTelem } from './messages/telemetry_pb';
+import UploadMonitor from './upload-monitor';
 
 let interopUrl = process.env.INTEROP_URL;
 let username = process.env.USERNAME;
@@ -12,6 +14,7 @@ let password = process.env.PASSWORD;
 let telemUrl = process.env.TELEMETRY_URL;
 
 let client = new AUVSIClient();
+let monitor = new UploadMonitor();
 
 /**
  * Get the latest telemetry and send it to the interop server.
@@ -22,12 +25,16 @@ function sendTelem() {
     return request.get('http://' + telemUrl + '/api/interop-telem?json=true')
         .then(JSON.parse)
         .then((telem) => {
-            return client.postTelemetry({
+            return {
                 lat: telem.lat,
                 lon: telem.lon,
                 alt_msl: telem.altFeetMsl,
                 yaw: telem.yaw
-            });
+            };
+        })
+        .then((telem) => {
+            return client.postTelemetry(telem)
+                .then(() => monitor.addTelem(telem));
         });
 }
 
@@ -57,6 +64,17 @@ client.login('http://' + interopUrl, username, password, 5000)
 // Making a simple api to check how often telemetry is being sent and
 // how much of that is unique.
 let app = express();
+
+app.get('/api/upload-rate', (req, res) => {
+    let rate = monitor.getUploadRate();
+
+    if (req.query.json !== undefined && req.query.json == 'true') {
+        res.send(rate);
+    } else {
+        // TODO: Protobufs not yet implemented.
+        res.sendStatus(500);
+    }
+});
 
 app.get('/api/alive', (req, res) => {
     res.send('Yo dude, I\'m good.\n');
