@@ -1,17 +1,5 @@
-# First we'll use the protobuf image to compile telemetry protobufs
-# for python
-ARG BASE_PROTOBUF=uavaustin/protobuf
 ARG BASE=python:3.6-slim
 
-FROM ${BASE_PROTOBUF} AS builder
-
-COPY common/messages/telemetry.proto messages/telemetry.proto
-
-RUN mkdir /dist
-
-RUN protoc -I="messages" --python_out="/dist" "messages/telemetry.proto"
-
-# Making the actual image now
 FROM ${BASE}
 
 WORKDIR /app
@@ -25,9 +13,6 @@ COPY telemetry/requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY telemetry .
-
-# Adding in the output from the builder above
-COPY --from=builder /dist messages
 
 # Setting the default dronekit connection string and baud rate as
 # well as the maximum time dronekit can fully establish its

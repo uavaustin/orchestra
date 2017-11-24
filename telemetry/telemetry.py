@@ -17,7 +17,6 @@ timeout = int(os.environ['CXN_TIMEOUT'])
 # We'll connect to the plane before we serve the endpoints
 print('Connecting to ' + cxn_str + '...')
 
-
 # Limiting the amount of time dronekit can load to the timeout
 # provided.
 try:
@@ -29,7 +28,6 @@ except util.TimeoutException as e:
     print('\x1b[31mConnection timed out after ' + str(timeout) + ' seconds.'
             '\x1b[0m')
     sys.exit(30)
-
 
 print('\x1b[32mConnection successful.\x1b[0m')
 
