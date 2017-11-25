@@ -88,7 +88,7 @@ export default class UploadMonitor {
             return curr ? acc + 1 : acc;
         }, 0) / TIME_LIMIT_5;
 
-        return { total1, total5, fresh1, fresh5 };
+        return { time: time(), total1, total5, fresh1, fresh5 };
     }
 
     /**

@@ -1,0 +1,20 @@
+/*
+ * Message definitions for various statistics.
+ *
+ * Time is in seconds from 1970 epoch.
+ */
+
+syntax = "proto3";
+
+package stats;
+
+// Rate at which the interop server receives telemetry
+message InteropUploadRate {
+    double time = 1;
+    // Total rates over 1 and 5 seconds, no filtering
+    float total_1 = 2;
+    float total_5 = 3;
+    // Rates over 1 and 5 seconds of unique telemetry
+    float fresh_1 = 4;
+    float fresh_5 = 5;
+}

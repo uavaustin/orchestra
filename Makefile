@@ -3,7 +3,7 @@
 # is done here.
 
 .PHONY: all
-all: common telemetry
+all: common telemetry forward-interop
 
 .PHONY: common
 common:
@@ -13,7 +13,12 @@ common:
 telemetry: common
 	$(MAKE) -C telemetry
 
+.PHONY: forward-interop
+forward-interop: common
+	$(MAKE) -C forward-interop
+
 .PHONY: clean
 clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C telemetry clean
+	$(MAKE) -C forward-interop clean

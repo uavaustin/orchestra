@@ -5,8 +5,7 @@
     "license": "MIT",
     "scripts": {
         "start": "node .",
-        "clean": "(rm -rf lib || true) && mkdir lib",
-        "build": "npm run clean && babel src --out-dir lib"
+        "build": "babel src --out-dir lib"
     },
     "dependencies": {
         "async": "^2.6.0",

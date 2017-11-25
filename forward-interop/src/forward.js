@@ -4,8 +4,10 @@ import request from 'request-promise-native';
 
 import AUVSIClient from 'auvsisuas-client';
 
-import { InteropTelem } from './messages/telemetry_pb';
 import UploadMonitor from './upload-monitor';
+
+import { InteropTelem } from './messages/telemetry_pb';
+import { InteropUploadRate } from './messages/stats_pb';
 
 let interopUrl = process.env.INTEROP_URL;
 let username = process.env.USERNAME;
@@ -22,14 +24,26 @@ let monitor = new UploadMonitor();
  * @return {Promise.<void, Error>}
  */
 function sendTelem() {
-    return request.get('http://' + telemUrl + '/api/interop-telem?json=true')
-        .then(JSON.parse)
+    // Requesting protobuf data, so we're transforming this into a
+    // protobuf.js object fist
+    return request.get({
+            uri: 'http://' + telemUrl + '/api/interop-telem',
+            encoding: null,
+            // Converting Buffer to UInt8Array and then converting
+            // that to a protobuf object
+            transform: (buffer) => InteropTelem.deserializeBinary(
+                buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset 
+                        + buffer.byteLength)
+            )
+        })
         .then((telem) => {
+            // Parsing the object into a regular JS object for
+            // posting telemetry and updating the monitor.
             return {
-                lat: telem.lat,
-                lon: telem.lon,
-                alt_msl: telem.altFeetMsl,
-                yaw: telem.yaw
+                lat: telem.getLat(),
+                lon: telem.getLon(),
+                alt_msl: telem.getAltFeetMsl(),
+                yaw: telem.getYaw()
             };
         })
         .then((telem) => {
@@ -55,7 +69,7 @@ client.login('http://' + interopUrl, username, password, 5000)
             }, reject);
         });
     })
-    .then(() => { throw new Error('Telemetry loop stopped!') })
+    .then(() => { throw Error('Telemetry loop stopped!') })
     .catch((err) => {
         console.log(err);
         process.exit(1);
@@ -66,13 +80,25 @@ client.login('http://' + interopUrl, username, password, 5000)
 let app = express();
 
 app.get('/api/upload-rate', (req, res) => {
+    // Get the rate, verify it is a valid message, and create the
+    // message.
     let rate = monitor.getUploadRate();
 
+    let msg = new InteropUploadRate();
+
+    msg.setTime(rate.time);
+    msg.setTotal1(rate.total1);
+    msg.setTotal5(rate.total5);
+    msg.setFresh1(rate.fresh1);
+    msg.setFresh5(rate.fresh5);
+
+    // If json=true is in the query params, return JSON, otherwise,
+    // return a protobuf.
     if (req.query.json !== undefined && req.query.json == 'true') {
-        res.send(rate);
+        res.send(msg.toObject());
     } else {
-        // TODO: Protobufs not yet implemented.
-        res.sendStatus(500);
+        res.set('Content-Type', 'application/x-protobuf');
+        res.send(Buffer.from(msg.serializeBinary()));
     }
 });
 
