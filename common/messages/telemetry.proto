@@ -1,0 +1,43 @@
+/*
+ * Telemetry message definitions
+ * 
+ * Note that all units will be in meters, meters/second, seconds,
+ * degrees, etc. unless otherwise noted.
+ * 
+ * Time is in seconds from 1970 epoch.
+ *
+ * Lat, lon, and yaw are in the range [0, 360) degrees and pitch and
+ * roll are in the range (-180, 180].
+ */
+
+syntax = "proto3";
+
+package telemetry;
+
+// Time message
+message Time {
+    double time = 1;
+}
+
+// Telemetry needed by the AUVSI SUAS Interop Server
+message InteropTelem {
+    double time = 1;
+    float lat = 2;
+    float lon = 3;
+    float alt_feet_msl = 4;
+    float yaw = 5;
+}
+
+// Camera telemtry
+message CameraTelem {
+    double time = 1;
+    float lat = 2;
+    float lon = 3;
+    // Relative to ground
+    float alt = 4;
+    float yaw = 5;
+    // 0 pitch points to the front of the plane, -90 points down
+    float pitch = 6;
+    // 0 roll points down, 90 points to the right
+    float roll = 7;
+}

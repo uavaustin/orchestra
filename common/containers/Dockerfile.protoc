@@ -1,0 +1,10 @@
+ARG BASE=debian:stretch-slim
+
+FROM ${BASE}
+
+WORKDIR /builder
+
+COPY common/scripts/protobuf-version.sh .
+COPY common/scripts/install-protoc.sh .
+
+RUN ./install-protoc.sh

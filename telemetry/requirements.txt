@@ -1,0 +1,4 @@
+dronekit
+Flask
+protobuf==3.4.0
+pyserial
