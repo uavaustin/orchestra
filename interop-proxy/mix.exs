@@ -13,13 +13,17 @@ defmodule InteropProxy.Mixfile do
 
   def application do
     [
-      extra_applications: [:logger, :httpoison],
+      extra_applications: list_apps(Mix.env),
       mod: {InteropProxy.Application, []}
     ]
   end
 
+  defp list_apps(:prod), do: [:flasked] ++ list_apps(:dev)
+  defp list_apps(_env), do: [:logger, :httpoison]
+
   defp deps do
     [
+      {:flasked, "~> 0.4.0", only: :prod},
       {:httpoison, "~> 0.13.0"},
       {:poison, "~> 3.1.0"}
     ]
