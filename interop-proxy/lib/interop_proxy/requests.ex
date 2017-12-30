@@ -1,8 +1,18 @@
 defmodule InteropProxy.Requests do
+  @moduledoc """
+  Handles making requests to the AUVSI SUAS Interoperability Server.
+
+  After logging in, the cookie must be passed to the server after
+  subsequent requests.
+  """
+
   @json       {"Content-Type", "application/json"}
   @png        {"Content-Type", "image/png"}
   @urlencoded {"Content-Type", "application/x-www-form-urlencoded"}
 
+  @doc """
+  Log in to the server and get a cookie.
+  """
   def login(url, username, password) do
     body = _get_urlencoded %{username: username, password: password}
 
@@ -11,24 +21,36 @@ defmodule InteropProxy.Requests do
     |> _handle_login
   end
 
+  @doc """
+  Get the full list of missions from the server.
+  """
   def get_missions(url, cookie) do
     "http://#{url}/api/missions"
     |> _cookie_get(cookie)
     |> _handle_json
   end
 
+  @doc """
+  Get a specific mission from the server.
+  """
   def get_mission(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/missions/#{id}"
     |> _cookie_get(cookie)
     |> _handle_json
   end
 
+  @doc """
+  Get the stationary and movie obstacles from the server.
+  """
   def get_obstacles(url, cookie) do
     "http://#{url}/api/obstacles"
     |> _cookie_get(cookie)
     |> _handle_json
   end
 
+  @doc """
+  Post UAS telemetry to the server.
+  """
   def post_telemetry(url, cookie, telem) when is_map(telem) do
     body = _get_urlencoded(telem)
 
@@ -37,6 +59,9 @@ defmodule InteropProxy.Requests do
     |> _handle_text("UAS Telemetry Successfully Posted.")
   end
 
+  @doc """
+  Post a new ODLC to the server.
+  """
   def post_odlc(url, cookie, odlc) when is_map(odlc) do
     body = _get_json(odlc)
 
@@ -45,24 +70,27 @@ defmodule InteropProxy.Requests do
     |> _handle_json
   end
 
+  @doc """
+  Get all ODLCs from the server.
+  """
   def get_odlcs(url, cookie) do
     "http://#{url}/api/odlcs"
     |> _cookie_get(cookie)
     |> _handle_json
   end
 
+  @doc """
+  Get a ODLC from the server.
+  """
   def get_odlc(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}"
     |> _cookie_get(cookie)
     |> _handle_json
   end
 
-  def get_odlc(url, cookie, id) when is_integer(id) do
-    "http://#{url}/api/odlcs/#{id}"
-    |> _cookie_get(cookie)
-    |> _handle_json
-  end
-
+  @doc """
+  Update an ODLC on the server.
+  """
   def put_odlc(url, cookie, id, odlc) when is_integer(id) and is_map(odlc) do
     body = _get_json(odlc)
 
@@ -71,18 +99,27 @@ defmodule InteropProxy.Requests do
     |> _handle_json
   end
 
+  @doc """
+  Delete an ODLC from the server.
+  """
   def delete_odlc(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}"
     |> _cookie_delete(cookie)
     |> _handle_text("Object deleted.")
   end
 
+  @doc """
+  Get an ODLC's image from the server.
+  """
   def get_odlc_image(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}/image"
     |> _cookie_get(cookie)
     |> _handle_get_image
   end
 
+  @doc """
+  Post an ODLC's image from the server.
+  """
   def post_odlc_image(url, cookie, id, image)
   when is_integer(id) and is_binary(image) do
     "http://#{url}/api/odlcs/#{id}/image"
@@ -90,10 +127,17 @@ defmodule InteropProxy.Requests do
     |> _handle_text("Image uploaded.")
   end
 
-  # This is just the same as posting
+  @doc """
+  Update an ODLC's image from the server.
+
+  This works the same as posting a new image.
+  """
   def put_odlc_image(url, cookie, id, image),
     do: post_odlc_image(url, cookie, id, image)
 
+  @doc """
+  Delete an ODLC's image from the server.
+  """
   def delete_odlc_image(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}"
     |> _cookie_delete(cookie)
@@ -113,12 +157,12 @@ defmodule InteropProxy.Requests do
   end
 
   # Making sure we're getting a png back.
-  def _handle_get_image({:ok, %{status_code: 200, body: body, headers: h}})
+  defp _handle_get_image({:ok, %{status_code: 200, body: body, headers: h}})
   when is_binary(body) do
     headers = Enum.into h, %{}
 
     # We'll have a match error if it's not a png.
-    @png = headers["Content-Type"]
+    @png = {"Content-Type", headers["Content-Type"]}
 
     {:ok, body}
   end
@@ -146,15 +190,19 @@ defmodule InteropProxy.Requests do
   defp _get_json(body) when is_map(body),
     do: Poison.encode!(body)
 
+  # Send a POST request with a cookie (default is json body).
   defp _cookie_post(url, cookie, body, headers \\ [@json]),
     do: HTTPoison.post(url, body, headers ++ [{"Cookie", cookie}])
 
+  # Send a GET request with a cookie.
   defp _cookie_get(url, cookie, headers \\ []),
     do: HTTPoison.get(url, headers ++ [{"Cookie", cookie}])
 
+  # Send a PUT request with a cookie (default is json body).
   defp _cookie_put(url, cookie, body, headers \\ [@json]),
     do: HTTPoison.put(url, body, headers ++ [{"Cookie", cookie}])
 
+  # Send a DELETE request with a cookie.
   defp _cookie_delete(url, cookie, headers \\ []),
     do: HTTPoison.delete(url, headers ++ [{"Cookie", cookie}])
 end
