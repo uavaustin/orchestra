@@ -6,7 +6,7 @@ defmodule InteropProxy.TestHelper do
   def password, do: Application.get_env(:interop_proxy, :password)
 
   def get_image(name) do
-    Path.join("test/data", name)
+    Path.join([__DIR__, "data", name])
     |> Path.absname
     |> File.read!
   end
