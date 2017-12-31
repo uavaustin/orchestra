@@ -105,7 +105,7 @@ defmodule InteropProxy.Requests do
   def delete_odlc(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}"
     |> _cookie_delete(cookie)
-    |> _handle_text("Object deleted.")
+    |> _handle_text("Odlc deleted.")
   end
 
   @doc """
@@ -139,7 +139,7 @@ defmodule InteropProxy.Requests do
   Delete an ODLC's image from the server.
   """
   def delete_odlc_image(url, cookie, id) when is_integer(id) do
-    "http://#{url}/api/odlcs/#{id}"
+    "http://#{url}/api/odlcs/#{id}/image"
     |> _cookie_delete(cookie)
     |> _handle_text("Image deleted.")
   end
@@ -165,6 +165,12 @@ defmodule InteropProxy.Requests do
     @png = {"Content-Type", headers["Content-Type"]}
 
     {:ok, body}
+  end
+
+  # If the odlc exists, but not the image, just return nil.
+  defp _handle_get_image({:ok, %{status_code: 404, body: body}}) do
+    true = String.match?(body, ~r/Odlc [0-9]+ has no image/)
+    {:ok, nil}
   end
 
   # Handling generic JSON responses.
