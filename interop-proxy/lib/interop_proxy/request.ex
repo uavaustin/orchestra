@@ -1,4 +1,4 @@
-defmodule InteropProxy.Requests do
+defmodule InteropProxy.Request do
   @moduledoc """
   Handles making requests to the AUVSI SUAS Interoperability Server.
 
