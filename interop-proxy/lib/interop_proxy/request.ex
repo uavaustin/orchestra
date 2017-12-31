@@ -188,8 +188,7 @@ defmodule InteropProxy.Request do
   # Making a urlencoded message from a map.
   defp get_urlencoded(body) when is_map(body) do
     body
-    |> Enum.map(fn {k, v} -> "#{Atom.to_string(k)}=#{v}" end)
-    |> Enum.join("&")
+    |> URI.encode_query
   end
 
   # Making a json encoded message from a map.
