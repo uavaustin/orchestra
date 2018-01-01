@@ -8,7 +8,8 @@ defmodule InteropProxy.SessionTest do
   import TestHelper, only: [url: 0, username: 0, password: 0]
 
   test "after starting a session, the cookie can be used for more requests" do
-    {:ok, session} = Session.start_link url(), username(), password()
+    {:ok, session} = Session.start_link url: url(), username: username(),
+                                        password: password()
 
     s_url    = session |> Session.url
     s_cookie = session |> Session.cookie
@@ -28,7 +29,8 @@ defmodule InteropProxy.SessionTest do
   end
 
   test "the session can be given a name" do
-    {:ok, _} = Session.start_link url(), username(), password(), name: :test
+    {:ok, _} = Session.start_link url: url(), username: username(),
+                                  password: password(), name: :test
 
     s_url    = :test |> Session.url
     s_cookie = :test |> Session.cookie
@@ -39,5 +41,17 @@ defmodule InteropProxy.SessionTest do
     {:ok, _} = Request.post_telemetry s_url, s_cookie, %{
       latitude: 1, longitude: 2, altitude_msl: 3, uas_heading: 4
     }
+  end
+
+  test "the default session was created" do
+    s_url    = Session.url
+    s_cookie = Session.cookie
+
+    assert is_binary(s_url)
+    assert is_binary(s_cookie)
+
+    {:ok, missions} = Request.get_missions s_url, s_cookie
+
+    assert length(missions) === 1
   end
 end

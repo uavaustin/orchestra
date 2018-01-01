@@ -10,8 +10,16 @@ defmodule InteropProxy.Session do
   @doc """
   Log in and then start the Session Agent.
   """
-  def start_link(url, username, password, opts \\ []) do
-    Agent.start_link __MODULE__, :start_fun, [url, username, password], opts
+  def start_link(opts) do
+    args = [
+      Keyword.fetch!(opts, :url),
+      Keyword.fetch!(opts, :username),
+      Keyword.fetch!(opts, :password)
+    ]
+
+    other_opts = Keyword.drop opts, [:url, :username, :password]
+
+    Agent.start_link __MODULE__, :start_fun, args, other_opts
   end
 
   @doc """
@@ -25,14 +33,14 @@ defmodule InteropProxy.Session do
   @doc """
   Get the url used in the login.
   """
-  def url(session) do
+  def url(session \\ __MODULE__) do
     Agent.get session, fn {url, _} -> url end
   end
 
   @doc """
   Get the cookie from the login.
   """
-  def cookie(session) do
+  def cookie(session \\ __MODULE__) do
     Agent.get session, fn {_, cookie} -> cookie end
   end
 end
