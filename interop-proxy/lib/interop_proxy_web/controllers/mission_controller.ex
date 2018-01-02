@@ -2,6 +2,10 @@ defmodule InteropProxyWeb.MissionController do
   use InteropProxyWeb, :controller
 
   def index(conn, _params) do
-    json conn, InteropProxy.get_active_mission!()
+    message = InteropProxy.get_active_mission!
+    |> form_message(Mission)    
+
+    conn
+    |> send_message(message)
   end
 end
