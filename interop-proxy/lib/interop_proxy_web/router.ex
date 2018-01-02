@@ -7,5 +7,7 @@ defmodule InteropProxyWeb.Router do
 
   scope "/api", InteropProxyWeb do
     pipe_through :api
+
+    get "/mission", MissionController, :index
   end
 end
