@@ -7,18 +7,18 @@ defmodule InteropProxy do
   """
 
   alias InteropProxy.Request
+  alias InteropProxy.Sanitize
 
   import InteropProxy.Session, only: [url: 0, cookie: 0]
 
   @doc """
   Return the active mission on the server.
-
-  `nil` is returned when there is none.
   """
   def get_active_mission! do
     {:ok, missions} = Request.get_missions url(), cookie()
 
     missions
     |> Enum.find(fn mission -> mission["active"] === true end)
+    |> Sanitize.sanitize_mission
   end
 end
