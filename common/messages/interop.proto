@@ -1,0 +1,53 @@
+/*
+ * Interop server message definitions.
+ *
+ * The Interop Proxy service translates the JSON repsonses from the
+ * interop server into these messages (and vise-versa).
+ *
+ * Note that all units will be in meters, meters/second, seconds,
+ * degrees, etc. unless otherwise noted.
+ *
+ * Time is in seconds from 1970 epoch.
+ *
+ * Lat, lon, and yaw are in the range [0, 360).
+ */
+
+syntax = "proto3";
+
+package interop;
+
+// Used by other messages.
+message Position {
+    float lat = 1;
+    float lon = 1;
+}
+
+// Used by other messages.
+message AerialPosition {
+    float lat = 1;
+    float lon = 2;
+    float alt_msl = 3;
+}
+
+// Mission on the interop server.
+// 
+// Note the lack of an active field, as all missions passed into the
+// stack will be assumed to be active.
+message Mission {
+    message FlyZone {
+        float alt_msl_max = 1;
+        float alt_msl_min = 2;
+        repeated Position boundary = 3;
+    }
+
+    double time = 1;
+    // If there even is an active mission or not.
+    bool current_mission = 2;
+    Position air_drop_pos = 3;
+    repeated FlyZone fly_zones = 4;
+    Position home_pos = 5;
+    repeated AerialPosition waypoints = 6;
+    Position off_axis_pos = 7;
+    Position emergent_pos = 8;
+    repeated AerialPosition search_area = 9;
+}

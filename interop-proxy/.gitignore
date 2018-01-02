@@ -6,3 +6,6 @@
 erl_crash.dump
 *.ez
 *.beam
+
+# Message definitions
+lib/messages

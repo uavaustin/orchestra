@@ -24,11 +24,12 @@ defmodule InteropProxy.Mixfile do
   defp elixirc_paths(_),     do: ["lib"]
 
   defp list_apps(:prod), do: [:flasked] ++ list_apps(:dev)
-  defp list_apps(_env), do: [:logger, :runtime_tools, :httpoison]
+  defp list_apps(_env), do: [:logger, :runtime_tools, :httpoison, :exprotobuf]
 
   defp deps do
     [
       {:cowboy, "~> 1.0"},
+      {:exprotobuf, "~> 1.2.9"},
       {:flasked, "~> 0.4.0", only: :prod},
       {:httpoison, "~> 0.13.0"},
       {:phoenix, "~> 1.3.0"},
