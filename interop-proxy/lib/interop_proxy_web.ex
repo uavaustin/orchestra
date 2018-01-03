@@ -14,7 +14,10 @@ defmodule InteropProxyWeb do
       import InteropProxyWeb.Router.Helpers
 
       import InteropProxyWeb.Message
-      alias InteropProxyWeb.Message.Interop.{Mission, Obstacles}
+
+      alias InteropProxyWeb.Message.Interop.{
+        Mission, Obstacles, InteropTelem, InteropMessage
+      }
     end
   end
 

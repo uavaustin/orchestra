@@ -31,4 +31,17 @@ defmodule InteropProxy do
     obstacles
     |> Sanitize.sanitize_obstacles
   end
+
+  @doc """
+  Post telemetry to the server.
+  """
+  def post_telemetry!(telem) do
+    outgoing_telem = telem
+    |> Sanitize.sanitize_outgoing_telemetry
+
+    {:ok, message} = Request.post_telemetry url(), cookie(), outgoing_telem
+
+    message
+    |> Sanitize.sanitize_message
+  end
 end

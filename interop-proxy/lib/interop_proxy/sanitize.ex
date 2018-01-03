@@ -66,6 +66,22 @@ defmodule InteropProxy.Sanitize do
     end)
   end
 
+  def sanitize_outgoing_telemetry(telem) do
+    %{
+      latitude: telem.pos.lat,
+      longitude: telem.pos.lon,
+      altitude_msl: telem.pos.alt_msl |> feet,
+      uas_heading: telem.yaw
+    }
+  end
+
+  def sanitize_message(text) do
+    %{
+      time: time(),
+      text: text
+    }
+  end
+
   defp sort_order(list) do
     list
     |> Enum.sort(fn a, b -> a["order"] < b["order"] end)
@@ -99,6 +115,8 @@ defmodule InteropProxy.Sanitize do
   end
 
   defp meters(feet), do: feet * 0.3048
+
+  defp feet(meters), do: meters / 0.3048
 
   defp time() do
     milliseconds = DateTime.utc_now()

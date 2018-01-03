@@ -69,3 +69,16 @@ message Obstacles {
     repeated StationaryObstacle stationary = 2;
     repeated MovingObstacle moving = 3;
 }
+
+// Telemetry to upload to the server.
+message InteropTelem {
+    double time = 1;
+    AerialPosition pos = 2;
+    float yaw = 3;
+}
+
+// Message containing text sent back from the server after a request.
+message InteropMessage {
+    double time = 1;
+    string text = 2;
+}

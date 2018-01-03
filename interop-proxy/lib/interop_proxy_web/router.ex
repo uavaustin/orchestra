@@ -10,5 +10,6 @@ defmodule InteropProxyWeb.Router do
 
     get "/mission", MissionController, :index
     get "/obstacles", ObstaclesController, :index
+    post "/telemetry", TelemetryController, :create
   end
 end
