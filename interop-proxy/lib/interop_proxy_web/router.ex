@@ -9,5 +9,6 @@ defmodule InteropProxyWeb.Router do
     pipe_through :api
 
     get "/mission", MissionController, :index
+    get "/obstacles", ObstaclesController, :index
   end
 end

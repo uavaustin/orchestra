@@ -21,4 +21,14 @@ defmodule InteropProxy do
     |> Enum.find(fn mission -> mission["active"] === true end)
     |> Sanitize.sanitize_mission
   end
+
+  @doc """
+  Return the stationary and moving obstacles on the server.
+  """
+  def get_obstacles! do
+    {:ok, obstacles} = Request.get_obstacles url(), cookie()
+
+    obstacles
+    |> Sanitize.sanitize_obstacles
+  end
 end

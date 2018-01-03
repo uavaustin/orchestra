@@ -35,6 +35,37 @@ defmodule InteropProxy.Sanitize do
     end)
   end
 
+  def sanitize_obstacles(obstacles) do
+    %{
+      time: time(),
+      stationary: obstacles["stationary_obstacles"]
+                  |> sanitize_stationary_obstacles,    
+      moving: obstacles["moving_obstacles"]
+              |> sanitize_moving_obstacles
+    }
+  end
+
+  defp sanitize_stationary_obstacles(stationary) do
+    stationary
+    |> Enum.map(fn obs ->
+      %{
+        pos: obs |> sanitize_position,
+        height: obs["cylinder_height"] |> meters,
+        radius: obs["cylinder_radius"] |> meters
+      }
+    end)
+  end
+
+  defp sanitize_moving_obstacles(moving) do
+    moving
+    |> Enum.map(fn obs ->
+      %{
+        pos: obs |> sanitize_aerial_position,
+        radius: obs["sphere_radius"] |> meters
+      }
+    end)
+  end
+
   defp sort_order(list) do
     list
     |> Enum.sort(fn a, b -> a["order"] < b["order"] end)

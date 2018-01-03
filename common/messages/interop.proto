@@ -51,3 +51,21 @@ message Mission {
     Position emergent_pos = 8;
     repeated AerialPosition search_area = 9;
 }
+
+// Lists the stationary and moving obstacles.
+message Obstacles {
+    message StationaryObstacle {
+        AerialPosition pos = 1;
+        float height = 2;
+        float radius = 3;
+    }
+
+    message MovingObstacle {
+        Position pos = 1;
+        float radius = 2;
+    }
+
+    double time = 1;
+    repeated StationaryObstacle stationary = 2;
+    repeated MovingObstacle moving = 3;
+}
