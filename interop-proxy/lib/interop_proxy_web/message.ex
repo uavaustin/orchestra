@@ -16,10 +16,13 @@ defmodule InteropProxyWeb.Message do
   function will take care of that for us.
 
   ## Examples
+  
+  The nested values can be in both optional and repeated fields.
 
       iex> alias InteropProxyWeb.Message
       iex> alias InteropProxyWeb.Message.Interop.Mission
-      iex> map = %{home_pos: %{lat: 1}, waypoints: [%{lat: 12, lon: 23}]}
+      iex> map = %{home_pos: %{lat: 1}, waypoints: [%{lat: 12,
+      ...>   lon: 23}]}
       iex> Message.form_message map, Mission
       %InteropProxyWeb.Message.Interop.Mission{
         air_drop_pos: nil,
@@ -42,6 +45,22 @@ defmodule InteropProxyWeb.Message do
         ]
       }
 
+  Keys can also be strings (useful when map was converted from JSON).
+
+      iex> alias InteropProxyWeb.Message
+      iex> alias InteropProxyWeb.Message.Interop.InteropTelem
+      iex> map = %{:time => 12, "pos" => %{"lat" => 1, "lon" => 2}}
+      iex> Message.form_message map, InteropTelem
+      %InteropProxyWeb.Message.Interop.InteropTelem{
+        pos: %InteropProxyWeb.Message.Interop.AerialPosition{
+          alt_msl: nil,
+          lat: 1,
+          lon: 2
+        },
+        time: 12,
+        yaw: nil
+      }
+
   """
   def form_message(map, module), do: do_form_message map, module, defs()
 
@@ -56,18 +75,18 @@ defmodule InteropProxyWeb.Message do
           # function again to resolve more nested messages.
           {mod, :optional} ->
             struct
-            |> Map.put(key, do_form_message(value, mod, defs))
+            |> update(key, do_form_message(value, mod, defs))
           # If it's a repeated message it's a list, so we'll do the
           # above but for each element in the list.
           {mod, :repeated} ->
             struct
-            |> Map.put(key, value |> Enum.map(&do_form_message(&1, mod, defs)))
+            |> update(key, value |> Enum.map(&do_form_message(&1, mod, defs)))
         end
       else
         # If we don't have anything nested, we're just entering a
         # normal key-value pair
         struct
-        |> Map.put(key, value)
+        |> update(key, value)
       end
     end
   end 
@@ -92,11 +111,27 @@ defmodule InteropProxyWeb.Message do
   defp get_nested(fields, key) do
     %Protobuf.Field{type: {:msg, mod}, occurrence: occurrence} = fields
     |> Enum.find(fn
-      %Protobuf.Field{name: ^key} -> true
-      _                           -> false
+      %Protobuf.Field{name: ^key} when is_atom(key) ->
+        true
+      %Protobuf.Field{name: atom_key} when is_binary(key) ->
+        Atom.to_string(atom_key) === key
+      _ ->
+        false
     end)
 
     {mod, occurrence}
+  end
+
+  # Doing a normal key update.
+  defp update(struct, key, value) when is_atom(key) do
+    struct
+    |> Map.put(key, value)
+  end
+
+  # Doing a key update, but converting the string to an atom.
+  defp update(struct, key, value) when is_binary(key) do
+    struct
+    |> Map.put(key |> String.to_atom, value)
   end
 
   @doc """
