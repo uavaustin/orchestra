@@ -3,6 +3,8 @@ defmodule InteropProxyWeb.Message do
   Contains the Protobuf messages from exprotobuf.
   """
 
+  @external_resource "lib/messages/interop.proto"
+
   use Protobuf,
     from: Path.expand("../messages/interop.proto", __DIR__),
     use_package_names: true
