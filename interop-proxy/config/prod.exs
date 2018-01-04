@@ -5,4 +5,6 @@ config :flasked,
   map_file: "priv/flasked_env.exs"
 
 config :interop_proxy, InteropProxyWeb.Endpoint,
-  http: [port: 5000],
+  http: [port: 8000]
+
+config :phoenix, :serve_endpoints, true

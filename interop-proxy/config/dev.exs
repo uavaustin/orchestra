@@ -6,6 +6,6 @@ config :interop_proxy,
   password: "testpass"
 
 config :interop_proxy, InteropProxyWeb.Endpoint,
-  http: [port: 5000],
+  http: [port: 8000],
   debug_errors: true,
   check_origin: false

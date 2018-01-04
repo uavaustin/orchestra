@@ -6,7 +6,7 @@ config :interop_proxy,
   password: "testpass"
 
 config :interop_proxy, InteropProxyWeb.Endpoint,
-  http: [port: 5001],
+  http: [port: 8001],
   server: false
 
 config :logger, level: :warn
