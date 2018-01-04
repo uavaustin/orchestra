@@ -18,7 +18,7 @@ defmodule InteropProxy.Request do
 
     "http://#{url}/api/login"
     |> HTTPoison.post(body, [@urlencoded])
-    |> handle_login
+    |> handle_resp(:login)
   end
 
   @doc """
@@ -27,7 +27,7 @@ defmodule InteropProxy.Request do
   def get_missions(url, cookie) do
     "http://#{url}/api/missions"
     |> cookie_get(cookie)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -36,7 +36,7 @@ defmodule InteropProxy.Request do
   def get_mission(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/missions/#{id}"
     |> cookie_get(cookie)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -45,7 +45,7 @@ defmodule InteropProxy.Request do
   def get_obstacles(url, cookie) do
     "http://#{url}/api/obstacles"
     |> cookie_get(cookie)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -56,7 +56,7 @@ defmodule InteropProxy.Request do
 
     "http://#{url}/api/telemetry"
     |> cookie_post(cookie, body, [@urlencoded])
-    |> handle_text("UAS Telemetry Successfully Posted.")
+    |> handle_resp(:text, text: "UAS Telemetry Successfully Posted.")
   end
 
   @doc """
@@ -67,7 +67,7 @@ defmodule InteropProxy.Request do
 
     "http://#{url}/api/odlcs"
     |> cookie_post(cookie, body)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -76,7 +76,7 @@ defmodule InteropProxy.Request do
   def get_odlcs(url, cookie) do
     "http://#{url}/api/odlcs"
     |> cookie_get(cookie)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -85,7 +85,7 @@ defmodule InteropProxy.Request do
   def get_odlc(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}"
     |> cookie_get(cookie)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule InteropProxy.Request do
 
     "http://#{url}/api/odlcs/#{id}"
     |> cookie_put(cookie, body)
-    |> handle_json
+    |> handle_resp(:json)
   end
 
   @doc """
@@ -105,7 +105,7 @@ defmodule InteropProxy.Request do
   def delete_odlc(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}"
     |> cookie_delete(cookie)
-    |> handle_text("Odlc deleted.")
+    |> handle_resp(:text, text: "Odlc deleted.")
   end
 
   @doc """
@@ -114,7 +114,7 @@ defmodule InteropProxy.Request do
   def get_odlc_image(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}/image"
     |> cookie_get(cookie)
-    |> handle_get_image
+    |> handle_resp(:get_image)
   end
 
   @doc """
@@ -124,7 +124,7 @@ defmodule InteropProxy.Request do
   when is_integer(id) and is_binary(image) do
     "http://#{url}/api/odlcs/#{id}/image"
     |> cookie_post(cookie, image, [@png])
-    |> handle_text("Image uploaded.")
+    |> handle_resp(:text, text: "Image uploaded.")
   end
 
   @doc """
@@ -141,25 +141,29 @@ defmodule InteropProxy.Request do
   def delete_odlc_image(url, cookie, id) when is_integer(id) do
     "http://#{url}/api/odlcs/#{id}/image"
     |> cookie_delete(cookie)
-    |> handle_text("Image deleted.")
+    |> handle_resp(:text, text: "Image deleted.")
   end
+
+  # Function head for generic responses, by default, no options are
+  # passed to the handler's below. HTTPoison errors are matched last.
+  defp handle_resp(value, type, opts \\ [])
 
   # Making sure we have a succesful login, and getting the cookie
   # from the response.
-  defp handle_login({:ok, %{status_code: 200, body: body, headers: h}}) do
-    headers = Enum.into h, %{}
+  defp handle_resp({:ok, %{status_code: 200} = resp}, :login, _opts) do
+    headers = Enum.into resp.headers, %{}
 
     cookie = headers["Set-Cookie"]
     |> String.split(";")
     |> List.first
 
-    {:ok, body, cookie}
+    {:ok, resp.body, cookie}
   end
 
   # Making sure we're getting a png back.
-  defp handle_get_image({:ok, %{status_code: 200, body: body, headers: h}})
-  when is_binary(body) do
-    headers = Enum.into h, %{}
+  defp handle_resp({:ok, %{status_code: 200, body: body} = resp},
+      :get_image, _opts) when is_binary(body) do
+    headers = Enum.into resp.headers, %{}
 
     # We'll have a match error if it's not a png.
     @png = {"Content-Type", headers["Content-Type"]}
@@ -168,22 +172,26 @@ defmodule InteropProxy.Request do
   end
 
   # If the odlc exists, but not the image, just return nil.
-  defp handle_get_image({:ok, %{status_code: 404, body: body}}) do
-    true = String.match?(body, ~r/Odlc [0-9]+ has no image/)
+  defp handle_resp({:ok, %{status_code: 404} = resp}, :get_image, _opts) do
+    true = String.match?(resp.body, ~r/Odlc [0-9]+ has no image/)
     {:ok, nil}
   end
 
   # Handling generic JSON responses.
-  defp handle_json({:ok, %{status_code: code, body: body}})
+  defp handle_resp({:ok, %{status_code: code} = resp}, :json, _opts)
   when code in [200, 201] do
-    {:ok, Poison.Parser.parse!(body)}
+    {:ok, Poison.Parser.parse!(resp.body)}
   end
 
   # Handling and verifying a generic text response.
-  defp handle_text({:ok, %{status_code: code, body: body}}, expected)
-  when code in [200, 201] and body === expected do
+  defp handle_resp({:ok, %{status_code: code, body: body}}, :text, opts)
+  when code in [200, 201] do
+    ^body = Keyword.fetch! opts, :text
     {:ok, body}
   end
+
+  # If HTTPoison returns an error, we'll handle this case gracefully.
+  defp handle_resp({:error, _reason} = value, _type, _opts), do: value
 
   # Making a urlencoded message from a map.
   defp get_urlencoded(body) when is_map(body) do
