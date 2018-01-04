@@ -9,25 +9,37 @@ defmodule InteropProxy.Session do
 
   @doc """
   Log in and then start the Session Agent.
+
+  If the `:respond_to` keyword argument is supplied in `opts`, we'll
+  send an `:ok` message when we've connected successfully.
   """
   def start_link(opts) do
-    args = [
-      Keyword.fetch!(opts, :url),
-      Keyword.fetch!(opts, :username),
-      Keyword.fetch!(opts, :password)
-    ]
+    url      = Keyword.fetch! opts, :url
+    username = Keyword.fetch! opts, :username
+    password = Keyword.fetch! opts, :password
 
-    other_opts = Keyword.drop opts, [:url, :username, :password]
+    resp = Keyword.get opts, :respond_to, nil
 
-    Agent.start_link __MODULE__, :start_fun, args, other_opts
+    other_opts = Keyword.drop opts, [:url, :username, :password, :respond_to]
+
+    {^url, cookie} = do_login url, username, password
+
+    if resp !== nil, do: send resp, :ok
+
+    Agent.start_link fn -> {url, cookie} end, other_opts
   end
 
-  @doc """
-  Function called when starting the Agent.
-  """
-  def start_fun(url, username, password) do
-    {:ok, _, cookie} = Request.login url, username, password
-    {url, cookie}
+  # Log in, if we couldn't log in, just keep trying.
+  defp do_login(url, username, password) do
+    case Request.login url, username, password do
+      {:ok, _, cookie} ->
+        {url, cookie}
+      _ ->
+        IO.puts "Interop server could not be reached... trying again."
+        Process.sleep 500
+
+        do_login url, username, password
+    end
   end
 
   @doc """
