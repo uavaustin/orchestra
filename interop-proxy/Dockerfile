@@ -38,10 +38,6 @@ RUN tar -xzf interop_proxy.tar.gz && \
 
 ENV LANG="C.UTF-8"
 
-ENV INTEROP_URL='0.0.0.0:8080' \
-    USERNAME='testuser' \
-    PASSWORD='testpass'
-
 EXPOSE 8000
 
 CMD /app/bin/interop_proxy foreground

@@ -15,7 +15,9 @@ defmodule InteropProxy.Mixfile do
 
   def application do
     [
-      extra_applications: list_apps(Mix.env),
+      extra_applications: [
+        :flasked, :logger, :runtime_tools, :httpoison, :exprotobuf
+      ],
       mod: {InteropProxy.Application, []}
     ]
   end
@@ -23,15 +25,12 @@ defmodule InteropProxy.Mixfile do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_),     do: ["lib"]
 
-  defp list_apps(:prod), do: [:flasked] ++ list_apps(:dev)
-  defp list_apps(_env), do: [:logger, :runtime_tools, :httpoison, :exprotobuf]
-
   defp deps do
     [
       {:cowboy, "~> 1.0"},
-      {:distillery, "~> 1.3", runtime: false, only: :prod},
+      {:distillery, "~> 1.3", runtime: false, except: :prod},
       {:exprotobuf, "~> 1.2.9"},
-      {:flasked, "~> 0.4.0", only: :prod},
+      {:flasked, "~> 0.4.0"},
       {:httpoison, "~> 0.13.0"},
       {:phoenix, "~> 1.3.0"},
       {:phoenix_pubsub, "~> 1.0"},
