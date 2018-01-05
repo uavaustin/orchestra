@@ -1,0 +1,67 @@
+# Interop Proxy
+
+Service that wraps the the AUVSI SUAS Interoperability Server with Protobuf
+responses along other things.
+
+This keeps a login state so that other services do not need to authenticate
+with the server.
+
+## Endpoints
+
+Note that all the endpoints can send and receive JSON as well (with the same
+structure as the Protobuf messages when the Accept or Content-Type header is
+`application/json`, respectively).
+
+- `GET /api/mission`
+
+  Lists the active mission on the server.
+
+  Note that if there isn't an active mession, the reply will have all defaults
+  and `current_mission` will be set to `false`.
+
+  On successful response: `200` status code with `interop::Mission` Protobuf
+  message.
+
+- `GET /api/obstacles`
+
+  Lists the stationary and moving obstacles on the server.
+
+  On successful response: `200` status code with `interop::Obstacles` Protobuf
+  message.
+
+- `POST /api/telemetry`
+
+  Post new telemetry to the server.
+
+  Note that the telemetry should be send it metric units (it will be converted
+  when being forwarded to the interop server).
+
+  Body should be a `interop::InteropTelem` Protobuf message.
+
+  On successful response: `200` status code with `interop::InteropMessage`
+  Protobuf message.
+
+## Testing
+
+The tests can either be run on the host machine or in a Docker container.
+
+### Testing on the host machine
+
+Make sure an interop server is being run on port 8080 and you'll need to have
+the Elixir programming language installed on your machine.
+
+```
+# Getting hex and rebar3
+$ mix local.hex --force && mix local.rebar --force
+# Getting the dependencies
+$ mix deps.get
+# Symlink the messages over (this is done for you when building the containers)
+$ ln -s ../common/messages lib/messages
+# Running the tests with mix
+$ mix test
+```
+
+### Testing with a Docker container
+
+Simply run `make test` in this directory to the run the tests with this. Note
+that this process is a bit slower than the above for debugging.
