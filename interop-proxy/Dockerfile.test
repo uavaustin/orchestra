@@ -1,0 +1,20 @@
+ARG BASE=elixir:1.5-slim
+
+FROM ${BASE}
+
+WORKDIR /test
+
+ENV MIX_ENV=test
+
+RUN mix local.hex --force && mix local.rebar --force
+
+COPY interop-proxy/mix.exs .
+
+RUN mix deps.get
+
+COPY interop-proxy .
+COPY common/messages lib/messages
+
+RUN mix compile
+
+CMD mix test
