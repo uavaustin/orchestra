@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Builds and runs the testing container and takes care of bringing a
 # test interop server online as well for the duration of the test.
 
