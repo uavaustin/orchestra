@@ -193,6 +193,10 @@ defmodule InteropProxy.Request do
   # If HTTPoison returns an error, we'll handle this case gracefully.
   defp handle_resp({:error, _reason} = value, _type, _opts), do: value
 
+  # If we have anything else, we'll return the body as the reason for
+  # an error.
+  defp handle_resp({:ok, %{body: body}}, _type, _opts), do: {:error, body}
+
   # Making a urlencoded message from a map.
   defp get_urlencoded(body) when is_map(body) do
     body
