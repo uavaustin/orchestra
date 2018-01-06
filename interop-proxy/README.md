@@ -6,6 +6,20 @@ responses along other things.
 This keeps a login state so that other services do not need to authenticate
 with the server.
 
+## Running the Image
+
+When running the image, make sure to pass in the `INTEROP_URL`, `USERNAME`, and
+`PASSWORD` envrionment variables. They default to `0.0.0.0:8080`, `testuser`,
+and `testpass`, respectively.
+
+```
+$ docker run -it -p 8000:8000 \
+    -e INTEROP_URL="192.168.0.5:8080" \
+    -e USERNAME="someuser" \
+    -e PASSWORD="somepass" \
+    uavaustin/interop-proxy
+```
+
 ## Endpoints
 
 Note that all the endpoints can send and receive JSON as well (with the same
@@ -53,10 +67,13 @@ the Elixir programming language installed on your machine.
 ```
 # Getting hex and rebar3
 $ mix local.hex --force && mix local.rebar --force
+
 # Getting the dependencies
 $ mix deps.get
+
 # Symlink the messages over (this is done for you when building the containers)
 $ ln -s ../common/messages lib/messages
+
 # Running the tests with mix
 $ mix test
 ```
