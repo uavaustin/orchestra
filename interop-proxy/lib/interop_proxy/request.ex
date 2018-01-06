@@ -171,10 +171,11 @@ defmodule InteropProxy.Request do
     {:ok, body}
   end
 
-  # If the odlc exists, but not the image, just return nil.
+  # If the odlc exists, but not the image, just return an empty
+  # binary.
   defp handle_resp({:ok, %{status_code: 404} = resp}, :get_image, _opts) do
     true = String.match?(resp.body, ~r/Odlc [0-9]+ has no image/)
-    {:ok, nil}
+    {:ok, <<>>}
   end
 
   # Handling generic JSON responses.

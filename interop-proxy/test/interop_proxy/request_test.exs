@@ -228,6 +228,6 @@ defmodule InteropProxy.RequestTest do
     # Making sure the image doesn't exist.
     {:ok, image} = Request.get_odlc_image url(), cookie, id
 
-    assert image === nil
+    assert image === <<>>
   end
 end
