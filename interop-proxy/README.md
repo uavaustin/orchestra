@@ -71,8 +71,8 @@ $ mix local.hex --force && mix local.rebar --force
 # Getting the dependencies
 $ mix deps.get
 
-# Symlink the messages over (this is done for you when building the containers)
-$ ln -s ../common/messages lib/messages
+# Copy the messages over (this is done for you when building the containers)
+$ cp -R ../common/messages lib/messages
 
 # Running the tests with mix
 $ mix test
