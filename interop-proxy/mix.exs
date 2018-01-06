@@ -28,7 +28,7 @@ defmodule InteropProxy.Mixfile do
   defp deps do
     [
       {:cowboy, "~> 1.0"},
-      {:distillery, "~> 1.3", runtime: false, except: :prod},
+      {:distillery, "~> 1.3", runtime: false},
       {:exprotobuf, "~> 1.2.9"},
       {:flasked, "~> 0.4.0"},
       {:httpoison, "~> 0.13.0"},
