@@ -1,4 +1,4 @@
-defmodule InteropProxyWeb.Message do
+defmodule InteropProxy.Message do
   @moduledoc """
   Contains the Protobuf messages from exprotobuf.
   """
@@ -19,17 +19,17 @@ defmodule InteropProxyWeb.Message do
   
   The nested values can be in both optional and repeated fields.
 
-      iex> alias InteropProxyWeb.Message
-      iex> alias InteropProxyWeb.Message.Interop.Mission
+      iex> alias InteropProxy.Message
+      iex> alias InteropProxy.Message.Interop.Mission
       iex> map = %{home_pos: %{lat: 1}, waypoints: [%{lat: 12,
       ...>   lon: 23}]}
       iex> Message.form_message map, Mission
-      %InteropProxyWeb.Message.Interop.Mission{
+      %InteropProxy.Message.Interop.Mission{
         air_drop_pos: nil,
         current_mission: nil,
         emergent_pos: nil,
         fly_zones: [],
-        home_pos: %InteropProxyWeb.Message.Interop.Position{
+        home_pos: %InteropProxy.Message.Interop.Position{
           lat: 1,
           lon: nil
         },
@@ -37,7 +37,7 @@ defmodule InteropProxyWeb.Message do
         search_area: [],
         time: nil,
         waypoints: [
-          %InteropProxyWeb.Message.Interop.AerialPosition{
+          %InteropProxy.Message.Interop.AerialPosition{
             alt_msl: nil,
             lat: 12,
             lon: 23
@@ -47,12 +47,12 @@ defmodule InteropProxyWeb.Message do
 
   Keys can also be strings (useful when map was converted from JSON).
 
-      iex> alias InteropProxyWeb.Message
-      iex> alias InteropProxyWeb.Message.Interop.InteropTelem
+      iex> alias InteropProxy.Message
+      iex> alias InteropProxy.Message.Interop.InteropTelem
       iex> map = %{:time => 12, "pos" => %{"lat" => 1, "lon" => 2}}
       iex> Message.form_message map, InteropTelem
-      %InteropProxyWeb.Message.Interop.InteropTelem{
-        pos: %InteropProxyWeb.Message.Interop.AerialPosition{
+      %InteropProxy.Message.Interop.InteropTelem{
+        pos: %InteropProxy.Message.Interop.AerialPosition{
           alt_msl: nil,
           lat: 1,
           lon: 2
@@ -132,24 +132,5 @@ defmodule InteropProxyWeb.Message do
   defp update(struct, key, value) when is_binary(key) do
     struct
     |> Map.put(key |> String.to_atom, value)
-  end
-
-  @doc """
-  Send a message either in an encoded Protobuf or JSON if requested.
-
-  This will check the Accepts header, if it's set to JSON it'll send
-  it as JSON for easier testing and implementation when needed.
-  """
-  def send_message(conn, status_code \\ 200, message) do
-    {content_type, binary} = case Plug.Conn.get_req_header conn, "accept" do
-      ["application/json"] ->
-        {"application/json", Poison.encode!(message)}
-      _ ->
-        {"application/x-protobuf", message |> message.__struct__.encode}
-    end
-
-    conn
-    |> Plug.Conn.put_resp_content_type(content_type)
-    |> Plug.Conn.send_resp(status_code, binary)
   end
 end

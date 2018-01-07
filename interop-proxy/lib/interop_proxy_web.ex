@@ -13,11 +13,13 @@ defmodule InteropProxyWeb do
       import Plug.Conn
       import InteropProxyWeb.Router.Helpers
 
-      import InteropProxyWeb.Message
+      import InteropProxy.Message
 
-      alias InteropProxyWeb.Message.Interop.{
+      alias InteropProxy.Message.Interop.{
         Mission, Obstacles, InteropTelem, InteropMessage
       }
+
+      import InteropProxyWeb.ControllerHelpers
     end
   end
 

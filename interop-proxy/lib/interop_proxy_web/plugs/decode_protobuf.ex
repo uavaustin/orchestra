@@ -1,7 +1,7 @@
 defmodule InteropProxyWeb.Plugs.DecodeProtobuf do
   import Plug.Conn
 
-  import InteropProxyWeb.Message
+  import InteropProxy.Message
 
   def init(opts), do: opts
 
