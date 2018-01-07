@@ -5,7 +5,8 @@ defmodule InteropProxy.Sanitize do
 
   # Aliasing the main messages.
   alias InteropProxy.Message.Interop.{
-    Position, AerialPosition, Mission, Obstacles, InteropTelem, InteropMessage
+    Position, AerialPosition, Mission, Obstacles, InteropTelem, Odlc, OdlcList,
+    InteropMessage
   }
 
   # Aliasing the nested messages.
@@ -79,11 +80,63 @@ defmodule InteropProxy.Sanitize do
 
   def sanitize_outgoing_telemetry(%InteropTelem{} = telem) do
     %{
-      latitude: telem.pos.lat,
-      longitude: telem.pos.lon,
+      latitude: telem.pos |> santiize_outgoing_latitude,
+      longitude: telem.pos |> santiize_outgoing_longitude,
       altitude_msl: telem.pos.alt_msl |> feet,
       uas_heading: telem.yaw
     }
+  end
+
+  def sanitize_odlc(odlc, image \\ <<>>) do
+    %Odlc{
+      time: time(),
+      id: odlc["id"],
+      type: odlc["type"] |> string_to_atom,
+      pos: odlc |> sanitize_position,
+      orientation: odlc["orientation"] |> string_to_atom,
+      shape: odlc["shape"] |> string_to_atom,
+      background_color: odlc["background_color"] |> string_to_atom,
+      alphanumeric: odlc["alphanumeric"],
+      alphanumeric_color: odlc["alphanumeric_color"] |> string_to_atom,
+      description: odlc["description"]
+                   |> (&(if &1 === :EMERGENT, do: &1, else: <<>>)).(),
+      autonomous: odlc["autonomous"],
+      image: image
+    }
+  end
+
+  def sanitize_odlc_list(odlcs) do
+    time = time()
+
+    %OdlcList{time: time, list: Enum.map(odlcs, &Map.put(&1, :time, time))}
+  end
+
+  def sanitize_outgoing_odlc(%Odlc{type: :EMERGENT} = odlc) do
+    outgoing_odlc = %{
+      type: odlc.type |> atom_to_string,
+      latitude: odlc.pos |> santiize_outgoing_latitude,
+      longitude: odlc.pos |> santiize_outgoing_longitude,
+      description: parse_string(odlc.description),
+      autonomous: odlc.autonomous |> (&(if &1 === nil, do: false, else: &1)).()
+    }
+
+    {outgoing_odlc, odlc.image |> (&(if &1 === nil, do: <<>>, else: &1)).()}
+  end
+
+  def sanitize_outgoing_odlc(%Odlc{} = odlc) do
+    outgoing_odlc = %{
+      type: odlc.type |> atom_to_string,
+      latitude: odlc.pos |> santiize_outgoing_latitude,
+      longitude: odlc.pos |> santiize_outgoing_longitude,
+      orientation: odlc.orientation |> atom_to_string,
+      shape: odlc.shape |> atom_to_string,
+      background_color: odlc.background_color |> atom_to_string,
+      alphanumeric: odlc.alphanumeric,
+      alphanumeric_color: odlc.alphanumeric_color |> atom_to_string,
+      autonomous: odlc.autonomous |> (&(if &1 === nil, do: false, else: &1)).()
+    }
+
+    {outgoing_odlc, odlc.image |> (&(if &1 === nil, do: <<>>, else: &1)).()}
   end
 
   def sanitize_message(text) do
@@ -125,9 +178,27 @@ defmodule InteropProxy.Sanitize do
     }
   end
 
+  defp santiize_outgoing_latitude(%Position{} = pos), do: pos.lat
+  defp santiize_outgoing_latitude(%AerialPosition{} = pos), do: pos.lat
+  defp santiize_outgoing_latitude(nil), do: 0.0
+
+  defp santiize_outgoing_longitude(%Position{} = pos), do: pos.lon
+  defp santiize_outgoing_longitude(%AerialPosition{} = pos), do: pos.lon
+  defp santiize_outgoing_longitude(nil), do: 0.0
+
   defp meters(feet), do: feet * 0.3048
 
   defp feet(meters), do: meters / 0.3048
+
+  defp string_to_atom(nil), do: :NONE
+  defp string_to_atom(string), do: string |> String.upcase |> String.to_atom
+
+  defp atom_to_string(nil), do: nil
+  defp atom_to_string(:NONE), do: nil
+  defp atom_to_string(atom), do: atom |> Atom.to_string |> String.downcase
+
+  defp parse_string(<<>>),   do: nil
+  defp parse_string(string), do: string
 
   defp time() do
     milliseconds = DateTime.utc_now()
