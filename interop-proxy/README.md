@@ -28,6 +28,12 @@ structure as the Protobuf messages when the Accept or Content-Type header is
 
 When a image is being sent through JSON, they should be base64 encoded.
 
+- `GET /api/alive`
+
+  Returns some text as a sanity check.
+
+  On successful response: `200` status code with `text/plain` Content-Type.
+
 - `GET /api/mission`
 
   Lists the active mission on the server.
