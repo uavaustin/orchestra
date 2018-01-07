@@ -72,7 +72,7 @@ $ mix local.hex --force && mix local.rebar --force
 $ mix deps.get
 
 # Copy the messages over (this is done for you when building the containers)
-$ cp -R ../common/messages lib/messages
+$ cp -R ../common/messages lib/
 
 # Running the tests with mix
 $ mix test
