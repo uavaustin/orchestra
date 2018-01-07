@@ -1,6 +1,8 @@
 defmodule InteropProxyTest do
   use ExUnit.Case
 
+  alias InteropProxy.Message.Interop.{AerialPosition, InteropTelem}
+
   import InteropProxy
 
   test "get the active mission" do
@@ -21,8 +23,8 @@ defmodule InteropProxyTest do
   end
 
   test "post valid telemetry" do
-    telem = %{
-      pos: %{
+    telem = %InteropTelem{
+      pos: %AerialPosition{
         lat: 30,
         lon: 60,
         alt_msl: 100

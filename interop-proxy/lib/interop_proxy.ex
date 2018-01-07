@@ -6,6 +6,8 @@ defmodule InteropProxy do
   Server for use from other services in the stack.
   """
 
+  alias InteropProxy.Message.Interop.InteropTelem
+
   alias InteropProxy.Request
   alias InteropProxy.Sanitize
 
@@ -28,20 +30,17 @@ defmodule InteropProxy do
   def get_obstacles! do
     {:ok, obstacles} = Request.get_obstacles url(), cookie()
 
-    obstacles
-    |> Sanitize.sanitize_obstacles
+    Sanitize.sanitize_obstacles obstacles
   end
 
   @doc """
   Post telemetry to the server.
   """
-  def post_telemetry!(telem) do
-    outgoing_telem = telem
-    |> Sanitize.sanitize_outgoing_telemetry
+  def post_telemetry!(%InteropTelem{} = telem) do
+    outgoing_telem = Sanitize.sanitize_outgoing_telemetry telem
 
     {:ok, message} = Request.post_telemetry url(), cookie(), outgoing_telem
 
-    message
-    |> Sanitize.sanitize_message
+    Sanitize.sanitize_message message
   end
 end

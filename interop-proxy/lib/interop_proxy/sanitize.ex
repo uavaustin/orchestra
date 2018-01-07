@@ -3,15 +3,26 @@ defmodule InteropProxy.Sanitize do
   Translates the interop server responses to our own and vise-versa.
   """
 
+  # Aliasing the main messages.
+  alias InteropProxy.Message.Interop.{
+    Position, AerialPosition, Mission, Obstacles, InteropTelem, InteropMessage
+  }
+
+  # Aliasing the nested messages.
+  alias InteropProxy.Message.Interop.Mission.FlyZone
+  alias InteropProxy.Message.Interop.Obstacles.{
+    StationaryObstacle, MovingObstacle
+  }
+
   def sanitize_mission(nil) do
-    %{
+    %Mission{
       time: time(),
       current_mission: false
     }
   end
 
   def sanitize_mission(mission) do
-    %{
+    %Mission{
       time: time(),
       current_mission: true,
       air_drop_pos: mission["air_drop_pos"] |> sanitize_position,
@@ -27,7 +38,7 @@ defmodule InteropProxy.Sanitize do
   defp sanitize_fly_zones(fly_zones) do
     fly_zones
     |> Enum.map(fn fly_zone -> 
-      %{
+      %FlyZone{
         alt_msl_max: fly_zone["altitude_msl_max"] |> meters,
         alt_msl_min: fly_zone["altitude_msl_min"] |> meters,
         boundary: fly_zone["boundary_pts"] |> sanitize_position
@@ -36,7 +47,7 @@ defmodule InteropProxy.Sanitize do
   end
 
   def sanitize_obstacles(obstacles) do
-    %{
+    %Obstacles{
       time: time(),
       stationary: obstacles["stationary_obstacles"]
                   |> sanitize_stationary_obstacles,    
@@ -48,7 +59,7 @@ defmodule InteropProxy.Sanitize do
   defp sanitize_stationary_obstacles(stationary) do
     stationary
     |> Enum.map(fn obs ->
-      %{
+      %StationaryObstacle{
         pos: obs |> sanitize_position,
         height: obs["cylinder_height"] |> meters,
         radius: obs["cylinder_radius"] |> meters
@@ -59,14 +70,14 @@ defmodule InteropProxy.Sanitize do
   defp sanitize_moving_obstacles(moving) do
     moving
     |> Enum.map(fn obs ->
-      %{
+      %MovingObstacle{
         pos: obs |> sanitize_aerial_position,
         radius: obs["sphere_radius"] |> meters
       }
     end)
   end
 
-  def sanitize_outgoing_telemetry(telem) do
+  def sanitize_outgoing_telemetry(%InteropTelem{} = telem) do
     %{
       latitude: telem.pos.lat,
       longitude: telem.pos.lon,
@@ -76,7 +87,7 @@ defmodule InteropProxy.Sanitize do
   end
 
   def sanitize_message(text) do
-    %{
+    %InteropMessage{
       time: time(),
       text: text
     }
@@ -94,7 +105,7 @@ defmodule InteropProxy.Sanitize do
   end
 
   defp sanitize_position(pos) do
-    %{
+    %Position{
       lat: pos["latitude"],
       lon: pos["longitude"]
     }
@@ -107,7 +118,7 @@ defmodule InteropProxy.Sanitize do
   end
 
   defp sanitize_aerial_position(pos) do
-    %{
+    %AerialPosition{
       lat: pos["latitude"],
       lon: pos["longitude"],
       alt_msl: pos["altitude_msl"] |> meters
