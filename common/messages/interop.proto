@@ -142,6 +142,9 @@ message Odlc {
     bool autonomous = 11;
     // Must be a png if provided.
     bytes image = 12;
+    // Should only be used with JSON in testing (since JSON needs to
+    // be UTF-8).
+    string image_base64 = 13;
 }
 
 // Message for listing all the odlcs.
