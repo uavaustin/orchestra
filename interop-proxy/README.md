@@ -26,6 +26,8 @@ Note that all the endpoints can send and receive JSON as well (with the same
 structure as the Protobuf messages when the Accept or Content-Type header is
 `application/json`, respectively).
 
+When a image is being sent through JSON, they should be base64 encoded.
+
 - `GET /api/mission`
 
   Lists the active mission on the server.
@@ -51,6 +53,55 @@ structure as the Protobuf messages when the Accept or Content-Type header is
   when being forwarded to the interop server).
 
   Body should be a `interop::InteropTelem` Protobuf message.
+
+  On successful response: `200` status code with `interop::InteropMessage`
+  Protobuf message.
+
+- `GET /api/odlcs`
+
+  Lists all the odlcs on the server.
+
+  Pass a `"image"` param of `"1"` or `"true"` to get images as well.
+
+  On successful response: `200` status code with `interop::OdlcList` Protobuf
+  message.
+
+- `GET /api/odlcs/:id`
+
+  Get an odlc on the server by id.
+
+  Pass a `"image"` param of `"1"` or `"true"` to get the image as well.
+
+  On successful response: `200` status code with `interop::Odlc` Protobuf
+  message.
+
+- `POST /api/odlcs`
+
+  Post a new odlc to the server.
+
+  Note that images can also be uploaded at the same time.
+
+  Body should be a `interop::Odlc` Protobuf message.
+
+  On successful response: `200` status code with `interop::Odlc` Protobuf
+  message (images will always be returned as empty strings).
+
+- `PUT /api/odlcs/:id`
+
+  Update an odlc on the server.
+
+  Note that images can also be uploaded at the same time and unlike the
+  interop server, this endpoint will replace all the contents of the odlc
+  (except the image won't be deleted if an empty string is passed).
+
+  Body should be a `interop::Odlc` Protobuf message.
+
+  On successful response: `200` status code with `interop::Odlc` Protobuf
+  message (images will always be returned as empty strings).
+
+- `DELETE /api/odlcs/:id`
+
+  Delete an odlc from the server.
 
   On successful response: `200` status code with `interop::InteropMessage`
   Protobuf message.
