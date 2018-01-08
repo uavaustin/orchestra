@@ -25,4 +25,4 @@ ENV CXN_STR=0.0.0.0:14550 \
 # 5000 is the default port for Flask
 EXPOSE 5000
 
-CMD ./run.sh
+CMD python -u /app/telemetry.py

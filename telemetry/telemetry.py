@@ -13,21 +13,29 @@ import util
 cxn_str = os.environ['CXN_STR']
 baud_rate = int(os.environ['BAUD_RATE'])
 timeout = int(os.environ['CXN_TIMEOUT'])
+retry_cxn = os.environ['RETRY_CXN'].lower() in ['1', 'true']
 
 # We'll connect to the plane before we serve the endpoints
-print('Connecting to ' + cxn_str + '...')
+print('\x1b[33mConnecting to ' + cxn_str + '...\x1b[0m')
+
+vehicle=None
 
 # Limiting the amount of time dronekit can load to the timeout
 # provided.
-try:
-    with util.time_limit(timeout):
-        vehicle = dronekit.connect(cxn_str, baud=baud_rate, wait_ready=True)
-except util.TimeoutException as e:
-    # We'll exit with code 30, and a shell script will start the
-    # script again if desired.
-    print('\x1b[31mConnection timed out after ' + str(timeout) + ' seconds.'
-            '\x1b[0m')
-    sys.exit(30)
+while vehicle is None:
+    try:
+        with util.time_limit(timeout):
+            vehicle = dronekit.connect(cxn_str, baud=baud_rate,
+                                                heartbeat_timeout=False,
+                                                wait_ready=True)
+    except util.TimeoutException as e:
+        if retry_cxn:
+            print('\x1b[31mConnection timed out after ' + str(timeout) +
+                    ' seconds... trying again.\x1b[0m')
+        else:
+            print('\x1b[31mConnection timed out after ' + str(timeout) +
+                    ' seconds.\1b[0m')
+            exit(1)
 
 print('\x1b[32mConnection successful.\x1b[0m')
 
