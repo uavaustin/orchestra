@@ -16,7 +16,7 @@ defmodule InteropProxyWeb do
       import InteropProxy.Message
 
       alias InteropProxy.Message.Interop.{
-        Mission, Obstacles, InteropTelem, InteropMessage
+        Mission, Obstacles, InteropTelem, Odlc, InteropMessage
       }
 
       import InteropProxyWeb.ControllerHelpers

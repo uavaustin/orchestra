@@ -1,7 +1,7 @@
 defmodule InteropProxyWeb.OdlcController do
   use InteropProxyWeb, :controller
 
-  plug InteropProxyWeb.Plugs.DecodeProtobuf, InteropTelem
+  plug InteropProxyWeb.Plugs.DecodeProtobuf, Odlc
   when action in [:create, :update]
 
   def index(conn, %{"image" => image}) do
