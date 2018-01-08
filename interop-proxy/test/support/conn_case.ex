@@ -8,6 +8,14 @@ defmodule InteropProxyWeb.ConnCase do
       import InteropProxyWeb.Router.Helpers
 
       @endpoint InteropProxyWeb.Endpoint
+
+      def protobuf_response(conn, status_code \\ 200, module) do
+        content_type = get_resp_header conn, "content-type"
+
+        assert content_type === ["application/x-protobuf"]
+
+        conn |> response(status_code) |> module.decode
+      end
     end
   end
 
