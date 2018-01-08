@@ -9,12 +9,12 @@ defmodule InteropProxyWeb.ControllerHelpers do
   """
   def send_message(conn, status_code \\ 200, message) do
     {content_type, binary} = case Plug.Conn.get_req_header conn, "accept" do
-      ["application/json"] ->
+      ["application/json" <> _] ->
         {"application/json; charset=utf-8", message 
-                                            |> make_json_safe
-                                            |> Poison.encode!}
+                                            |> encode_base64()
+                                            |> Poison.encode!()}
       _ ->
-        {"application/x-protobuf", message |> message.__struct__.encode}
+        {"application/x-protobuf", message |> message.__struct__.encode()}
     end
 
     conn
@@ -22,19 +22,13 @@ defmodule InteropProxyWeb.ControllerHelpers do
     |> Plug.Conn.send_resp(status_code, binary)
   end
 
-  # Gets binary images out of JSON since it needs to be UTF-8.
-  defp make_json_safe(%Odlc{image: image} = message)
-  when image not in [<<>>, nil] do
-    message
-    |> Map.put(:image_base64, Base.encode64(image))
-    |> Map.put(:image, <<>>)
-  end
-
-  defp make_json_safe(%OdlcList{} = message) do
-    Map.put message, :list, Enum.map(message.list, &make_json_safe/1) 
-  end
-
-  defp make_json_safe(message), do: message 
+  # JSON messages need base64 instead of binary.
+  defp encode_base64(%Odlc{image: nil} = message), do: message
+  defp encode_base64(%Odlc{} = message),
+    do: Map.update! message, :image, &Base.encode64/1
+  defp encode_base64(%OdlcList{} = message),
+    do: Map.put message, :list, Enum.map(message.list, &encode_base64/1) 
+  defp encode_base64(message), do: message
 
   @doc """
   Checking if a param string means to be `true`.

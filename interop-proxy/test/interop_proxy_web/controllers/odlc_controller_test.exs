@@ -31,7 +31,6 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       assert odlc.pos.lat == 60
       assert odlc.pos.lon == 50
       assert odlc.image === <<>>
-      assert odlc.image_base64 === <<>>
     end
 
     test "can get a list with images in a protobuf", context do
@@ -45,7 +44,34 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       assert odlc.pos.lat == 60
       assert odlc.pos.lon == 50
       assert odlc.image === context.image
-      assert odlc.image_base64 === <<>>
+    end
+
+    test "can get a list as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> get(odlc_path(context.conn, :index))
+      |> json_response(200)
+
+      odlc = Enum.find response["list"], &(&1["id"] === context.id)
+
+      assert odlc["type"] === "OFF_AXIS"
+      assert odlc["pos"]["lat"] == 60
+      assert odlc["pos"]["lon"] == 50
+      assert odlc["image"] === <<>>
+    end
+
+    test "can get a list with images as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> get(odlc_path(context.conn, :index, image: "true"))
+      |> json_response(200)
+
+      odlc = Enum.find response["list"], &(&1["id"] === context.id)
+
+      assert odlc["type"] === "OFF_AXIS"
+      assert odlc["pos"]["lat"] == 60
+      assert odlc["pos"]["lon"] == 50
+      assert odlc["image"] === Base.encode64(context.image)
     end
   end
 
@@ -73,7 +99,6 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       assert response.pos.lat == 61
       assert response.pos.lon == 51
       assert response.image === <<>>
-      assert response.image_base64 === <<>>
     end
 
     test "can get an odlc with an image in a protobuf", context do
@@ -86,11 +111,42 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       assert response.pos.lat == 61
       assert response.pos.lon == 51
       assert response.image === context.image
-      assert response.image_base64 === <<>>
+    end
+
+    test "can get an odlc as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> get(odlc_path(context.conn, :show, context.id))
+      |> json_response(200)
+
+      assert response["type"] === "EMERGENT"
+      assert response["description"] === "fireman"
+      assert response["pos"]["lat"] == 61
+      assert response["pos"]["lon"] == 51
+      assert response["image"] === <<>>
+    end
+
+    test "can get an odlc with an image as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> get(odlc_path(context.conn, :show, context.id, image: "true"))
+      |> json_response(200)
+
+      assert response["type"] === "EMERGENT"
+      assert response["description"] === "fireman"
+      assert response["pos"]["lat"] == 61
+      assert response["pos"]["lon"] == 51
+      assert response["image"] === Base.encode64(context.image)
     end
   end
 
   describe "create/2" do
+    setup _context do
+      image_2 = TestHelper.get_image "image-2.png"
+
+      {:ok, image: image_2}
+    end
+
     test "post new odlc in a protobuf, get it back in a protobuf", context do
       response = context.conn
       |> put_req_header("content-type", "application/x-protobuf")
@@ -106,7 +162,6 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       assert response.pos.lat == -1
       assert response.pos.lon == 1
       assert response.image === <<>>
-      assert response.image_base64 === <<>>
     end
 
     test "post new odlc and image in a protobuf, get it back in a protobuf",
@@ -115,22 +170,58 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       |> put_req_header("content-type", "application/x-protobuf")
       |> post(odlc_path(context.conn, :create), %Odlc{
         type: :OFF_AXIS,
-        shape: :TRAPEZOID
+        shape: :TRAPEZOID,
+        image: context.image
       } |> Odlc.encode)
       |> protobuf_response(Odlc)
 
       assert response.type === :OFF_AXIS
       assert response.shape === :TRAPEZOID
       assert response.image === <<>>
-      assert response.image_base64 === <<>>
+    end
+
+    test "post new odlc as JSON, get it back as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(odlc_path(context.conn, :create), %{
+        type: "OFF_AXIS",
+        shape: "RECTANGLE",
+        pos: %{lat: -1, lon: 1}
+      })
+      |> json_response(200)
+
+      assert response["type"] === "OFF_AXIS"
+      assert response["shape"] === "RECTANGLE"
+      assert response["pos"]["lat"] == -1
+      assert response["pos"]["lon"] == 1
+      assert response["image"] === <<>>
+    end
+
+    test "post new odlc and image as JSON, get it back as JSON",
+        context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(odlc_path(context.conn, :create), %{
+        type: "OFF_AXIS",
+        shape: "TRAPEZOID",
+        image: Base.encode64(context.image) 
+      })
+      |> json_response(200)
+
+      assert response["type"] === "OFF_AXIS"
+      assert response["shape"] === "TRAPEZOID"
+      assert response["image"] === <<>>
     end
   end
 
   describe "update/2" do
     setup _context do
+      image = TestHelper.get_image "image-1.png"
       odlc = post_odlc! %Odlc{type: :STANDARD}
 
-      {:ok, id: odlc.id}
+      {:ok, id: odlc.id, image: image}
     end
 
     test "update odlc with a protobuf, get it back in a protobuf", context do
@@ -146,25 +237,64 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       assert response.shape === :SQUARE
       assert response.orientation === :WEST
       assert response.image === <<>>
-      assert response.image_base64 === <<>>
     end
 
     test "update odlc and image with a protobuf, get it back in a protobuf",
         context do
-      image_1 = TestHelper.get_image "image-1.png"
-
       response = context.conn
       |> put_req_header("content-type", "application/x-protobuf")
       |> put(odlc_path(context.conn, :update, context.id), %Odlc{
         type: :STANDARD,
         shape: :SQUARE,
-        image: image_1
+        background_color: :RED,
+        alphanumeric_color: :WHITE,
+        alphanumeric: "Z",
+        image: context.image
       } |> Odlc.encode)
       |> protobuf_response(Odlc)
 
       assert response.shape === :SQUARE
+      assert response.background_color === :RED
+      assert response.alphanumeric_color === :WHITE
+      assert response.alphanumeric === "Z"
       assert response.image === <<>>
-      assert response.image_base64 === <<>>
+    end
+
+    test "update odlc with JSON, get it back as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> put(odlc_path(context.conn, :update, context.id), %{
+        type: "STANDARD",
+        shape: "SQUARE",
+        orientation: "WEST"
+      })
+      |> json_response(200)
+
+      assert response["shape"] === "SQUARE"
+      assert response["orientation"] === "WEST"
+      assert response["image"] === <<>>
+    end
+
+    test "update odlc and image with JSON, get it back as JSON", context do
+      response = context.conn
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> put(odlc_path(context.conn, :update, context.id), %{
+        type: "STANDARD",
+        shape: "SQUARE",
+        background_color: "RED",
+        alphanumeric_color: "WHITE",
+        alphanumeric: "Z",
+        image: Base.encode64(context.image)
+      })
+      |> json_response(200)
+
+      assert response["shape"] === "SQUARE"
+      assert response["background_color"] === "RED"
+      assert response["alphanumeric_color"] === "WHITE"
+      assert response["alphanumeric"] === "Z"
+      assert response["image"] === <<>>
     end
   end
 
