@@ -19,7 +19,7 @@ package interop;
 // Used by other messages.
 message Position {
     float lat = 1;
-    float lon = 1;
+    float lon = 2;
 }
 
 // Used by other messages.
@@ -86,19 +86,19 @@ message Odlc {
     }
 
     enum Orientation {
-        NONE = 0;
-        N = 1;
-        NE = 2;
-        E = 3;
-        SE = 4;
-        S = 5;
-        SW = 6;
-        W = 7;
-        NW = 8;
+        UNKNOWN_ORIENTATION = 0;
+        NORTH = 1;
+        NORTHEAST = 2;
+        EAST = 3;
+        SOUTHEAST = 4;
+        SOUTH = 5;
+        SOUTHWEST = 6;
+        WEST = 7;
+        NORTHWEST = 8;
     }
 
     enum Shape {
-        NONE = 0;
+        UNKNOWN_SHAPE = 0;
         CIRCLE = 1;
         SEMICIRCLE = 2;
         QUARTER_CIRCLE = 3;
@@ -115,7 +115,7 @@ message Odlc {
     }
 
     enum Color {
-        NONE = 0;
+        UNKNOWN_COLOR = 0;
         WHITE = 1;
         BLACK = 2;
         GRAY = 3;

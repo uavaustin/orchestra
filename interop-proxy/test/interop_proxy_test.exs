@@ -42,10 +42,12 @@ defmodule InteropProxyTest do
   end
 
   test "posting a new odlc" do
-    odlc = %Odlc{type: :STANDARD}
+    odlc = %Odlc{type: :STANDARD, orientation: :NORTHWEST}
 
     count_matching = fn ->
-      Enum.count get_odlcs!().list, &match?(%{type: :STANDARD}, &1)
+      Enum.count get_odlcs!().list, fn odlc ->
+        match?(%{type: :STANDARD, orientation: :NORTHWEST}, odlc)
+      end
     end
 
     # Getting the count for reference.
@@ -105,21 +107,25 @@ defmodule InteropProxyTest do
     }
 
     # Updating it.
-    returned = put_odlc! id, %Odlc{type: :OFF_AXIS, background_color: :BLUE}
+    returned = put_odlc! id, %Odlc{
+      type: :OFF_AXIS, background_color: :BLUE, orientation: :SOUTH
+    }
 
     # Since we're using structs, the default value of shape will be
     # passed, so when updating, the shape should be gone, but the
     # image shouldn't change.
-    assert returned.shape === :NONE
+    assert returned.shape === :UNKNOWN_SHAPE
     assert returned.background_color === :BLUE
+    assert returned.orientation === :SOUTH
 
     assert get_odlc!(id, image: true).image === image_1
 
     # Updating it with an image as well.
     returned = put_odlc! id, %Odlc{type: :OFF_AXIS, image: image_2}
 
-    assert returned.shape === :NONE
-    assert returned.background_color === :NONE
+    assert returned.shape === :UNKNOWN_SHAPE
+    assert returned.background_color === :UNKNOWN_COLOR
+    assert returned.orientation === :UNKNOWN_ORIENTATION
 
     assert get_odlc!(id, image: true).image === image_2
   end

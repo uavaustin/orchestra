@@ -80,8 +80,8 @@ defmodule InteropProxy.Sanitize do
 
   def sanitize_outgoing_telemetry(%InteropTelem{} = telem) do
     %{
-      latitude: telem.pos |> santiize_outgoing_latitude,
-      longitude: telem.pos |> santiize_outgoing_longitude,
+      latitude: telem.pos |> sanitize_outgoing_latitude,
+      longitude: telem.pos |> sanitize_outgoing_longitude,
       altitude_msl: telem.pos.alt_msl |> feet,
       uas_heading: telem.yaw
     }
@@ -91,15 +91,14 @@ defmodule InteropProxy.Sanitize do
     %Odlc{
       time: time(),
       id: odlc["id"],
-      type: odlc["type"] |> string_to_atom,
+      type: odlc["type"] |> string_to_atom(:type),
       pos: odlc |> sanitize_position,
-      orientation: odlc["orientation"] |> string_to_atom,
-      shape: odlc["shape"] |> string_to_atom,
-      background_color: odlc["background_color"] |> string_to_atom,
+      orientation: odlc["orientation"] |> sanitize_orientation,
+      shape: odlc["shape"] |> string_to_atom(:shape),
+      background_color: odlc["background_color"] |> string_to_atom(:color),
       alphanumeric: odlc["alphanumeric"],
-      alphanumeric_color: odlc["alphanumeric_color"] |> string_to_atom,
-      description: odlc["description"]
-                   |> (&(if &1 === :EMERGENT, do: &1, else: <<>>)).(),
+      alphanumeric_color: odlc["alphanumeric_color"] |> string_to_atom(:color),
+      description: odlc["description"],
       autonomous: odlc["autonomous"],
       image: image
     }
@@ -114,8 +113,8 @@ defmodule InteropProxy.Sanitize do
   def sanitize_outgoing_odlc(%Odlc{type: :EMERGENT} = odlc) do
     outgoing_odlc = %{
       type: odlc.type |> atom_to_string,
-      latitude: odlc.pos |> santiize_outgoing_latitude,
-      longitude: odlc.pos |> santiize_outgoing_longitude,
+      latitude: odlc.pos |> sanitize_outgoing_latitude,
+      longitude: odlc.pos |> sanitize_outgoing_longitude,
       description: parse_string(odlc.description),
       autonomous: odlc.autonomous |> (&(if &1 === nil, do: false, else: &1)).()
     }
@@ -126,9 +125,9 @@ defmodule InteropProxy.Sanitize do
   def sanitize_outgoing_odlc(%Odlc{} = odlc) do
     outgoing_odlc = %{
       type: odlc.type |> atom_to_string,
-      latitude: odlc.pos |> santiize_outgoing_latitude,
-      longitude: odlc.pos |> santiize_outgoing_longitude,
-      orientation: odlc.orientation |> atom_to_string,
+      latitude: odlc.pos |> sanitize_outgoing_latitude,
+      longitude: odlc.pos |> sanitize_outgoing_longitude,
+      orientation: odlc.orientation |> sanitize_outgoing_orientation,
       shape: odlc.shape |> atom_to_string,
       background_color: odlc.background_color |> atom_to_string,
       alphanumeric: odlc.alphanumeric,
@@ -178,23 +177,55 @@ defmodule InteropProxy.Sanitize do
     }
   end
 
-  defp santiize_outgoing_latitude(%Position{} = pos), do: pos.lat
-  defp santiize_outgoing_latitude(%AerialPosition{} = pos), do: pos.lat
-  defp santiize_outgoing_latitude(nil), do: 0.0
+  defp sanitize_outgoing_latitude(%Position{} = pos), do: pos.lat
+  defp sanitize_outgoing_latitude(%AerialPosition{} = pos), do: pos.lat
+  defp sanitize_outgoing_latitude(nil), do: 0.0
 
-  defp santiize_outgoing_longitude(%Position{} = pos), do: pos.lon
-  defp santiize_outgoing_longitude(%AerialPosition{} = pos), do: pos.lon
-  defp santiize_outgoing_longitude(nil), do: 0.0
+  defp sanitize_outgoing_longitude(%Position{} = pos), do: pos.lon
+  defp sanitize_outgoing_longitude(%AerialPosition{} = pos), do: pos.lon
+  defp sanitize_outgoing_longitude(nil), do: 0.0
+
+  defp sanitize_orientation(string) do
+    case string do
+      nil  -> :UNKNOWN_ORIENTATION
+      "n"  -> :NORTH
+      "ne" -> :NORTHEAST
+      "e"  -> :EAST
+      "se" -> :SOUTHEAST
+      "s"  -> :SOUTH
+      "sw" -> :SOUTHWEST
+      "w"  -> :WEST
+      "nw" -> :NORTHWEST
+    end
+  end
+
+  defp sanitize_outgoing_orientation(nil), do: nil
+
+  defp sanitize_outgoing_orientation(atom) do
+    case atom do
+      :UNKNOWN_ORIENTATION -> nil
+      :NORTH               -> "n"
+      :NORTHEAST           -> "ne"
+      :EAST                -> "e"
+      :SOUTHEAST           -> "se"
+      :SOUTH               -> "s"
+      :SOUTHWEST           -> "sw"
+      :WEST                -> "w"
+      :NORTHWEST           -> "nw"
+    end
+  end
 
   defp meters(feet), do: feet * 0.3048
 
   defp feet(meters), do: meters / 0.3048
 
-  defp string_to_atom(nil), do: :NONE
-  defp string_to_atom(string), do: string |> String.upcase |> String.to_atom
+  defp string_to_atom(nil, :shape), do: :UNKNOWN_SHAPE
+  defp string_to_atom(nil, :color), do: :UNKNOWN_COLOR
+  defp string_to_atom(string, _), do: string |> String.upcase |> String.to_atom
 
   defp atom_to_string(nil), do: nil
-  defp atom_to_string(:NONE), do: nil
+  defp atom_to_string(:UNKNOWN_SHAPE), do: nil
+  defp atom_to_string(:UNKNOWN_COLOR), do: nil
   defp atom_to_string(atom), do: atom |> Atom.to_string |> String.downcase
 
   defp parse_string(<<>>),   do: nil
