@@ -9,34 +9,34 @@ defmodule InteropProxyWeb.Plugs.DecodeProtobuf do
 
   def call(conn, module) do
     case decode(conn, module) do
-      {nil, conn} ->
+      {:error, reason, conn} ->
         conn
-        |> send_resp(400, "")
+        |> put_resp_content_type("text/plain")
+        |> send_resp(400, reason)
         |> halt()
-      {decoded, conn} ->
-        conn
-        |> assign(:protobuf, decoded)
+      {:ok, decoded, conn} ->
+        assign conn, :protobuf, decoded
     end
   end
 
   # Decodes the message into a Protobuf struct or nil. JSON data is
-  # allowed for easier integration and testing if needed.
+  # allowed for easier integration and testing if needed. Anything
+  # that is not JSON will be interpreted as being a Protobuf.
   defp decode(conn, module) do
     case get_req_header conn, "content-type" do
-      ["application/x-protobuf" <> _] -> 
-        with {:ok, binary, conn} <- parse_body conn do
-          {module.decode(binary), conn}
-        else
-          _ -> {nil, conn}
-        end
       ["application/json" <> _] ->
-        {form_message(conn.params, module) |> remove_base64, conn}
+        {:ok, form_message(conn.params, module) |> remove_base64, conn}
       _ ->
-        {nil, conn}
+        with {:ok, binary, conn} <- parse_body conn do
+          {:ok, module.decode(binary), conn}
+        else
+          _ ->
+            {:error, "Error while parsing Protobuf body.", conn}
+      end
     end
   end
 
-  # Messages that have base64 images should be converted.
+  # JSON messages that have base64 images should be converted.
   defp remove_base64(%Odlc{image_base64: image_base64} = message)
   when not image_base64 in [<<>>, nil] do
     message
@@ -44,14 +44,13 @@ defmodule InteropProxyWeb.Plugs.DecodeProtobuf do
     |> Map.put(:image_base64, <<>>)
   end
 
-  def parse_body(%Plug.Conn{} = conn, acc \\ "") do
-    case read_body(conn) do
-      {:ok, body, next_conn} ->
-        {:ok, acc <> body, next_conn}
-      {:more, body, next_conn} ->
-        parse_body(next_conn, acc <> body)
-      other ->
-        other
+  defp remove_base64(message), do: message
+
+  def parse_body(%Plug.Conn{} = conn, acc \\ <<>>) do
+    case read_body conn do
+      {:ok,   body, next_conn} -> {:ok, acc <> body, next_conn}
+      {:more, body, next_conn} -> parse_body next_conn, acc <> body
+      other                    -> other
     end
   end
 end
