@@ -129,6 +129,3 @@ def get_alive():
 
 # Silence logging from sucessful requests
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
-
-# Host the Flask app to where outside connections are allowed
-app.run(host='0.0.0.0')
