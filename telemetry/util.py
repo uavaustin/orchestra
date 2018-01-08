@@ -31,7 +31,7 @@ def all_exist(*args):
     return all(i is not None for i in args)
 
 
-def protobuf_resp(msg, json=False):
+def protobuf_resp(msg, accept):
     """Return a Flask response with a serialized protobuf
 
     Optionally, this can return a human-readable JSON response 
@@ -40,7 +40,7 @@ def protobuf_resp(msg, json=False):
 
     resp = make_response()
 
-    if not json:
+    if accept is None or not accept.startswith('application/json'):
         resp.mimetype = 'application/x-protobuf'
         resp.set_data(msg.SerializeToString())
     else:

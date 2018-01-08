@@ -47,7 +47,7 @@ def get_time():
     """Gets the time since epoch in seconds"""
     msg = telemetry_pb2.Time(time=time.time())
 
-    return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
+    return util.protobuf_resp(msg, request.headers.get('accept'))
 
 
 @app.route('/api/interop-telem')
@@ -73,7 +73,7 @@ def get_interop_telem():
         yaw=util.mod_deg(util.rad_to_deg(yaw))
     )
 
-    return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
+    return util.protobuf_resp(msg, request.headers.get('accept'))
 
 
 @app.route('/api/camera-telem')
@@ -118,7 +118,7 @@ def get_camera_telem():
         roll=util.mod_deg_2(util.rad_to_deg(-p_roll) + g_roll)
     )
 
-    return util.protobuf_resp(msg, json=request.args.get('json') == 'true')
+    return util.protobuf_resp(msg, request.headers.get('accept'))
 
 
 @app.route('/api/alive')
