@@ -42,14 +42,6 @@ print('\x1b[32mConnection successful.\x1b[0m')
 app = Flask(__name__)
 
 
-@app.route('/api/time')
-def get_time():
-    """Gets the time since epoch in seconds"""
-    msg = telemetry_pb2.Time(time=time.time())
-
-    return util.protobuf_resp(msg, request.headers.get('accept'))
-
-
 @app.route('/api/interop-telem')
 def get_interop_telem():
     """Get the lat, lon, alt_msl, yaw of the plane"""
