@@ -20,11 +20,11 @@ defmodule InteropProxy.Message do
   The nested values can be in both optional and repeated fields.
 
       iex> alias InteropProxy.Message
-      iex> alias InteropProxy.Message.Interop.Mission
+      iex> alias InteropProxy.Message.Interop.InteropMission
       iex> map = %{home_pos: %{lat: 1}, waypoints: [%{lat: 12,
       ...>   lon: 23}]}
-      iex> Message.form_message map, Mission
-      %InteropProxy.Message.Interop.Mission{
+      iex> Message.form_message map, InteropMission
+      %InteropProxy.Message.Interop.InteropMission{
         air_drop_pos: nil,
         current_mission: nil,
         emergent_pos: nil,

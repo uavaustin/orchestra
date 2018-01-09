@@ -33,7 +33,7 @@ message AerialPosition {
 // 
 // Note the lack of an active field, as all missions passed into the
 // stack will be assumed to be active.
-message Mission {
+message InteropMission {
     message FlyZone {
         float alt_msl_max = 1;
         float alt_msl_min = 2;

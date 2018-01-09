@@ -5,25 +5,25 @@ defmodule InteropProxy.Sanitize do
 
   # Aliasing the main messages.
   alias InteropProxy.Message.Interop.{
-    Position, AerialPosition, Mission, Obstacles, InteropTelem, Odlc, OdlcList,
-    InteropMessage
+    Position, AerialPosition, InteropMission, Obstacles, InteropTelem, Odlc,
+    OdlcList, InteropMessage
   }
 
   # Aliasing the nested messages.
-  alias InteropProxy.Message.Interop.Mission.FlyZone
+  alias InteropProxy.Message.Interop.InteropMission.FlyZone
   alias InteropProxy.Message.Interop.Obstacles.{
     StationaryObstacle, MovingObstacle
   }
 
   def sanitize_mission(nil) do
-    %Mission{
+    %InteropMission{
       time: time(),
       current_mission: false
     }
   end
 
   def sanitize_mission(mission) do
-    %Mission{
+    %InteropMission{
       time: time(),
       current_mission: true,
       air_drop_pos: mission["air_drop_pos"] |> sanitize_position,
