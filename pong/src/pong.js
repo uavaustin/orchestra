@@ -141,7 +141,9 @@ app.get('/api/ping', (req, res) => {
 
     // If the client wants JSON, we'll send them Protobuf-style JSON
     // instead, otherwise, send the Protobuf.
-    if (!req.get('accept').startsWith('application/json')) {
+    let accept = req.get('accept');
+
+    if (accept === undefined || !accept.startsWith('application/json')) {
         res.set('content-type', 'application/x-protobuf');
         res.send(Buffer.from(msg.serializeBinary()));
     } else {
