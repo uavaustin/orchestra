@@ -25,4 +25,6 @@ RUN export NODE_ENV=production && npm install
 # Adding in the output from the js builder above
 COPY --from=builder /builder/lib lib
 
+EXPOSE 7000
+
 ENTRYPOINT ["npm", "start", "--silent"]
