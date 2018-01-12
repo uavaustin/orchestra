@@ -14,11 +14,6 @@ syntax = "proto3";
 
 package telemetry;
 
-// Time message
-message Time {
-    double time = 1;
-}
-
 // Telemetry needed by the AUVSI SUAS Interop Server
 message InteropTelem {
     double time = 1;
