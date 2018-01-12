@@ -3,9 +3,6 @@ version: '3'
 services:
   plane-sitl:
     image: uavaustin/plane-sitl
-    build:
-      context: ../..
-      dockerfile: test/common/containers/Dockerfile.plane-sitl
     environment:
       - PLANE_HOME=30,60,1000,0
     networks:
@@ -14,33 +11,33 @@ services:
 
   interop-server:
     image: auvsisuas/interop-server
+    ports:
+      - '8080:80'
     networks:
       test_net:
         ipv4_address: 172.16.238.11
 
   telemetry:
     image: uavaustin/telemetry
-    build:
-      context: ../..
-      dockerfile: telemetry/Dockerfile
     environment:
       - CXN_STR=udpout:172.16.238.10:14550
       - CXN_TIMEOUT=30
       - RETRY_CXN=1
+    ports:
+      - '5000:5000'
     networks:
       test_net:
         ipv4_address: 172.16.238.12
 
   forward-interop:
     image: uavaustin/forward-interop
-    build:
-      context: ../..
-      dockerfile: forward-interop/Dockerfile
     environment:
       - INTEROP_URL=172.16.238.11
       - USERNAME=testuser
       - PASSWORD=testpass
       - TELEMETRY_URL=172.16.238.12:5000
+    ports:
+      - '4000:4000'
     networks:
       test_net:
         ipv4_address: 172.16.238.13
