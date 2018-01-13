@@ -36,6 +36,8 @@ ENV INTEROP_URL='0.0.0.0:8080' \
     PASSWORD='testpass' \
     TELEMETRY_URL='0.0.0.0:8080'
 
+EXPOSE 4000
+
 # Waiting for a response from the interop server first
 CMD ./wait-for-it.sh "http://$INTEROP_URL/api/login" "interop server" && \
     ./wait-for-it.sh "http://$TELEMETRY_URL/api/alive" "telemetry service" && \
