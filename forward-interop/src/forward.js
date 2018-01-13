@@ -92,17 +92,20 @@ app.get('/api/upload-rate', (req, res) => {
     msg.setFresh1(rate.fresh1);
     msg.setFresh5(rate.fresh5);
 
-    // If json=true is in the query params, return JSON, otherwise,
-    // return a protobuf.
-    if (req.query.json !== undefined && req.query.json == 'true') {
-        res.send(msg.toObject());
-    } else {
-        res.set('Content-Type', 'application/x-protobuf');
+    // If the client wants JSON, we'll send them Protobuf-style JSON
+    // instead, otherwise, send the Protobuf.
+    let accept = req.get('accept');
+
+    if (accept === undefined || !accept.startsWith('application/json')) {
+        res.set('content-type', 'application/x-protobuf');
         res.send(Buffer.from(msg.serializeBinary()));
-    }
+    } else {
+        res.send(msg.toObject());
+}
 });
 
 app.get('/api/alive', (req, res) => {
+    res.set('content-type', 'text/plain');
     res.send('Yo dude, I\'m good.\n');
 });
 
