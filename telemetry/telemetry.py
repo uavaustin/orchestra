@@ -116,7 +116,9 @@ def get_camera_telem():
 @app.route('/api/alive')
 def get_alive():
     """Sanity check to make sure the server is up"""
-    return 'Yes, I\'m alive!\n'
+    return 'Yes, I\'m alive!\n', 200, {
+        'content-type': 'text/plain; charset=utf-8'
+    }
 
 
 # Silence logging from sucessful requests
