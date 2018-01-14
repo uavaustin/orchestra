@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from threading import Thread
 import time
 
 import dronekit
@@ -35,9 +36,31 @@ while vehicle is None:
         else:
             print('\x1b[31mConnection timed out after ' + str(timeout) +
                     ' seconds.\1b[0m')
-            exit(1)
+            sys.exit(1)
 
 print('\x1b[32mConnection successful.\x1b[0m')
+
+print('Getting initial mission...')
+
+last_commands = util.get_commands(vehicle)
+
+print('\x1b[32mMission received.\x1b[0m')
+
+
+# Starting a thread to retrieve commands every 5 seconds (at most).
+def get_commands_thread():
+    while True:
+        time.sleep(5)
+
+        try:
+            global last_commands
+            last_commands = util.get_commands(vehicle, timeout=15)
+        except dronekit.APIException as e:
+            print('Mission download timed out after 15 seconds.')
+
+
+t = Thread(target=get_commands_thread)
+t.start()
 
 app = Flask(__name__)
 
@@ -54,7 +77,7 @@ def get_interop_telem():
     yaw = attitude.yaw
 
     # This telemetry is only useful if it's all here
-    if (not util.all_exist(lat, lon, alt_msl, yaw)):
+    if not util.all_exist(lat, lon, alt_msl, yaw):
         return '', 204
 
     msg = telemetry_pb2.InteropTelem(
@@ -89,7 +112,7 @@ def get_camera_telem():
 
     # This telemetry is only useful if we at least have the basic
     # plane telemetry
-    if (not util.all_exist(lat, lon, alt, yaw, p_pitch, p_roll)):
+    if not util.all_exist(lat, lon, alt, yaw, p_pitch, p_roll):
         return '', 204    
 
     # Setting default gimbal position to be orthagonal to the plane
@@ -111,6 +134,12 @@ def get_camera_telem():
     )
 
     return util.protobuf_resp(msg, request.headers.get('accept'))
+
+
+@app.route('/api/raw-mission')
+def get_raw_mission():
+    """Get the mission in dronekit's cache directly."""
+    return util.protobuf_resp(last_commands, request.headers.get('accept'))
 
 
 @app.route('/api/alive')

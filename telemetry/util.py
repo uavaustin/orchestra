@@ -1,9 +1,12 @@
 from contextlib import contextmanager
 from math import fmod, pi
 import signal
+import time
 
 from flask import make_response
 from google.protobuf import json_format
+
+from messages import telemetry_pb2
 
 
 def meters_to_feet(meters):
@@ -48,6 +51,42 @@ def protobuf_resp(msg, accept):
         resp.set_data(json_format.MessageToJson(msg))
 
     return resp
+
+
+def get_commands(vehicle, timeout=30):
+    """Gets the commands from a dronkeit vehicle synchonously.
+
+    Also puts them in a protobuf message before returning.    
+    """
+
+    commands = vehicle.commands
+    commands.download()
+    commands.wait_ready(timeout=timeout)
+
+    command_msg_list = []
+
+    # Mapping the dronekit commands to the Command Protobuf message.
+    for command in commands:
+        command_msg_list.append(telemetry_pb2.RawMission.Command(
+            target_system=command.target_system,
+            target_component=command.target_component,
+            seq=command.seq,
+            frame=command.frame,
+            command=command.command,
+            param_1=command.param1,
+            param_2=command.param2,
+            param_3=command.param3,
+            param_4=command.param4,
+            param_5=command.x,
+            param_6=command.y,
+            param_7=command.z
+        ))
+
+    return telemetry_pb2.RawMission(
+        time=time.time(),
+        next=commands.next,
+        commands=command_msg_list
+    )
 
 
 class TimeoutException(Exception):

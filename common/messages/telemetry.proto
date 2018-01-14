@@ -36,3 +36,30 @@ message CameraTelem {
     // 0 roll points down, 90 points to the right
     float roll = 7;
 }
+
+// This has direct mappings to the Mavlink protocol.
+message RawMission {
+    message Command {
+        uint32 target_system = 1;
+        uint32 target_component = 2;
+        // Order of this Command, only needed when reading a
+        // RawMission.
+        uint32 seq = 3;
+        // Frame and Command use the int number specified in the
+        // Mavlink XML file.
+        uint32 frame = 4;
+        uint32 command = 5;
+        // These parameters correspond to the Mavlink command enums.
+        float param_1 = 6;
+        float param_2 = 7;
+        float param_3 = 8;
+        float param_4 = 9;
+        float param_5 = 10;
+        float param_6 = 11;
+        float param_7 = 12;
+    }
+
+    double time = 1;
+    uint32 next = 2;
+    repeated Command commands = 3;
+}
