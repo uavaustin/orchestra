@@ -11,7 +11,7 @@
  * how long the request takes, round-trip, every 3 seconds.
  *
  * To use a different endpoint to ping against, specify the endpoint
- * after the hostname.
+ * after the host.
  *
  *     pong.js interop-server,10.10.130.10:8080,/some/endpoint
  *
@@ -41,24 +41,24 @@ for (let string of input) {
 
     if (split.length !== 2 && split.length !== 3) {
         console.error('Expected input args to be in the form: ');
-        console.error('    service-name,hostname');
+        console.error('    service-name,host');
         console.error('or alternatively:');
-        console.error('    service-name,hostname,endpoint');
+        console.error('    service-name,host,endpoint');
         process.exit(1);
     }
 
     let name = split[0];
-    let hostname = split[1];
+    let host = split[1];
     let endpoint = '/api/alive';
 
     if (split.length === 3) {
         endpoint = split[2];
     }
 
-    // Each one just has a hostname, whether or not it is online, and
-    // the millisecond ping time.
+    // Each one just has a host, whether or not it is online, and the
+    // millisecond ping time.
     ping[name] = {
-        hostname: hostname,
+        host: host,
         endpoint: endpoint,
         online: false,
         ms: 0.0
@@ -97,7 +97,7 @@ function startWorker(name) {
         // offline, otherwise, it's online and we'll record the
         // amount of time passed.
         request.get({
-            url: 'http://' + ping[name].hostname + ping[name].endpoint,
+            url: 'http://' + ping[name].host + ping[name].endpoint,
             followRedirect: false
         }, (err, res) => {
             if (err || res.statusCode >= 400) {
@@ -130,7 +130,7 @@ app.get('/api/ping', (req, res) => {
         let inner = new PingTimes.ServicePing();
 
         inner.setName(name);
-        inner.setHostname(ping[name].hostname);
+        inner.setHostname(ping[name].host);
         inner.setOnline(ping[name].online);
         inner.setMs(ping[name].ms);
 

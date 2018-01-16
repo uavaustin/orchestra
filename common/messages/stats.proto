@@ -12,7 +12,7 @@ package stats;
 message PingTimes {
     message ServicePing {
         string name = 1;
-        string hostname = 2;
+        string host = 2;
         bool online = 3;
         // Ping time in milliseconds.
         uint32 ms = 4;
