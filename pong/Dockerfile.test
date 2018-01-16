@@ -1,0 +1,15 @@
+ARG BASE=node:8-slim
+
+FROM ${BASE}
+
+WORKDIR /test
+
+COPY pong/package.json .
+
+RUN npm install
+
+COPY pong .
+
+RUN npm run build
+
+CMD npm test

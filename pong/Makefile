@@ -1,8 +1,9 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
 
-PROTOC_IMAGE := uavaustin/protoc
-PONG_IMAGE   := uavaustin/pong
+PROTOC_IMAGE    := uavaustin/protoc
+PONG_IMAGE      := uavaustin/pong
+PONG_TEST_IMAGE := uavaustin/pong-test
 
 current_dir := $(shell pwd)
 
@@ -25,7 +26,12 @@ lib/messages/stats_pb.js: ../common/messages/stats.proto
 image:
 	docker build -t $(PONG_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
+.PHONY: test
+test:
+	docker build -t $(PONG_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
+	docker run -it $(PONG_TEST_IMAGE)
+
 .PHONY: clean
 clean:
 	rm -rf node_modules lib package-lock.json
-	docker rmi -f $(PONG_IMAGE)
+	docker rmi -f $(PONG_IMAGE) $(PONG_TEST_IMAGE)

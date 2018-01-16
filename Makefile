@@ -5,6 +5,9 @@
 .PHONY: all
 all: common telemetry pong
 
+.PHONY: test
+test: pong-test
+
 .PHONY: common
 common:
 	$(MAKE) -C common
@@ -16,6 +19,10 @@ telemetry: common
 .PHONY: pong
 pong: common
 	$(MAKE) -C pong
+
+.PHONY: pong-test
+pong-test: common
+	$(MAKE) -C pong test
 
 .PHONY: clean
 clean:
