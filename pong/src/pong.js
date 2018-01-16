@@ -66,9 +66,11 @@ for (let string of input) {
 }
 
 // Making async workers to update the ping values for each service.
+let workers = [];
+
 for (let name in ping) {
     if (ping.hasOwnProperty(name)) {
-        startWorker(name);
+        workers.push(startWorker(name));
     }
 }
 
@@ -79,7 +81,7 @@ function startWorker(name) {
     let activeRequest = false;
     let skipped = 0;
 
-    setInterval(() => {
+    function recordPing() {
         // If there's an active request going, we just say the time
         // is how many requests are going (times 3 seconds).
         if (activeRequest) {
@@ -111,7 +113,11 @@ function startWorker(name) {
             activeRequest = false;
             skipped = 0;
         });
-    }, 3000);
+    }
+
+    // Running the function once now, then put it on an interval.
+    recordPing();
+    return setInterval(recordPing, 3000);
 }
 
 // Making the api to get the ping times.
@@ -130,7 +136,7 @@ app.get('/api/ping', (req, res) => {
         let inner = new PingTimes.ServicePing();
 
         inner.setName(name);
-        inner.setHostname(ping[name].host);
+        inner.setHost(ping[name].host);
         inner.setOnline(ping[name].online);
         inner.setMs(ping[name].ms);
 
@@ -158,6 +164,16 @@ app.get('/api/alive', (req, res) => {
     res.send('Yeah, this is kinda meta tho.\n');
 });
 
-app.listen(7000);
+let server = app.listen(7000);
 
 console.log('Running server with Express at http://0.0.0.0:7000');
+
+// Wrapping the close method so it clears the workers as well.
+let defaultClose = server.close;
+
+server.close = function () {
+    workers.map(worker => clearInterval(worker));
+    return defaultClose.apply(this, arguments);
+}
+
+export { app, server };

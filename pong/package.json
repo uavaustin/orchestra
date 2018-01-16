@@ -5,7 +5,8 @@
     "license": "MIT",
     "scripts": {
         "start": "node .",
-        "build": "babel src --out-dir lib"
+        "build": "babel src --out-dir lib",
+        "test": "mocha"
     },
     "dependencies": {
         "express": "^4.16.2",
@@ -14,7 +15,9 @@
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
-        "babel-preset-env": "^1.6.1"
+        "babel-preset-env": "^1.6.1",
+        "chai": "^4.1.2",
+        "mocha": "^4.1.0"
     },
     "babel": {
         "presets": [
