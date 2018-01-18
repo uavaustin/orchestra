@@ -7,7 +7,12 @@ defmodule InteropProxyWeb.ControllerHelpers do
   This will check the Accepts header, if it's set to JSON it'll send
   it as JSON for easier testing and implementation when needed.
   """
-  def send_message(conn, status_code \\ 200, message) do
+  def send_message(conn, status_code \\ 200, message)
+
+  def send_message(conn, status_code, {:ok, message}),
+    do: send_message conn, status_code, message
+
+  def send_message(conn, status_code, message) do
     {content_type, binary} = case Plug.Conn.get_req_header conn, "accept" do
       ["application/json" <> _] ->
         {"application/json; charset=utf-8", message 

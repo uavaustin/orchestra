@@ -5,6 +5,6 @@ defmodule InteropProxyWeb.TelemetryController do
   when action in [:create]
 
   def create(conn, _params) do
-    send_message conn, InteropProxy.post_telemetry!(conn.assigns.protobuf)
+    send_message conn, InteropProxy.post_telemetry(conn.assigns.protobuf)
   end
 end
