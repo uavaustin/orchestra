@@ -41,15 +41,24 @@ for (let string of input) {
 
     if (split.length !== 2 && split.length !== 3) {
         console.error('Expected input args to be in the form: ');
-        console.error('    service-name,host');
+        console.error('    service-name,host:port');
         console.error('or alternatively:');
-        console.error('    service-name,host,endpoint');
+        console.error('    service-name,host:port,endpoint');
         process.exit(1);
     }
 
     let name = split[0];
-    let host = split[1];
+    let host;
+    let port = '80';
     let endpoint = '/api/alive';
+
+    let urlSplit = split[1].split(':');
+
+    host = urlSplit[0];
+
+    if (urlSplit.length !== 1) {
+        port = urlSplit[1];
+    }
 
     if (split.length === 3) {
         endpoint = split[2];
@@ -59,6 +68,7 @@ for (let string of input) {
     // millisecond ping time.
     ping[name] = {
         host: host,
+        port: port,
         endpoint: endpoint,
         online: false,
         ms: 0.0
@@ -99,7 +109,8 @@ function startWorker(name) {
         // offline, otherwise, it's online and we'll record the
         // amount of time passed.
         request.get({
-            url: 'http://' + ping[name].host + ping[name].endpoint,
+            url: 'http://' + ping[name].host + ':' + ping[name].port +
+                    ping[name].endpoint,
             followRedirect: false
         }, (err, res) => {
             if (err || res.statusCode >= 400) {
@@ -137,6 +148,7 @@ app.get('/api/ping', (req, res) => {
 
         inner.setName(name);
         inner.setHost(ping[name].host);
+        inner.setPort(ping[name].port);
         inner.setOnline(ping[name].online);
         inner.setMs(ping[name].ms);
 

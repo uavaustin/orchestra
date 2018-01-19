@@ -5,7 +5,7 @@ process, round-trip.
 
 ## Running the Image
 
-To ping the services, the service names and hostnames are simply passed as
+To ping the services, the service names, host, and port are simply passed as
 command-line arguments seperated by a comma. Optionally, the endpoint that is
 called can be set as well (defaults to `/api/alive`).
 

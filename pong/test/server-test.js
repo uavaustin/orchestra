@@ -20,7 +20,7 @@ before(function (done) {
     process.argv.push('test1,127.0.0.1:7001');
     process.argv.push('test2,127.0.0.1:7002,/custom');
     process.argv.push('no-endpoint,127.0.0.1:7003')
-    process.argv.push('non-existent,127.0.0.1:7004');
+    process.argv.push('non-existent,127.0.0.1');
     process.argv.push('meta,127.0.0.1:7000');
 
     // Allowing a little time to get things up and running.
@@ -52,29 +52,34 @@ describe('GET /api/ping', function () {
             let list = msg.getListList();
 
             assert.equal(list[0].getName(), 'meta');
-            assert.equal(list[0].getHost(), '127.0.0.1:7000');
+            assert.equal(list[0].getHost(), '127.0.0.1');
+            assert.equal(list[0].getPort(), '7000');
             assert.equal(list[0].getOnline(), true);
             assert(list[0].getMs() > 0);
             assert(list[0].getMs() < 1000);
 
             assert.equal(list[1].getName(), 'no-endpoint');
-            assert.equal(list[1].getHost(), '127.0.0.1:7003');
+            assert.equal(list[1].getHost(), '127.0.0.1');
+            assert.equal(list[1].getPort(), '7003');
             assert.equal(list[1].getOnline(), false);
             assert.equal(list[1].getMs(), 0);
 
             assert.equal(list[2].getName(), 'non-existent');
-            assert.equal(list[2].getHost(), '127.0.0.1:7004');
+            assert.equal(list[2].getHost(), '127.0.0.1');
+            assert.equal(list[2].getPort(), '80');
             assert.equal(list[2].getOnline(), false);
             assert.equal(list[2].getMs(), 0);
 
             assert.equal(list[3].getName(), 'test1');
-            assert.equal(list[3].getHost(), '127.0.0.1:7001');
+            assert.equal(list[3].getHost(), '127.0.0.1');
+            assert.equal(list[3].getPort(), '7001');
             assert.equal(list[3].getOnline(), true);
             assert(list[3].getMs() > 0);
             assert(list[3].getMs() < 1000);
 
             assert.equal(list[4].getName(), 'test2');
-            assert.equal(list[4].getHost(), '127.0.0.1:7002');
+            assert.equal(list[4].getHost(), '127.0.0.1');
+            assert.equal(list[4].getPort(), '7002');
             assert.equal(list[4].getOnline(), true);
             assert(list[4].getMs() > 0);
             assert(list[4].getMs() < 1000);
@@ -102,31 +107,36 @@ describe('GET /api/ping', function () {
             let list = body.listList;
 
             assert.equal(list[0].name, 'meta');
-            assert.equal(list[0].host, '127.0.0.1:7000');
+            assert.equal(list[0].host, '127.0.0.1');
+            assert.equal(list[0].port, '7000');
             assert.equal(list[0].online, true);
             assert.equal(typeof list[0].ms, 'number');
             assert(list[0].ms > 0);
             assert(list[0].ms < 1000);
 
             assert.equal(list[1].name, 'no-endpoint');
-            assert.equal(list[1].host, '127.0.0.1:7003');
+            assert.equal(list[1].host, '127.0.0.1');
+            assert.equal(list[1].port, '7003');
             assert.equal(list[1].online, false);
             assert.equal(list[1].ms, 0);
 
             assert.equal(list[2].name, 'non-existent');
-            assert.equal(list[2].host, '127.0.0.1:7004');
+            assert.equal(list[2].host, '127.0.0.1');
+            assert.equal(list[2].port, '80');
             assert.equal(list[2].online, false);
             assert.equal(list[2].ms, 0);
 
             assert.equal(list[3].name, 'test1');
-            assert.equal(list[3].host, '127.0.0.1:7001');
+            assert.equal(list[3].host, '127.0.0.1');
+            assert.equal(list[3].port, '7001');
             assert.equal(list[3].online, true);
             assert.equal(typeof list[3].ms, 'number');
             assert(list[3].ms > 0);
             assert(list[3].ms < 1000);
 
             assert.equal(list[4].name, 'test2');
-            assert.equal(list[4].host, '127.0.0.1:7002');
+            assert.equal(list[4].host, '127.0.0.1');
+            assert.equal(list[4].port, '7002');
             assert.equal(list[4].online, true);
             assert.equal(typeof list[4].ms, 'number');
             assert(list[4].ms > 0);

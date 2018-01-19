@@ -13,9 +13,10 @@ message PingTimes {
     message ServicePing {
         string name = 1;
         string host = 2;
-        bool online = 3;
+        string port = 3;
+        bool online = 4;
         // Ping time in milliseconds.
-        uint32 ms = 4;
+        uint32 ms = 5;
     }
 
     double time = 1;
