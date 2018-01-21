@@ -5,6 +5,11 @@
 
 docker network create --subnet=172.37.0.0/16 interop-proxy-test-net > /dev/null
 
+if [ "$?" -ne 0 ]; then
+    printf "\033[31mCould not create test network\033[0m\n" 1>&2
+    exit 1
+fi
+
 # Start the server and retry if it doesn't come alive
 start_interop_server() {
     printf "\033[33mStarting interop server..." 1>&2
@@ -12,6 +17,11 @@ start_interop_server() {
     docker run -itd --rm --net=interop-proxy-test-net --ip=172.37.0.2 \
             -p 8081:80 --name interop-proxy-test auvsisuas/interop-server \
             > /dev/null
+
+    if [ "$?" -ne 0 ]; then
+        printf "\033[31mCould not create interop server\033[0m\n" 1>&2
+        return 1
+    fi
 
     sleep 1
 
@@ -43,9 +53,15 @@ start_interop_server() {
 
 start_interop_server
 
-docker build -t $INTEROP_PROXY_TEST_IMAGE -f Dockerfile.test $DOCKERFLAGS ..
+if [ "$?" -eq 0 ]; then
+    docker build -t $INTEROP_PROXY_TEST_IMAGE \
+            -f Dockerfile.test $DOCKERFLAGS \
+            ..
 
-built=$?
+    built=$?
+else
+    built=1
+fi
 
 if [ "$built" -eq 0 ]; then
     printf "\n\033[34mStarting tests...\033[0m\n\n"
