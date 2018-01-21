@@ -12,10 +12,16 @@ defmodule InteropProxyWeb.ControllerHelpers do
   """
   def send_message(conn, status_code \\ 200, message)
 
-  def send_message(conn, _status_code, {:error, %HTTPoison.Error{}}) do
+  def send_message(conn, _status_code, {:error, reason}) do
+    {code, text} = case reason do
+      %HTTPoison.Error{} -> {503, "Interop server not available\n"}
+      :forbidden         -> {503, "Interop server did not accept cookie\n"}
+      other              -> {500, other}
+    end
+
     conn
     |> Plug.Conn.put_resp_header("content_type", "text/plain")
-    |> Plug.Conn.send_resp(503, "Interop service not available\n")
+    |> Plug.Conn.send_resp(code, text)
   end
 
   def send_message(conn, status_code, {:ok, message}),

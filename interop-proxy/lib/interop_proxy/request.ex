@@ -194,6 +194,10 @@ defmodule InteropProxy.Request do
   # If HTTPoison returns an error, we'll handle this case gracefully.
   defp handle_resp({:error, _reason} = value, _type, _opts), do: value
 
+  # If our cookie is not working, we'll handle it seperately.
+  defp handle_resp({:ok, %{status_code: 403}}, _type, _opts),
+    do: {:error, :forbidden}
+
   # If we have anything else, we'll return the body as the reason for
   # an error.
   defp handle_resp({:ok, %{body: body}}, _type, _opts), do: {:error, body}
