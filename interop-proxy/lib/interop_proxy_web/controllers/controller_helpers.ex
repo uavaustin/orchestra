@@ -6,8 +6,17 @@ defmodule InteropProxyWeb.ControllerHelpers do
 
   This will check the Accepts header, if it's set to JSON it'll send
   it as JSON for easier testing and implementation when needed.
+
+  If the interop server could not be reached, a 503 status code will
+  be sent.
   """
   def send_message(conn, status_code \\ 200, message)
+
+  def send_message(conn, _status_code, {:error, %HTTPoison.Error{}}) do
+    conn
+    |> Plug.Conn.put_resp_header("content_type", "text/plain")
+    |> Plug.Conn.send_resp(503, "Interop service not available\n")
+  end
 
   def send_message(conn, status_code, {:ok, message}),
     do: send_message conn, status_code, message
