@@ -9,7 +9,8 @@
  *
  * Time is in seconds from 1970 epoch.
  *
- * Lat, lon, and yaw are in the range [0, 360).
+ * Yaw is in the range [0, 360) degrees and lat and lon are in the
+ * range (-180, 180].
  */
 
 syntax = "proto3";
