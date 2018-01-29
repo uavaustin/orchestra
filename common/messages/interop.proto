@@ -19,15 +19,15 @@ package interop;
 
 // Used by other messages.
 message Position {
-    float lat = 1;
-    float lon = 2;
+    double lat = 1;
+    double lon = 2;
 }
 
 // Used by other messages.
 message AerialPosition {
-    float lat = 1;
-    float lon = 2;
-    float alt_msl = 3;
+    double lat = 1;
+    double lon = 2;
+    double alt_msl = 3;
 }
 
 // Mission on the interop server.
@@ -36,8 +36,8 @@ message AerialPosition {
 // stack will be assumed to be active.
 message InteropMission {
     message FlyZone {
-        float alt_msl_max = 1;
-        float alt_msl_min = 2;
+        double alt_msl_max = 1;
+        double alt_msl_min = 2;
         repeated Position boundary = 3;
     }
 
@@ -57,13 +57,13 @@ message InteropMission {
 message Obstacles {
     message StationaryObstacle {
         AerialPosition pos = 1;
-        float height = 2;
-        float radius = 3;
+        double height = 2;
+        double radius = 3;
     }
 
     message MovingObstacle {
         Position pos = 1;
-        float radius = 2;
+        double radius = 2;
     }
 
     double time = 1;
@@ -75,7 +75,7 @@ message Obstacles {
 message InteropTelem {
     double time = 1;
     AerialPosition pos = 2;
-    float yaw = 3;
+    double yaw = 3;
 }
 
 // Target on the interop server, also includes the image.
