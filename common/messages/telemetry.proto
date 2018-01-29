@@ -17,24 +17,24 @@ package telemetry;
 // Telemetry needed by the AUVSI SUAS Interop Server
 message InteropTelem {
     double time = 1;
-    float lat = 2;
-    float lon = 3;
-    float alt_feet_msl = 4;
-    float yaw = 5;
+    double lat = 2;
+    double lon = 3;
+    double alt_feet_msl = 4;
+    double yaw = 5;
 }
 
 // Camera telemtry
 message CameraTelem {
     double time = 1;
-    float lat = 2;
-    float lon = 3;
+    double lat = 2;
+    double lon = 3;
     // Relative to ground
-    float alt = 4;
-    float yaw = 5;
+    double alt = 4;
+    double yaw = 5;
     // 0 pitch points to the front of the plane, -90 points down
-    float pitch = 6;
+    double pitch = 6;
     // 0 roll points down, 90 points to the right
-    float roll = 7;
+    double roll = 7;
 }
 
 // This has direct mappings to the Mavlink protocol.
@@ -50,13 +50,13 @@ message RawMission {
         uint32 frame = 4;
         uint32 command = 5;
         // These parameters correspond to the Mavlink command enums.
-        float param_1 = 6;
-        float param_2 = 7;
-        float param_3 = 8;
-        float param_4 = 9;
-        float param_5 = 10;
-        float param_6 = 11;
-        float param_7 = 12;
+        double param_1 = 6;
+        double param_2 = 7;
+        double param_3 = 8;
+        double param_4 = 9;
+        double param_5 = 10;
+        double param_6 = 11;
+        double param_7 = 12;
     }
 
     double time = 1;
