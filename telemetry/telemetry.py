@@ -7,7 +7,7 @@ import time
 import dronekit
 from flask import Flask, jsonify, request
 
-from messages import telemetry_pb2
+from messages import interop_pb2, telemetry_pb2
 import util
 
 
@@ -80,11 +80,13 @@ def get_interop_telem():
     if not util.all_exist(lat, lon, alt_msl, yaw):
         return '', 204
 
-    msg = telemetry_pb2.InteropTelem(
+    msg = interop_pb2.InteropTelem(
         time=time.time(),
-        lat=lat,
-        lon=lon,
-        alt_feet_msl=util.meters_to_feet(alt_msl),
+        pos=interop_pb2.AerialPosition(
+            lat=lat,
+            lon=lon,
+            alt_msl=alt_msl,
+        ),
         yaw=util.mod_deg(util.rad_to_deg(yaw))
     )
 

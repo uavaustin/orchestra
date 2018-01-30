@@ -14,15 +14,6 @@ syntax = "proto3";
 
 package telemetry;
 
-// Telemetry needed by the AUVSI SUAS Interop Server
-message InteropTelem {
-    double time = 1;
-    double lat = 2;
-    double lon = 3;
-    double alt_feet_msl = 4;
-    double yaw = 5;
-}
-
 // Camera telemtry
 message CameraTelem {
     double time = 1;

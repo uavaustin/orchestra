@@ -10,14 +10,14 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: messages/telemetry_pb2.py
+proto: messages/interop_pb2.py messages/telemetry_pb2.py
 
-messages/telemetry_pb2.py: ../common/messages/telemetry.proto
+messages/%_pb2.py: ../common/messages/%.proto
 	docker run -it \
 		-v $(current_dir)/../common/messages:/messages \
 		-v $(current_dir)/messages:/dist \
 		$(PROTOC_IMAGE) \
-		protoc -I=/messages --python_out=/dist /messages/telemetry.proto
+		protoc -I=/messages --python_out=/dist /messages/$(notdir $<)
 
 .PHONY: image
 image:

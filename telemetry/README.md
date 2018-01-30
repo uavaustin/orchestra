@@ -32,9 +32,9 @@ header is set to `application/json`.
 
 - `GET /api/interop-telem`
 
-  Telemetry that can be forwarded to the interop server.
+  Telemetry that can be forwarded to interop-proxy.
 
-  On successful response: `200` status code with `telemetry::InteropTelem`
+  On successful response: `200` status code with `interop::InteropTelem`
   Protobuf message.
 
 - `GET /api/camera-telem`

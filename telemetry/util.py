@@ -9,11 +9,6 @@ from google.protobuf import json_format
 from messages import telemetry_pb2
 
 
-def meters_to_feet(meters):
-    """Convert a number from meters to feet"""
-    return meters * 3.280839895
-
-
 def rad_to_deg(rad):
     """Convert a number from radians to degrees"""
     return rad * 180 / pi
