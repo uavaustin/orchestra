@@ -1,0 +1,24 @@
+/*
+ * Message definitions for various statistics.
+ *
+ * Time is in seconds from 1970 epoch.
+ */
+
+syntax = "proto3";
+
+package stats;
+
+// Ping times from listed services.
+message PingTimes {
+    message ServicePing {
+        string name = 1;
+        string host = 2;
+        string port = 3;
+        bool online = 4;
+        // Ping time in milliseconds.
+        uint32 ms = 5;
+    }
+
+    double time = 1;
+    repeated ServicePing list = 2;
+}

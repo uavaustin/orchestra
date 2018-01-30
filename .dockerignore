@@ -1,0 +1,23 @@
+### General
+
+# Git
+.git
+**/.gitignore
+
+# Docker
+.dockerignore
+**/Dockerfile*
+
+# Make
+**/Makefile
+
+# JavaScript
+**/node_modules
+**/npm-debug.log*
+**/package-lock.json
+
+### Services
+
+# pong
+pong/lib
+!pong/lib/messages
