@@ -1,14 +1,12 @@
 from contextlib import contextmanager
 from math import fmod, pi
 import signal
+import time
 
 from flask import make_response
 from google.protobuf import json_format
 
-
-def meters_to_feet(meters):
-    """Convert a number from meters to feet"""
-    return meters * 3.280839895
+from messages import telemetry_pb2
 
 
 def rad_to_deg(rad):
@@ -31,7 +29,7 @@ def all_exist(*args):
     return all(i is not None for i in args)
 
 
-def protobuf_resp(msg, json=False):
+def protobuf_resp(msg, accept):
     """Return a Flask response with a serialized protobuf
 
     Optionally, this can return a human-readable JSON response 
@@ -40,7 +38,7 @@ def protobuf_resp(msg, json=False):
 
     resp = make_response()
 
-    if not json:
+    if accept is None or not accept.startswith('application/json'):
         resp.mimetype = 'application/x-protobuf'
         resp.set_data(msg.SerializeToString())
     else:
@@ -48,6 +46,42 @@ def protobuf_resp(msg, json=False):
         resp.set_data(json_format.MessageToJson(msg))
 
     return resp
+
+
+def get_commands(vehicle, timeout=30):
+    """Gets the commands from a dronkeit vehicle synchonously.
+
+    Also puts them in a protobuf message before returning.    
+    """
+
+    commands = vehicle.commands
+    commands.download()
+    commands.wait_ready(timeout=timeout)
+
+    command_msg_list = []
+
+    # Mapping the dronekit commands to the Command Protobuf message.
+    for command in commands:
+        command_msg_list.append(telemetry_pb2.RawMission.Command(
+            target_system=command.target_system,
+            target_component=command.target_component,
+            seq=command.seq,
+            frame=command.frame,
+            command=command.command,
+            param_1=command.param1,
+            param_2=command.param2,
+            param_3=command.param3,
+            param_4=command.param4,
+            param_5=command.x,
+            param_6=command.y,
+            param_7=command.z
+        ))
+
+    return telemetry_pb2.RawMission(
+        time=time.time(),
+        next=commands.next,
+        commands=command_msg_list
+    )
 
 
 class TimeoutException(Exception):
