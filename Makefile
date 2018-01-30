@@ -37,4 +37,4 @@ clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C telemetry clean
 	$(MAKE) -C interop-proxy clean
-  $(MAKE) -C pong clean
+	$(MAKE) -C pong clean
