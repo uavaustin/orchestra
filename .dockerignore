@@ -16,7 +16,24 @@
 **/npm-debug.log*
 **/package-lock.json
 
+# Python
+**/__pycache__/
+*.py[cod]
+
+# Elixir
+erl_crash.dump
+*.ez
+*.beam
+
 ### Services
+
+# interop-proxy
+interop-proxy/_build
+interop-proxy/cover
+interop-proxy/deps
+interop-proxy/doc
+interop-proxy/.fetch
+interop-proxy/mix.lock
 
 # pong
 pong/lib
