@@ -3,10 +3,10 @@
 # is done here.
 
 .PHONY: all
-all: common telemetry pong
+all: common telemetry interop-proxy pong
 
 .PHONY: test
-test: pong-test
+test: interop-proxy-test pong-test
 
 .PHONY: common
 common:
@@ -15,6 +15,14 @@ common:
 .PHONY: telemetry
 telemetry: common
 	$(MAKE) -C telemetry
+
+.PHONY: interop-proxy
+interop-proxy: common
+	$(MAKE) -C interop-proxy
+
+.PHONY: interop-proxy-test
+interop-proxy-test: common
+	$(MAKE) -C interop-proxy test
 
 .PHONY: pong
 pong: common
@@ -28,4 +36,5 @@ pong-test: common
 clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C telemetry clean
-	$(MAKE) -C pong clean
+	$(MAKE) -C interop-proxy clean
+  $(MAKE) -C pong clean
