@@ -24,11 +24,13 @@ vehicle=None
 # Limiting the amount of time dronekit can load to the timeout
 # provided.
 while vehicle is None:
+    wait_for = ['gps_0', 'armed', 'mode', 'attitude']
+
     try:
         with util.time_limit(timeout):
             vehicle = dronekit.connect(cxn_str, baud=baud_rate,
                                                 heartbeat_timeout=False,
-                                                wait_ready=True)
+                                                wait_ready=wait_for)
     except util.TimeoutException as e:
         if retry_cxn:
             print('\x1b[31mConnection timed out after ' + str(timeout) +
