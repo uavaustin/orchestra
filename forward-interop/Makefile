@@ -10,25 +10,15 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: lib/messages/telemetry_pb.js lib/messages/stats_pb.js
+proto: lib/messages/interop_pb.js lib/messages/stats_pb.js
 
-lib/messages/telemetry_pb.js: ../common/messages/telemetry.proto
+lib/messages/%_pb.js: ../common/messages/%.proto
 	docker run -it \
 		-v $(current_dir)/../common/messages:/messages \
 		-v $(current_dir)/lib/messages:/dist \
 		$(PROTOC_IMAGE) \
 		protoc -I=/messages \
-			--js_out=import_style=commonjs,binary:/dist \
-			/messages/telemetry.proto
-
-lib/messages/stats_pb.js: ../common/messages/stats.proto
-	docker run -it \
-		-v $(current_dir)/../common/messages:/messages \
-		-v $(current_dir)/lib/messages:/dist \
-		$(PROTOC_IMAGE) \
-		protoc -I=/messages \
-			--js_out=import_style=commonjs,binary:/dist \
-			/messages/stats.proto
+			--js_out=import_style=commonjs,binary:/dist /messages/$(notdir $<)
 
 .PHONY: image
 image:

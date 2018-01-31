@@ -9,7 +9,6 @@
     },
     "dependencies": {
         "async": "^2.6.0",
-        "auvsisuas-client": "0.1.1",
         "express": "^4.16.2",
         "google-protobuf": "3.4.0",
         "request": "^2.83.0",
@@ -21,7 +20,14 @@
     },
     "babel": {
         "presets": [
-            "env"
+            [
+                "env",
+                {
+                    "targets": {
+                        "node": "current"
+                    }
+                }
+            ]
         ]
     }
 }

@@ -9,7 +9,7 @@ let time = () => (new Date()).getTime() / 1000;
  * Telemetry should be fed into the monitor as it arrvies, to keep
  * the rates as fast as possible.
  *
- * Rates are given over 1 and 5 seconds before the rate is requested 
+ * Rates are given over 1 and 5 seconds before the rate is requested
  * and both a raw rate and one for only fresh telemetry are
  * available.
  */
@@ -42,7 +42,7 @@ export default class UploadMonitor {
 
         // Checking if any updates were made to the telemety.
         if (this._last.lat !== telem.lat || this._last.lon !== telem.lon ||
-                this._last.alt_msl !== telem.alt_msl || 
+                this._last.alt_msl !== telem.alt_msl ||
                 this._last.yaw !== telem.yaw) {
             this._fresh1.push(true);
             this._fresh5.push(true);
@@ -74,7 +74,7 @@ export default class UploadMonitor {
     getUploadRate() {
         this._trimArrays();
 
-        // The total rate is simply the number of times over the 
+        // The total rate is simply the number of times over the
         // range.
         let total1 = this._times1.length / TIME_LIMIT_1;
         let total5 = this._times5.length / TIME_LIMIT_5;
@@ -93,7 +93,7 @@ export default class UploadMonitor {
 
     /**
      * Clip off times outside of the time ranges on the arrays.
-     * 
+     *
      * @private
      */
     _trimArrays() {

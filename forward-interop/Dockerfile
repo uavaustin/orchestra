@@ -31,16 +31,14 @@ COPY common/scripts/wait-for-it.sh .
 # Adding in the output from the js builder above
 COPY --from=builder /builder/lib lib
 
-ENV INTEROP_URL='0.0.0.0:8080' \
-    USERNAME='testuser' \
-    PASSWORD='testpass' \
-    TELEMETRY_URL='0.0.0.0:8080'
+ENV INTEROP_PROXY_URL='0.0.0.0:8000' \
+    TELEMETRY_URL='0.0.0.0:5000'
 
 EXPOSE 4000
 
-# Waiting for a response from the interop server first
-CMD ./wait-for-it.sh "http://$INTEROP_URL/api/login" "interop server" && \
+# Waiting for a response from interop-proxy and the telemetry service
+# first.
+CMD ./wait-for-it.sh "http://$INTEROP_PROXY_URL/api/alive" "interop proxy" && \
     ./wait-for-it.sh "http://$TELEMETRY_URL/api/alive" "telemetry service" && \
     printf 'Starting.' && \
-    npm start
-
+    npm start --silent
