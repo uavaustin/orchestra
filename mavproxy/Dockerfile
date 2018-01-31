@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install mavproxy
 
-COPY .mavinit.scr
+COPY mavproxy/.mavinit.scr .
 
 ENTRYPOINT ["mavproxy.py"]

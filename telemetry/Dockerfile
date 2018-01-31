@@ -25,4 +25,7 @@ ENV CXN_STR=0.0.0.0:14550 \
 # 5000 is the default port for Flask
 EXPOSE 5000
 
-CMD ./run.sh
+ENV PYTHONUNBUFFERED=TRUE
+
+# Starting gunicorn with enough timeout time for 10 retries
+CMD gunicorn -b 0.0.0.0:5000 --timeout $(( $CXN_TIMEOUT * 11 )) wsgi:app
