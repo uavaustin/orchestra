@@ -10,14 +10,12 @@ been uploaded in the time.
 
 ## Running the Image
 
-When running the image, you'll need to pass in the `INTEROP_URL`, `USERNAME`,
-`PASSWORD`, `TELEMETRY_URL` environment variables.
+When running the image, you'll need to pass in the `INTEROP_PROXY_URL` and
+`TELEMETRY_URL` environment variables.
 
 ```
 $ docker run -it -p 4000:4000 \
-    -e INTEROP_URL="192.168.0.5:8000" \
-    -e USERNAME="someuser" \
-    -e PASSWORD="somepass" \
+    -e INTEROP_PROXY_URL="192.168.0.5:8000" \
     -e TELEMETRY_URL="192.168.0.6:5000" \
     uavaustin/forward-interop
 ```
