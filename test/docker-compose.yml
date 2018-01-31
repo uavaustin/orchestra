@@ -29,18 +29,41 @@ services:
       test_net:
         ipv4_address: 172.16.238.12
 
-  forward-interop:
-    image: uavaustin/forward-interop
+  interop-proxy:
+    image: uavaustin/interop-proxy
     environment:
       - INTEROP_URL=172.16.238.11
       - USERNAME=testuser
       - PASSWORD=testpass
+    ports:
+      - '8000:8000'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.13
+
+  pong:
+    image: uavaustin/pong
+    command: interop-server,172.16.238.11,/ \
+             telemetry,172.16.238.12:5000 \
+             interop-proxy,172.16.238.13:8000 \
+             pong,172.16.238.14:7000 \
+             forward-interop,172.16.238.15:4000
+    ports:
+      - '7000:7000'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.14
+
+  forward-interop:
+    image: uavaustin/forward-interop
+    environment:
+      - INTEROP_PROXY_URL=172.16.238.13:8000
       - TELEMETRY_URL=172.16.238.12:5000
     ports:
       - '4000:4000'
     networks:
       test_net:
-        ipv4_address: 172.16.238.13
+        ipv4_address: 172.16.238.15
 
 networks:
   test_net:
