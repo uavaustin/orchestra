@@ -22,3 +22,14 @@ message PingTimes {
     double time = 1;
     repeated ServicePing list = 2;
 }
+
+// Rate at which the interop server receives telemetry.
+message InteropUploadRate {
+    double time = 1;
+    // Total rates over 1 and 5 seconds without filtering.
+    double total_1 = 2;
+    double total_5 = 3;
+    // Rates over 1 and 5 seconds of unique telemetry.
+    double fresh_1 = 4;
+    double fresh_5 = 5;
+}
