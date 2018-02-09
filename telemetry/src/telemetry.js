@@ -10,7 +10,7 @@ app.get('/api/alive', (req, res) => {
     res.send('Yes, I\'m alive!\n');
 });
 
-app.listen(5000);
+let server = app.listen(5000);
 
 console.log('Running server with Express at http://0.0.0.0:5000');
 
