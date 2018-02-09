@@ -1,12 +1,7 @@
-# Python defaults
-__pycache__/
-*.py[cod]
+# Ignoring things from npm
+node_modules/
+npm-debug.log*
+package-lock.json
 
-# Environments
-.env
-.venv
-env/
-venv/
-
-# protoc output
-messages/
+# Ignore message and babel output
+lib/
