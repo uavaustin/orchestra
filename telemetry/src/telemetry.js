@@ -29,7 +29,7 @@ class PlaneState {
 class PlaneLink {
     constructor() {
         this._mav = new mavlink(1, 1);
-        this._mav.on('ready', this._createSocket);
+        this._mav.on('ready', () => this._createSocket());
         this.state = new PlaneState();
         console.log("Connecting via mavlink...")
     }
@@ -40,8 +40,7 @@ class PlaneLink {
         socket.on('error', (err) => {
             console.error("Socket connection error! ", err);
         });
-        console.log(this._bindMessages);
-        socket.on('listening', this._bindMessages);
+        socket.on('listening', () => this._bindMessages());
         socket.bind(25565);
         console.log("Creating socket...");
     }
@@ -53,8 +52,8 @@ class PlaneLink {
             mav.parse(data);
             console.log(data);
         });
-        mav.on('MISSION_COUNT', this._handleMissionList);
-        mav.on('MISSION_ITEM', this._handleMissionEntry);
+        mav.on('MISSION_COUNT', () => this._handleMissionList());
+        mav.on('MISSION_ITEM', () => this._handleMissionEntry());
         // Add your handlers here!
 
         // Send telemetry constantly.
