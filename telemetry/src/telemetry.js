@@ -5,7 +5,7 @@ import dgram from 'dgram';
 import interop from './messages/interop_pb';
 import telemetry from './messages/telemetry_pb';
 
-const destAddr = '127.0.0.1', destPort = 14552;
+const destAddr = '172.16.238.10', destPort = 14550;
 
 class PlaneState {
     constructor() {
@@ -31,7 +31,7 @@ class PlaneLink {
         this._mav = new mavlink(1, 1);
         this._mav.on('ready', () => this._createSocket());
         this.state = new PlaneState();
-        console.log("Connecting via mavlink...")
+        console.log("Establishing mavlink...")
     }
 
     _createSocket() {
@@ -46,21 +46,32 @@ class PlaneLink {
     }
 
     _bindMessages() {
-        console.log("Connected to socket, binding messages now")
+        console.log("Created socket, binding messages now")
         const mav = this._mav;
         this._socket.on('message', (data) => {
-            mav.parse(data);
-            console.log(data);
+            if (typeof this._connect_timeout !== 'undefined') {
+                clearInterval(this._connect_timeout);
+                this._connect_timeout = undefined;
+            }
+            this._mav.parse(data);
+            //console.log(data);
         });
-        mav.on('MISSION_COUNT', () => this._handleMissionList());
-        mav.on('MISSION_ITEM', () => this._handleMissionEntry());
+        mav.on('MISSION_COUNT', (msg, fields) => this._handleMissionList());
+        mav.on('MISSION_ITEM', (msg, fields) => this._handleMissionEntry());
+        mav.on('GLOBAL_POSITION_INT', (msg, fields) => {
+            console.log(`${fields.lat}, ${fields.lon}`);
+        });
         // Add your handlers here!
 
-        // Send telemetry constantly.
+        this._connect_timeout = setInterval(() => this._start_telemetry(), 1500);
+    }
+
+    _start_telemetry() {
+        // Send a request to send telemetry at a constant rate.
         // createMessage doesn't even merit a callback,
         // and the source doesn't even tick the event loop,
         // but we still have to use it because the argument exists!
-        mav.createMessage('REQUEST_DATA_STREAM',
+        this._mav.createMessage('REQUEST_DATA_STREAM',
         {
             'target_system': 1,
             'target_component': 1,
@@ -72,7 +83,7 @@ class PlaneLink {
                 if (err) {
                     console.error(err);
                 } else {
-                    console.log("Sent REQUEST_DATA_STREAM")
+                    console.log("Requesting data stream...")
                 }
             });
         });
