@@ -23,7 +23,7 @@ export default class SyncBackend {
 
     async _runLoop() {
         // The last image number we've fetched.
-        let lastId = -1;
+        let lastId = this._imageStore.getCount() - 1;
 
         while (this._active) {
             try {

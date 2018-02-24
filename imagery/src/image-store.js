@@ -9,6 +9,7 @@ import { Image } from './messages/imagery_pb';
 import { toUint8Array } from './util';
 
 const FOLDER_NAME = '/opt/imagery';
+const COUNT_FILE = path.join(FOLDER_NAME, 'count.json');
 
 export default class ImageStore extends EventEmitter {
     /**
@@ -17,20 +18,28 @@ export default class ImageStore extends EventEmitter {
      * After creating an object, setup() needs to be called so it can
      * get the folder ready.
      *
-     * Image metadata is also stored in a json file with the images
-     * as well.
+     * Image metadata is stored as a serialized Protobuf. A file
+     * called count.json holds the number of the images taken, so
+     * when the image stores starts with an existing directory, it
+     * can use the previous images.
      */
 
     /** Create a new image store. */
-    constructor() {
+    constructor(clearExisting = false) {
         super();
 
+        this._clearExisting = clearExisting;
         this._count = 0;
     }
 
     /** Creates an empty directory for the image store. */
     async setup() {
-        await fs.emptyDir(FOLDER_NAME);
+        if (this._clearExisting === true) {
+            await fs.emptyDir(COUNT_FILE);
+        } else if (await fs.exists(COUNT_FILE)) {
+            // Reading the file and getting the count from there.
+            this._count = JSON.parse(await fs.readFile(COUNT_FILE)).count;
+        }
     }
 
     /** Get the number of images stored. */
@@ -60,7 +69,6 @@ export default class ImageStore extends EventEmitter {
         }
 
         let id = this._count;
-        this._count++;
 
         // Set the id number in the metadata.
         metadata.setId(id);
@@ -81,6 +89,13 @@ export default class ImageStore extends EventEmitter {
         await fs.writeFile(filenameMeta, metadata.serializeBinary(), {
             encoding: null
         });
+
+        // Recording the count in case the image store restarts.
+        await fs.writeFile(COUNT_FILE, JSON.stringify({ count: id + 1 }));
+
+        // The count in incremented towards the end, to prevent image
+        // requests while still writing them.
+        this._count++;
 
         // Broadcast the new image id.
         this.emit('image', id);
