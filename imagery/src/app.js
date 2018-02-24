@@ -35,6 +35,16 @@ export function createApp(imageStore) {
         sendMessage(req, res, msg);
     });
 
+    app.get('/api/next-image', (req, res) => {
+        imageStore.once('image', async (id) => {
+            let msg = await imageStore.getMetadata(id);
+
+            msg.setImage(await imageStore.getImage(id));
+
+            sendMessage(req, res, msg);
+        });
+    });
+
     app.get('/api/alive', (req, res) => {
         res.set('content-type', 'text/plain');
         res.send('Howdy.\n');
