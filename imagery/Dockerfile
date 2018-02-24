@@ -22,7 +22,12 @@ COPY imagery .
 
 RUN npm run build
 
-ENV TELEMETRY_URL='0.0.0.0:5000'
+# Must be one of "camera", "file", "sync".
+ENV BACKEND='camera' \
+    # Should be set when using the camera backend.
+    TELEMETRY_URL='' \
+    # Must be set if using the sync backend.
+    IMAGERY_SYNC_URL=''
 
 EXPOSE 9000
 
