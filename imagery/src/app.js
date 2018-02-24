@@ -38,25 +38,36 @@ export function createApp(imageStore) {
     }
 
     app.get('/api/image/:id', async (req, res) => {
-        let id = parseInt(req.params.id);
-
-        // 404 if this image doesn't exist.
-        if (Number.isNaN(id) || id < 0 || id >= imageStore.getCount()) {
-            res.sendStatus(404);
-            return;
-        }
-
-        let msg = await getImageMessage(id, req.query);
-
-        sendMessage(req, res, msg);
-    });
-
-    app.get('/api/next-image', (req, res) => {
-        imageStore.once('image', async (id) => {
+        // Carry out the response, gets the image message for the
+        // requested id, and then sends it.
+        async function respondFor(id) {
             let msg = await getImageMessage(id, req.query);
 
             sendMessage(req, res, msg);
-        });
+        }
+
+        if (req.params.id === 'next') {
+            // If we want the next image, we'll wait until the image
+            // store broadcasts it has a new one, and then we'll
+            // return that image.
+            imageStore.once('image', id => respondFor(id));
+        } else if (req.params.id === 'latest') {
+            // If we want the latest image, we'll just get the last
+            // image id registered.
+            respondFor(imageStore.getCount() - 1);
+        } else {
+            // Otherwise, we'll parse the integer the user send, make
+            // sure it's valid, and then we'll send that.
+            let id = parseInt(req.params.id);
+
+            // 404 if this image doesn't exist.
+            if (Number.isNaN(id) || id < 0 || id >= imageStore.getCount()) {
+                res.sendStatus(404);
+                return;
+            }
+
+            respondFor(id);
+        }
     });
 
     app.get('/api/alive', (req, res) => {
