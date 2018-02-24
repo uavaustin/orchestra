@@ -1,5 +1,4 @@
 import EventEmitter from 'events';
-import os from 'os';
 import path from 'path';
 
 import fs from 'fs-extra';
@@ -86,7 +85,7 @@ export default class ImageStore extends EventEmitter {
         return id;
     }
 
-    /** Return the image for the id in a string. */
+    /** Return the image for the id in an Uint8Array. */
     async getImage(id, warped = false) {
         let filename = this._formatFilename(id, warped);
 
@@ -94,7 +93,7 @@ export default class ImageStore extends EventEmitter {
             encoding: null
         });
 
-        return buffer.toString();
+        return toUint8Array(buffer);
     }
 
     /** Get the image metadata in the Image protobuf message. */
