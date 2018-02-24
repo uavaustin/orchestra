@@ -31,7 +31,7 @@ export function createApp(imageStore) {
         if (original)
             msg.setImage(await imageStore.getImage(id));
 
-        if (warped)
+        if (warped && msg.getHasWarped())
             msg.setWarpedImage(await imageStore.getImage(id, true));
 
         return msg;
@@ -53,8 +53,15 @@ export function createApp(imageStore) {
             imageStore.once('image', id => respondFor(id));
         } else if (req.params.id === 'latest') {
             // If we want the latest image, we'll just get the last
-            // image id registered.
-            respondFor(imageStore.getCount() - 1);
+            // image id registered. If there are no images at all,
+            // we'll just 404.
+            let count = imageStore.getCount();
+
+            if (count === 0) {
+                res.sendStatus(404);
+            } else {
+                respondFor(count - 1);
+            }
         } else {
             // Otherwise, we'll parse the integer the user send, make
             // sure it's valid, and then we'll send that.
@@ -63,10 +70,9 @@ export function createApp(imageStore) {
             // 404 if this image doesn't exist.
             if (Number.isNaN(id) || id < 0 || id >= imageStore.getCount()) {
                 res.sendStatus(404);
-                return;
+            } else {
+                respondFor(id);
             }
-
-            respondFor(id);
         }
     });
 
