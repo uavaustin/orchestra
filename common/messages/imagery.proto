@@ -45,5 +45,6 @@ message Image {
     // Both images are PNG images. The warped image will have
     // transparency around the edges.
     bytes image = 7;
-    bytes warped_image = 8;
+    bool has_warped = 8;
+    bytes warped_image = 9;
 }
