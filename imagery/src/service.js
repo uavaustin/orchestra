@@ -55,6 +55,8 @@ export default class Service {
                 throw Error('Sync backend not implemented.');
         }
 
+        await backend.start();
+
         return await (new Promise((resolve, reject) => {
             app.listen(this._port, (err) => {
                 if (err) reject(err);

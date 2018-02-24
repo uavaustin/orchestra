@@ -21,15 +21,15 @@ export default class FileBackend {
 
     /** Create a new file backend. */
     constructor(imageStore) {
-        this._watch(imageStore);
+        this._imageStore = imageStore;
     }
 
     /** Watches a folder and adds new images to the image store. */
-    async _watch(imageStore) {
+    async start() {
         // Creates an empty directory to watch if it doesn't exist.
         await fs.mkdirp(WATCH_FOLDER_NAME);
 
-        chokidar.watch(WATCH_FOLDER_NAME)
+        this._watcher = chokidar.watch(WATCH_FOLDER_NAME)
             .on('add', async (path) => {
                 // On each new file, read and then delete it.
                 let data = await fs.readFile(path, { encoding: null });
@@ -41,7 +41,12 @@ export default class FileBackend {
                 metadata.setTime((new Date()).getTime() / 1000);
 
                 // Add it to the image store without a warped image.
-                await imageStore.addImage(data, metadata);
+                await this._imageStore.addImage(data, metadata);
             });
+    }
+
+    /** Stop watching files. */
+    async stop() {
+        this._watcher.close();
     }
 }
