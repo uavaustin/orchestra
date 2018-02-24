@@ -1,5 +1,6 @@
 import { createApp } from './app';
 import FileBackend from './backends/file-backend';
+import SyncBackend from './backends/sync-backend';
 import ImageStore from './image-store';
 
 const BACKENDS = ["camera", "file", "sync"];
@@ -14,6 +15,8 @@ export default class Service {
      * @param {number}  options.port
      * @param {string}  options.backend          - one of "camera",
      *                                             "file", "sync"
+     * @param {string}  [options.imagerySyncUrl] - url to sync
+                                                   imagery against
      * @param {boolean} [options.printNew=false] - prints when a new
      *                                             image is added
      */
@@ -24,6 +27,8 @@ export default class Service {
 
         this._port = options.port;
         this._backend = options.backend;
+
+        this._imagerySyncUrl = options.imagerySyncUrl;
 
         this._printNew = options.printNew;
     }
@@ -52,7 +57,7 @@ export default class Service {
                 backend = new FileBackend(imageStore);
                 break;
             case "sync":
-                throw Error('Sync backend not implemented.');
+                backend = new SyncBackend(imageStore, this._imagerySyncUrl);
         }
 
         await backend.start();
