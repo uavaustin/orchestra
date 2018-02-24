@@ -35,14 +35,15 @@ message Image {
 
     // Time at which the image was taken.
     double time = 1;
+    uint32 id = 2;
     // True if we have telemetry for this image.
-    bool has_telem = 2;
-    telemetry.CameraTelem telem = 3;
+    bool has_telem = 3;
+    telemetry.CameraTelem telem = 4;
     // True if we're able to get coords for this image.
-    bool found_corners = 4;
-    CornerCoords corners = 5;
+    bool found_corners = 5;
+    CornerCoords corners = 6;
     // Both images are PNG images. The warped image will have
     // transparency around the edges.
-    bytes image = 6;
-    bytes warped_image = 7;
+    bytes image = 7;
+    bytes warped_image = 8;
 }

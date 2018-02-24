@@ -62,6 +62,9 @@ export default class ImageStore extends EventEmitter {
         let id = this._count;
         this._count++;
 
+        // Set the id number in the metadata.
+        metadata.setId(id);
+
         let filenameNormal = this._formatFilename(id);
         let filenameWarped = this._formatFilename(id, true);
         let filenameMeta = this._formatMetadataFilename(id);
