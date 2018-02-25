@@ -125,22 +125,22 @@ export default class ImageStore extends EventEmitter {
         return Image.deserializeBinary(toUint8Array(buffer));
     }
 
-    /** Get the filename for an image id. */
+    /** Get the filename for an image by id. */
     _formatFilename(id, warped = false) {
         let basename;
 
         if (warped) {
-            basename = sprintf('%06d-warped.png', id);
+            basename = sprintf('warped-%06d.png', id);
         } else {
-            basename = sprintf('%06d.png', id);
+            basename = sprintf('image-%06d.png', id);
         }
 
         return path.join(FOLDER_NAME, basename);
     }
 
-    /** Get the filename for image metadata by image id. */
+    /** Get the filename for image metadata by id. */
     _formatMetadataFilename(id) {
-        let basename = sprintf('%06d-metadata.pb', id);
+        let basename = sprintf('meta-%06d.pb', id);
 
         return path.join(FOLDER_NAME, basename);
     }
