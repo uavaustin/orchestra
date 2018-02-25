@@ -76,7 +76,8 @@ export default class SyncBackend {
             },
             simple: false,
             resolveWithFullResponse: true,
-            encoding: null
+            encoding: null,
+            timeout: 5000
         });
 
         // If there response was successful, there's at least one
@@ -102,7 +103,8 @@ export default class SyncBackend {
             },
             encoding: null,
             transform: buffer => Image.deserializeBinary(toUint8Array(buffer)),
-            transform2xxOnly: true
+            transform2xxOnly: true,
+            timeout: 5000
         });
     }
 
