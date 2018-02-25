@@ -21,6 +21,11 @@ message Position {
     double lon = 2;
 }
 
+message ImageCount {
+    double time = 1;
+    uint32 count = 2;
+}
+
 message Image {
     message CornerCoords {
         Position top_left = 1;

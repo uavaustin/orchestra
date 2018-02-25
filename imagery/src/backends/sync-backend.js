@@ -2,7 +2,7 @@ import request from 'request-promise-native';
 
 import { toUint8Array, wait } from '../util';
 
-import { Image } from '../messages/imagery_pb';
+import { Image, ImageCount } from '../messages/imagery_pb';
 
 export default class SyncBackend {
     /**
@@ -60,35 +60,24 @@ export default class SyncBackend {
                 console.error('Encountered an error in sync loop: ' + message);
             }
 
-            // Wait a 100 ms to continue.
-            await wait(100);
+            // Wait 250 ms to continue.
+            await wait(250);
         }
     }
 
     /** Get the latest id number the sync url has. */
     async _getLatestId() {
-        let resp = await request({
-            uri: `http://${this._syncUrl}/api/image/latest`,
-            qs: {
-                // We don't want to get the images here.
-                original: 'false',
-                warped: 'false'
-            },
-            simple: false,
-            resolveWithFullResponse: true,
+        let msg = await request({
+            uri: `http://${this._syncUrl}/api/count`,
             encoding: null,
+            transform: buffer => ImageCount.deserializeBinary(
+                toUint8Array(buffer)
+            ),
+            transform2xxOnly: true,
             timeout: 5000
         });
 
-        // If there response was successful, there's at least one
-        // image. If not, we'll just return -1.
-        if (resp.statusCode === 200) {
-            let msg = Image.deserializeBinary(toUint8Array(resp.body));
-
-            return msg.getId();
-        } else {
-            return -1;
-        }
+        return msg.getCount() - 1;
     }
 
     /** Get an image from the sync url by id. */
@@ -102,7 +91,9 @@ export default class SyncBackend {
                 warped: 'true'
             },
             encoding: null,
-            transform: buffer => Image.deserializeBinary(toUint8Array(buffer)),
+            transform: buffer => Image.deserializeBinary(
+                toUint8Array(buffer)
+            ),
             transform2xxOnly: true,
             timeout: 5000
         });

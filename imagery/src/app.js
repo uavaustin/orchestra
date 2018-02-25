@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { Image } from './messages/imagery_pb';
+import { Image, ImageCount } from './messages/imagery_pb';
 
 export function createApp(imageStore) {
     let app = express();
@@ -36,6 +36,17 @@ export function createApp(imageStore) {
 
         return msg;
     }
+
+    app.get('/api/count', (req, res) => {
+        // Just return the image count in a ImageCount protobuf
+        // message.
+        let msg = new ImageCount();
+
+        msg.setTime((new Date()).getTime() / 1000);
+        msg.setCount(imageStore.getCount());
+
+        sendMessage(req, res, msg);
+    });
 
     app.get('/api/image/:id', async (req, res) => {
         // Carry out the response, gets the image message for the
