@@ -3,7 +3,7 @@
 Implementation-level repository for UAV Austin. Communications between
 different runtime services are managed here.
 
-# Building Services
+## Building Services
 
 This repository heavily depends on Docker. Make sure both Docker and Docker
 Compose (which is used for testing) are installed on your machine.
@@ -22,7 +22,7 @@ Docker flags can be passed into `make` in case you need to configure the
 building process a bit. For example, to prevent using the cache when building,
 you can run `make DOCKERFLAGS=--no-cache`.
 
-# Testing
+## Testing
 
 There are two kinds of tests in the repository:
 
@@ -39,7 +39,10 @@ There are two kinds of tests in the repository:
 
   Images must be built with `make` before running this suite.
 
-# Directory Structure
+All the automated tests can be run together with `make test` at the top-level
+directory as well.
+
+## Directory Structure
 
 - `services/` - location of all the services, for descriptions of each service,
   see the README located inside each sub-folder.
