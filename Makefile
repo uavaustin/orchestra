@@ -1,45 +1,45 @@
 # See service level Makefiles for more fine-grained control. Note
-# that they do not take care of any prerequisites in common/ as that
-# is done here.
+# that they do not take care of any prerequisites as that is done
+# here.
 
 .PHONY: all
-all: common telemetry interop-proxy pong forward-interop
+all: telemetry interop-proxy pong forward-interop
 
 .PHONY: test
 test: interop-proxy-test pong-test
 
-.PHONY: common
-common:
-	$(MAKE) -C common
+.PHONY: protoc
+protoc:
+	$(MAKE) -C tools/protoc
 
 .PHONY: telemetry
-telemetry: common
-	$(MAKE) -C telemetry
+telemetry: protoc
+	$(MAKE) -C services/telemetry
 
 .PHONY: interop-proxy
-interop-proxy: common
-	$(MAKE) -C interop-proxy
+interop-proxy: protoc
+	$(MAKE) -C services/interop-proxy
 
 .PHONY: interop-proxy-test
-interop-proxy-test: common
-	$(MAKE) -C interop-proxy test
+interop-proxy-test: protoc
+	$(MAKE) -C services/interop-proxy test
 
 .PHONY: pong
-pong: common
-	$(MAKE) -C pong
+pong: protoc
+	$(MAKE) -C services/pong
 
 .PHONY: pong-test
-pong-test: common
-	$(MAKE) -C pong test
+pong-test: protoc
+	$(MAKE) -C services/pong test
 
 .PHONY: forward-interop
-forward-interop: common
-	$(MAKE) -C forward-interop
+forward-interop: protoc
+	$(MAKE) -C services/forward-interop
 
 .PHONY: clean
 clean:
-	$(MAKE) -C common clean
-	$(MAKE) -C telemetry clean
-	$(MAKE) -C interop-proxy clean
-	$(MAKE) -C pong clean
-	$(MAKE) -C forward-interop clean
+	$(MAKE) -C tools/protoc clean
+	$(MAKE) -C services/telemetry clean
+	$(MAKE) -C services/interop-proxy clean
+	$(MAKE) -C services/pong clean
+	$(MAKE) -C services/forward-interop clean
