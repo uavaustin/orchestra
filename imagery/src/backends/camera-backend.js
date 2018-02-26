@@ -23,7 +23,7 @@ export default class CameraBackend {
 
                 metadata.setTime((new Date()).getTime() / 1000);
 
-                let data = await _takePhoto(camera);
+                let data = await this._takePhoto(camera);
 
                 // Add it to the image store without a warped image.
                 await this._imageStore.addImage(data, metadata);
@@ -50,12 +50,14 @@ export default class CameraBackend {
 
     /** Get the camera gphoto2 object. */
     async _getCamera() {
-        return await (new Promise((resolve, reject) => {
+        return await (new Promise((resolve) => {
             this._gphoto2.list((list) => {
                 if (list.length == 0) {
-                    reject(Error('No camera found.'));
-                } else if (list.length >= 0) {
-                    reject(Error('More than one camera found.'));
+                    console.error('No camera found.');
+                    process.exit(1);
+                } else if (list.length >= 2) {
+                    console.error('More than 1 camera found.');
+                    process.exit(1);
                 } else {
                     resolve(list[0]);
                 }
@@ -67,7 +69,7 @@ export default class CameraBackend {
     async start() {
         this._active = true;
 
-        let camera = await _getCamera();
+        let camera = await this._getCamera();
 
         this._runLoop(camera);
     }
