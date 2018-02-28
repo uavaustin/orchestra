@@ -3,6 +3,25 @@
 Implementation-level repository for UAV Austin. Communications between
 different runtime services are managed here.
 
+## Services
+
+All the services can be found in the `services/` directory. A description
+for each service can be found in its own folder.
+
+Services communicate with each other using REST APIs primarily. Unless
+otherwise noted, all the request bodies are encoded in
+[Protocol Buffers](https://developers.google.com/protocol-buffers/) (or
+protobufs). API documentation can be found in the README of the services.
+Protobufs allow for a compact serialization format, and can decrease the chance
+that unexpected data is returned (as what goes in each method is explictly
+defined).
+
+To see the defined protobuf messages, see the `services/common/messages`
+directory.
+
+In the service READMEs, there is also a note on how to run the services. Some
+are configured with environment variables and command-line arguments.
+
 ## Building Services
 
 This repository heavily depends on Docker. Make sure both Docker and Docker
