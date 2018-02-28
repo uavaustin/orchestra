@@ -4,7 +4,7 @@ FROM ${BASE}
 
 WORKDIR /builder
 
-COPY common/scripts/protobuf-version.sh .
-COPY common/scripts/install-protoc.sh .
+COPY protobuf-version.sh .
+COPY install-protoc.sh .
 
 RUN ./install-protoc.sh

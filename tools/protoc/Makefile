@@ -8,8 +8,7 @@ all: protoc
 
 .PHONY: protoc
 protoc:
-	docker build -t $(PROTOC_IMAGE) -f containers/Dockerfile.protoc \
-		$(DOCKERFLAGS) ..
+	docker build -t $(PROTOC_IMAGE) $(DOCKERFLAGS) .
 
 .PHONY: clean
 clean:
