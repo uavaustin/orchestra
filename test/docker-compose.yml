@@ -43,10 +43,10 @@ services:
 
   pong:
     image: uavaustin/pong
-    command: interop-server,172.16.238.11,/ \
-             telemetry,172.16.238.12:5000 \
-             interop-proxy,172.16.238.13:8000 \
-             pong,172.16.238.14:7000 \
+    command: interop-server,172.16.238.11,/
+             telemetry,172.16.238.12:5000
+             interop-proxy,172.16.238.13:8000
+             pong,172.16.238.14:7000
              forward-interop,172.16.238.15:4000
     ports:
       - '7000:7000'
