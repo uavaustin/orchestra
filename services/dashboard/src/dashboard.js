@@ -54,10 +54,13 @@ async.forever((next) => {
         // If we have a message (i.e. no error), then take each
         // listing and put it in a 4 element array corresponding to
         // the ping time headers. If the service is offline, we'll
-        // print the line in read. Afterwards, this is sorted by
-        // increasing hostname, and then by increasing port number.
+        // print the line in read. This is sorted first by increasing
+        // hostname, and then by increasing port number.
         if (message !== null) {
-            data = message.getListList().map((time) => {
+            data = message.getListList().sort((a, b) =>
+                a.getHost() !== b.getHost() ? a.getHost() > b.getHost() :
+                                              a.getPort() > b.getPort()
+            ).map((time) => {
                 if (time.getOnline()) {
                     return [
                         time.getName(),
@@ -73,7 +76,7 @@ async.forever((next) => {
                         chalk.red('-')
                     ];
                 }
-            }).sort((a, b) => a[1] !== b[1] ? a[1] > b[1] : a[2] > b[2]);
+            });
         }
 
         setPingTableData(data);
