@@ -14,18 +14,47 @@ syntax = "proto3";
 
 package telemetry;
 
-// Camera telemtry
-message CameraTelem {
-    double time = 1;
-    double lat = 2;
-    double lon = 3;
-    // Relative to ground
-    double alt = 4;
-    double yaw = 5;
-    // 0 pitch points to the front of the plane, -90 points down
-    double pitch = 6;
-    // 0 roll points down, 90 points to the right
-    double roll = 7;
+// Represents an overview of the plane's current state.
+// Useful for dashboards and flight views.
+message Overview {
+    Position pos = 1;
+    Rotation rot = 2;
+    Altitude alt = 3;
+    Velocity vel = 4;
+    Speed speed = 5;
+}
+
+// WGS84 in degrees
+message Position {
+    double lat = 1;
+    double lon = 2;
+}
+
+// In degrees
+message Rotation {
+    // Semantically eqivalent to heading
+    double yaw = 1;
+    double pitch = 2;
+    double roll = 3;
+}
+
+// In meters
+message Altitude {
+    double msl = 1;
+    double agl = 2;
+}
+
+// Body frame velocity in m/s
+message Velocity {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+// In m/s
+message Speed {
+    double airspeed = 1;
+    double ground_speed = 2;
 }
 
 // This has direct mappings to the Mavlink protocol.
