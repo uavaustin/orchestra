@@ -118,7 +118,7 @@ function setTelemUploadGraphData(data, available = true) {
                 return desc + chalk.bold.red(rateStr);
             }
         } else {
-            return desc + chalk.bold.red(sprintf(`%${width - 10}s`, 'n/a'));
+            return desc + chalk.bold.red(sprintf(`%${width - 10}s`, '(n/a)'));
         }
     }
 
@@ -218,10 +218,15 @@ async.forever((next) => {
             telemUploadData[1].push(message.getTotal5());
             telemUploadData[2].push(message.getFresh1());
             telemUploadData[3].push(message.getFresh5());
-
-            if (telemUploadData[0].length === 40)
-                telemUploadData.map(list => list.shift());
+        } else {
+            telemUploadData[0].push(0.0);
+            telemUploadData[1].push(0.0);
+            telemUploadData[2].push(0.0);
+            telemUploadData[3].push(0.0);
         }
+
+        if (telemUploadData[0].length === 40)
+            telemUploadData.map(list => list.shift());
 
         setTelemUploadGraphData(telemUploadData, available);
         screen.render();
