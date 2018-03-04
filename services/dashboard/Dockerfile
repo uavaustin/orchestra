@@ -29,4 +29,6 @@ ENV INTEROP_PROXY_URL='0.0.0.0:8000' \
     FORWARD_INTEROP_URL='0.0.0.0:4000' \
     PONG_URL='0.0.0.0:7000'
 
+ENV LANG=en_US.UTF-8
+
 CMD npm start --silent
