@@ -10,6 +10,12 @@ import { AerialPosition, InteropTelem } from './messages/interop_pb';
 
 const destAddr = '172.16.238.10', destPort = 14550;
 
+// Python-like remainder.
+// https://stackoverflow.com/a/3417242
+function wrapIndex(i, i_max) {
+    return ((i % i_max) + i_max) % i_max;
+}
+
 class PlaneState {
     constructor() {
         this.lat = null;
@@ -72,10 +78,10 @@ class PlaneState {
     }
 
     /*
-     * Returns whether or not all telemetry data has been received.
+     * Returns whether or not enough telemetry data has been received.
      */
     isPopulated() {
-        return !(Object.values(this).contains(null));
+        return !([this.lat, this.lon, this.yaw, this.altAGL, this.altMSL].includes(null));
     }
 }
 
@@ -128,7 +134,7 @@ class PlaneLink {
             const s = this.state;
             s.roll = fields.roll * 180 / Math.PI;
             s.pitch = fields.pitch * 180 / Math.PI;
-            s.yaw = (fields.yaw * 180 / Math.PI) % 360;
+            s.yaw = wrapIndex(fields.yaw * 180 / Math.PI, 360);
         });
         mav.on('VFR_HUD', (msg, fields) => {
             const s = this.state;
