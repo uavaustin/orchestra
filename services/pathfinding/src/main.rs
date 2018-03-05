@@ -2,14 +2,13 @@ extern crate reqwest;
 extern crate protobuf;
 extern crate Obstacle_Path_Finder;
 
-mod telemetry;
-mod interop;
+mod messages { pub mod interop; pub mod telemetry; }
 
 use std::env;
 use protobuf::*;
 use reqwest::*;
-use telemetry::*;
-use interop::*;
+use messages::telemetry::*;
+use messages::interop::*;
 use std::result;
 
 const PROTOCOL: &str = "http://";
