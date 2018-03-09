@@ -13,8 +13,14 @@ $ docker run -it -p 7000:7000 \
 
 ## Endpoints
 
-- `POST /api/get_path`
+- `GET	/api/alive
 
-  Return the current optimal path
+  Returns some text as a sanity check.
+
+  On successful response: `200` status code with `text/plain` Content-Type.
+
+- `POST /api/update_path`
+
+  Calculate and update the current optimal path
 
   On successful response: `200` status code with `text/plain` Content-Type.

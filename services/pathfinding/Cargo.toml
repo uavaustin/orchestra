@@ -1,9 +1,11 @@
 [package]
-name = "path_finder_microservice"
+name = "pathfinding"
 version = "0.1.0"
-authors = ["steven <stevenzhu@utexas.edu>"]
+authors = ["Steven Zhu <stevenzhu@utexas.edu>"]
 
 [dependencies]
-reqwest = "0.8.4"
+hyper = "0.11"
+futures = "0.1"
+tokio-core = "0.1"
 protobuf = "1.4.3"
 Obstacle-Path-Finder = {git = "https://github.com/uavaustin/Obstacle-Path-Finder/", branch = "switch-to-rust"}
