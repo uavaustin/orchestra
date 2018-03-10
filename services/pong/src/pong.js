@@ -111,14 +111,15 @@ function startWorker(name) {
         request.get({
             url: 'http://' + ping[name].host + ':' + ping[name].port +
                     ping[name].endpoint,
-            followRedirect: false
+            followRedirect: false,
+            time: true
         }, (err, res) => {
             if (err || res.statusCode >= 400) {
                 ping[name].online = false;
                 ping[name].ms = 0.0;
             } else {
                 ping[name].online = true;
-                ping[name].ms = (new Date()).getTime() - start;
+                ping[name].ms = res.elapsedTime;
             }
 
             activeRequest = false;
