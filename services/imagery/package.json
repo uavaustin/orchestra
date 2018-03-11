@@ -12,7 +12,7 @@
         "express": "^4.16.2",
         "fs-extra": "^5.0.0",
         "google-protobuf": "3.4.0",
-        "gphoto2": "lwille/node-gphoto2#feature/nan",
+        "gphoto2": "^0.2.0",
         "request": "^2.83.0",
         "request-promise-native": "^1.0.5",
         "sprintf-js": "^1.1.1"
