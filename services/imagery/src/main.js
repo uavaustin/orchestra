@@ -5,7 +5,7 @@
 import Service from './service';
 
 let options = {
-    port: 9000,
+    port: 8081,
     backend: process.env.BACKEND,
     imagerySyncUrl: process.env.IMAGERY_SYNC_URL,
     printNew: process.env.PRINT_NEW in ['1', 'true', 'TRUE']
@@ -13,6 +13,6 @@ let options = {
 
 (new Service(options)).start()
     .then(() => console.log(
-        'Running server with Express at http://0.0.0.0:9000'
+        'Running server with Express at http://0.0.0.0:8081'
     ))
     .catch(console.error);
