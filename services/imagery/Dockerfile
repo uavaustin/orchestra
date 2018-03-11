@@ -29,6 +29,6 @@ ENV BACKEND='camera' \
     # Must be set if using the sync backend.
     IMAGERY_SYNC_URL=''
 
-EXPOSE 9000
+EXPOSE 8081
 
 CMD npm start --silent
