@@ -31,6 +31,9 @@ export default class FileBackend {
 
         this._watcher = chokidar.watch(WATCH_FOLDER_NAME)
             .on('add', async (path) => {
+                // If this isn't a png file, don't process it.
+                if (!path.match(/\.[pP][nN][gG]$/)) return;
+
                 // On each new file, read and then delete it.
                 let data = await fs.readFile(path, { encoding: null });
                 await fs.unlink(path);
