@@ -24,8 +24,6 @@ RUN npm run build
 
 # Must be one of "camera", "file", "sync".
 ENV BACKEND='camera' \
-    # Should be set when using the camera backend.
-    TELEMETRY_URL='' \
     # Must be set if using the sync backend.
     IMAGERY_SYNC_URL=''
 

@@ -6,9 +6,8 @@ import { wait } from '../util';
 
 export default class CameraBackend {
     /** Create a new camera backend. */
-    constructor(imageStore, telemUrl) {
+    constructor(imageStore) {
         this._imageStore = imageStore;
-        this._telemUrl = telemUrl;
         this._active = false;
 
         this._gphoto2 = new GPhoto2();

@@ -7,7 +7,6 @@ import Service from './service';
 let options = {
     port: 9000,
     backend: process.env.BACKEND,
-    telemUrl: process.env.TELEMETRY_URL,
     imagerySyncUrl: process.env.IMAGERY_SYNC_URL,
     printNew: process.env.PRINT_NEW in ['1', 'true', 'TRUE']
 };

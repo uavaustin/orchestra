@@ -16,8 +16,6 @@ export default class Service {
      * @param {number}  options.port
      * @param {string}  options.backend          - one of 'camera',
      *                                             'file', 'sync'
-     * @param {string}  [options.telemUrl]       - url to pull
-     *                                             telemetry from
      * @param {string}  [options.imagerySyncUrl] - url to sync
      *                                             imagery against
      * @param {boolean} [options.printNew=false] - prints when a new
@@ -31,7 +29,6 @@ export default class Service {
         this._port = options.port;
         this._backend = options.backend;
 
-        this._telemUrl = options.telemUrl;
         this._imagerySyncUrl = options.imagerySyncUrl;
 
         this._printNew = options.printNew;
@@ -56,7 +53,7 @@ export default class Service {
 
         switch (this._backend) {
             case 'camera':
-                backend = new CameraBackend(imageStore, this._telemUrl);
+                backend = new CameraBackend(imageStore);
                 break;
             case 'file':
                 backend = new FileBackend(imageStore);
