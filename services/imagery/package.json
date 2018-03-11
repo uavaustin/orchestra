@@ -1,0 +1,36 @@
+{
+    "name": "imagery",
+    "main": "lib/main.js",
+    "private": true,
+    "license": "MIT",
+    "scripts": {
+        "start": "node .",
+        "build": "babel src --out-dir lib"
+    },
+    "dependencies": {
+        "chokidar": "^2.0.2",
+        "express": "^4.16.2",
+        "fs-extra": "^5.0.0",
+        "google-protobuf": "3.4.0",
+        "gphoto2": "^0.2.0",
+        "request": "^2.83.0",
+        "request-promise-native": "^1.0.5",
+        "sprintf-js": "^1.1.1"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-preset-env": "^1.6.1"
+    },
+    "babel": {
+        "presets": [
+            [
+                "env",
+                {
+                    "targets": {
+                        "node": "current"
+                    }
+                }
+            ]
+        ]
+    }
+}
