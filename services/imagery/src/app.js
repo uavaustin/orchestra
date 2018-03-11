@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { Image, ImageCount } from './messages/imagery_pb';
+import { ImageCount } from './messages/imagery_pb';
 
 export function createApp(imageStore) {
     let app = express();
