@@ -56,13 +56,13 @@ message InteropMission {
 // Lists the stationary and moving obstacles.
 message Obstacles {
     message StationaryObstacle {
-        AerialPosition pos = 1;
+        Position pos = 1;
         double height = 2;
         double radius = 3;
     }
 
     message MovingObstacle {
-        Position pos = 1;
+        AerialPosition pos = 1;
         double radius = 2;
     }
 

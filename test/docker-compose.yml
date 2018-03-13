@@ -76,6 +76,19 @@ services:
       test_net:
         ipv4_address: 172.16.238.16
 
+  imagery:
+    image: uavaustin/imagery
+    environment:
+      - BACKEND=file
+    ports:
+      - '8081:8081'
+    volumes:
+      - './data/new-images:/opt/new-images'
+      - './data/imagery:/opt/imagery'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.50
+
 networks:
   test_net:
     driver: bridge
