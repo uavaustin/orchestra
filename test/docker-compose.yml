@@ -53,6 +53,7 @@ services:
              pong,172.16.238.14:7000
              forward-interop,172.16.238.15:4000
              imagery,172.16.238.50:8081
+             image-rec-master,172.16.238.52:8082
     ports:
       - '7000:7000'
     networks:
@@ -96,6 +97,27 @@ services:
     networks:
       test_net:
         ipv4_address: 172.16.238.50
+
+  imagery-db:
+    image: redis:alpine
+    command: redis-server --save "" --appendonly no
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.51
+
+  image-rec-master:
+    image: uavaustin/image-rec-master
+    environment:
+      - IMAGERY_URL=172.16.238.50:8081
+      - REDIS_URL=172.16.238.51:6379
+    ports:
+      - '8082:8082'
+    depends_on:
+      - imagery-db
+      - imagery
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.52
 
 networks:
   test_net:
