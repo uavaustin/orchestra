@@ -23,15 +23,17 @@ let screen = blessed.screen();
 // The screen is set up in a 12x12 grid.
 let grid = new contrib.grid({ rows: 12, cols: 12, screen: screen });
 
-// The ping table shows the output from the pong service.
+// The ping table shows the output from the pong service. This
+// differs from the built-in table in that we can specify a more
+// custom header.
 let pingTable = grid.set(6, 0, 6, 12, blessed.box, {
     label: 'Ping',
-    // keys: true,
-    // interactive: false,
-    // columnWidth: [15, 16, 5, 9]
 });
 
 function setPingTableData(data) {
+    // Making the header at the top, note the newlines are outside
+    // the bold styling, this was causing major problems when it was
+    // inside earlier.
     let header = '\n' + chalk.bold.green(sprintf(
         ' %-24s %-23s %-13s %s', 'Name:', 'Host:', 'Port:', 'Ping (ms):'
     )) + '\n\n';
@@ -253,6 +255,9 @@ async.forever((next) => {
     });
 });
 
+// Allow escape, q, and Ctrl+C to exit the process. Note this is only
+// useful when not running a service in the background.
 screen.key(['escape', 'q', 'C-c'], () => process.exit(0));
 
+// Start rendering the screen.
 screen.render();

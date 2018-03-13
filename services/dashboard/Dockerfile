@@ -25,8 +25,7 @@ RUN export NODE_ENV=production && npm install
 # Adding in the output from the js builder above
 COPY --from=builder /builder/lib lib
 
-ENV INTEROP_PROXY_URL='0.0.0.0:8000' \
-    FORWARD_INTEROP_URL='0.0.0.0:4000' \
+ENV FORWARD_INTEROP_URL='0.0.0.0:4000' \
     PONG_URL='0.0.0.0:7000'
 
 ENV LANG=en_US.UTF-8
