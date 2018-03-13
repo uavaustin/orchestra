@@ -24,18 +24,46 @@ let screen = blessed.screen();
 let grid = new contrib.grid({ rows: 12, cols: 12, screen: screen });
 
 // The ping table shows the output from the pong service.
-let pingTable = grid.set(6, 0, 6, 12, contrib.table, {
+let pingTable = grid.set(6, 0, 6, 12, blessed.box, {
     label: 'Ping',
-    keys: true,
-    interactive: false,
-    columnWidth: [15, 16, 5, 9]
+    // keys: true,
+    // interactive: false,
+    // columnWidth: [15, 16, 5, 9]
 });
 
 function setPingTableData(data) {
-    pingTable.setData({
-        headers: ['Name', 'Host', 'Port', 'Ping (ms)'],
-        data: data
-    });
+    let header = '\n' + chalk.bold.green(sprintf(
+        ' %-24s %-23s %-13s %s', 'Name:', 'Host:', 'Port:', 'Ping (ms):'
+    )) + '\n\n';
+
+    let lines;
+
+    if (data !== undefined && data.length > 0) {
+        lines = data.map((line) => {
+            // If the service is offline, we print the line in red with
+            // a dash for the ping. If the ping is 1s or above, we'll
+            // print it in yellow. Otherwise, we'll normally print it in
+            // green.
+            if (!line[0]) {
+                return chalk.bold.red(sprintf('  %-24s %-23s %-13d %-5s',
+                        line[1], line[2], line[3], '-'));
+            } else if (line[4] >= 1000) {
+                return chalk.yellow(sprintf('  %-24s %-23s %-13d %-5d',
+                        line[1], line[2], line[3], line[4]));
+            } else {
+                return chalk.green(sprintf('  %-24s %-23s %-13d %-5d',
+                        line[1], line[2], line[3], line[4]));
+            }
+        }).join('\n');
+    } else {
+        // We just set the lines to red dashes when we don't have any
+        // data.
+        lines = chalk.bold.red(sprintf(
+            '  %-24s %-23s %-13s %-5s\n', '-', '-', '-', '-'
+        ));
+    }
+
+    pingTable.setContent(header + lines);
 }
 
 // Initially, we show that there isn't any ping data.
@@ -54,31 +82,21 @@ async.forever((next) => {
         let data = [];
 
         // If we have a message (i.e. no error), then take each
-        // listing and put it in a 4 element array corresponding to
-        // the ping time headers. If the service is offline, we'll
-        // print the line in read. This is sorted first by increasing
+        // listing and put it in a 5 element array corresponding to
+        // the ping time headers, with the first being if the service
+        // is online or not. This is sorted first by increasing
         // hostname, and then by increasing port number.
         if (message !== null) {
             data = message.getListList().sort((a, b) =>
                 a.getHost() !== b.getHost() ? a.getHost() > b.getHost() :
                                               a.getPort() > b.getPort()
-            ).map((time) => {
-                if (time.getOnline()) {
-                    return [
-                        time.getName(),
-                        time.getHost(),
-                        time.getPort(),
-                        time.getMs()
-                    ];
-                } else {
-                    return [
-                        chalk.red(time.getName()),
-                        chalk.red(time.getHost()),
-                        chalk.red(time.getPort()),
-                        chalk.red('-')
-                    ];
-                }
-            });
+            ).map(time => [
+                time.getOnline(),
+                time.getName(),
+                time.getHost(),
+                time.getPort(),
+                time.getMs()
+            ]);
         }
 
         setPingTableData(data);
