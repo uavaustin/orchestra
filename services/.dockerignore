@@ -42,3 +42,7 @@ pong/lib
 # imagery
 imagery/lib
 !imagery/lib/messages
+
+# dashboard
+dashboard/lib
+!dashboard/lib/messages
