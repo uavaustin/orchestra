@@ -1,0 +1,7 @@
+# Ignoring things from npm
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Ignore message and babel output
+lib/

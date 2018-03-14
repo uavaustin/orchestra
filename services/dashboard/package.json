@@ -1,0 +1,36 @@
+{
+    "name": "dashboard",
+    "main": "lib/dashboard.js",
+    "private": true,
+    "license": "MIT",
+    "scripts": {
+        "start": "node .",
+        "build": "babel src --out-dir lib"
+    },
+    "dependencies": {
+        "async": "^2.6.0",
+        "blessed": "^0.1.81",
+        "blessed-contrib": "^4.8.5",
+        "chalk": "^2.3.1",
+        "google-protobuf": "3.4.0",
+        "lodash": "^4.17.5",
+        "request": "^2.83.0",
+        "sprintf-js": "^1.1.1"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-preset-env": "^1.6.1"
+    },
+    "babel": {
+        "presets": [
+            [
+                "env",
+                {
+                    "targets": {
+                        "node": "current"
+                    }
+                }
+            ]
+        ]
+    }
+}
