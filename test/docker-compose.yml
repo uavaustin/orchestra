@@ -25,6 +25,8 @@ services:
       - RETRY_CXN=1
     ports:
       - '5000:5000'
+    depends_on:
+      - plane-sitl
     networks:
       test_net:
         ipv4_address: 172.16.238.12
@@ -37,6 +39,8 @@ services:
       - PASSWORD=testpass
     ports:
       - '8000:8000'
+    depends_on:
+      - interop-server
     networks:
       test_net:
         ipv4_address: 172.16.238.13
@@ -48,6 +52,7 @@ services:
              interop-proxy,172.16.238.13:8000
              pong,172.16.238.14:7000
              forward-interop,172.16.238.15:4000
+             imagery,172.16.238.50:8081
     ports:
       - '7000:7000'
     networks:
@@ -61,6 +66,9 @@ services:
       - TELEMETRY_URL=172.16.238.12:5000
     ports:
       - '4000:4000'
+    depends_on:
+      - telemetry
+      - interop-proxy
     networks:
       test_net:
         ipv4_address: 172.16.238.15
