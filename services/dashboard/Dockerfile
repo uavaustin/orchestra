@@ -5,11 +5,11 @@ FROM ${BASE} AS builder
 
 WORKDIR /builder
 
-COPY pong/package.json .
+COPY dashboard/package.json .
 
 RUN npm install
 
-COPY pong .
+COPY dashboard .
 
 RUN npm run build
 
@@ -18,16 +18,16 @@ FROM ${BASE}
 
 WORKDIR /app
 
-COPY pong/package.json .
+COPY dashboard/package.json .
 
 RUN export NODE_ENV=production && npm install
 
 # Adding in the output from the js builder above
 COPY --from=builder /builder/lib lib
 
-# Amount of time in a request until a service is said to be offline
-ENV REQUEST_TIMEOUT=5000
+ENV FORWARD_INTEROP_URL='0.0.0.0:4000' \
+    PONG_URL='0.0.0.0:7000'
 
-EXPOSE 7000
+ENV LANG=en_US.UTF-8
 
-ENTRYPOINT ["npm", "start", "--silent"]
+CMD npm start --silent

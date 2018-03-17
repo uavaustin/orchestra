@@ -1,5 +1,5 @@
-ARG BASE_BUILDER=elixir:1.5-slim
-ARG BASE=debian:jessie-slim
+ARG BASE_BUILDER=elixir:1.6-alpine
+ARG BASE=alpine
 
 FROM ${BASE_BUILDER} as builder
 
@@ -7,15 +7,18 @@ WORKDIR /builder
 
 ENV MIX_ENV=prod
 
+# Setting up the package manager.
 RUN mix local.hex --force && mix local.rebar --force
 
 COPY interop-proxy/mix.exs .
 
-RUN mix deps.get
+# Fetching and then compiling our deps first.
+RUN mix deps.get && mix deps.compile
 
 COPY interop-proxy .
 COPY common/messages lib/messages
 
+# Make a release so we can copy it later.
 RUN mix release
 
 # Moving the archive to the top directory so it can be accessed
@@ -27,10 +30,13 @@ FROM ${BASE}
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    libssl1.0.0
+# Bash is needed because of distillery and libssl is needed by
+# :erlang.crypto.
+RUN apk --no-cache add \
+    bash \
+    libssl1.0
 
-# Getting the archive from the builder, then uncompressing it
+# Getting the archive from the builder, then uncompressing it.
 COPY --from=builder /builder/interop_proxy.tar.gz .
 
 RUN tar -xzf interop_proxy.tar.gz && \
