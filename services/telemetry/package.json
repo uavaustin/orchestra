@@ -10,7 +10,8 @@
     "dependencies": {
         "express": "^4.16.2",
         "google-protobuf": "3.4.0",
-        "mavlink": "^1.0.1"
+        "mavlink": "^1.0.1",
+        "async": "^2.6.0"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",

@@ -1,6 +1,8 @@
 import express from 'express';
 import mavlink from 'mavlink';
 import dgram from 'dgram';
+import queue from 'async/queue';
+import series from 'async/series';
 
 import {
     Overview, Position, Rotation,
@@ -8,12 +10,16 @@ import {
 } from './messages/telemetry_pb';
 import { AerialPosition, InteropTelem } from './messages/interop_pb';
 
+
 // Parse CXN_STR (defined in Docker config)
 // Capture group 0: IP address (IPv4, IPv6, and hostname are all acceptable)
 // Capture group 1: port
+if (typeof(process.env['CXN_STR']) === 'undefined') {
+    throw Error('CXN_STR environment variable missing');
+}
 const mavHost = /(?:udpout:)?(.+):(\d+)/.exec(process.env['CXN_STR']);
-const destAddr = mavHost[0];
-const destPort = parseInt(mavHost[1]);
+const destAddr = mavHost[1];
+const destPort = parseInt(mavHost[2]);
 
 // Python-like remainder.
 // https://stackoverflow.com/a/3417242
@@ -100,33 +106,68 @@ const ConnectionState = Object.freeze({
 class PlaneLink {
     constructor() {
         this._mav = new mavlink(1, 1);
-        this._mav.on('ready', () => this._createSocket());
         this.state = new PlaneState();
         this._cxnState = ConnectionState.NOT_CONNECTED;
-        this._taskQueue = [];
-        console.log('Establishing mavlink...');
+        this._taskQueue = queue((task, cb) => {task(); cb();});
     }
-
-    _createSocket() {
-        const socket = dgram.createSocket('udp4');
-        this._socket = socket;
-        socket.on('error', (err) => {
-            console.error('Socket connection error! ', err);
+    
+    async connect() {
+        await new Promise((resolve, reject) => {
+            const unboundTasks = [
+                function(cb) {
+                    console.log('Establishing mavlink...');
+                    this._mav.on('ready', () => cb());
+                },
+                function(cb) {
+                    console.log('Creating socket...');
+                    const socket = dgram.createSocket('udp4');
+                    this._socket = socket;
+                    socket.on('error', (err) => {
+                        console.error('Socket connection error! ', err);
+                    });
+                    socket.on('listening', () => cb());
+                    socket.bind(25565);
+                },
+                function(cb) {
+                    this._bindMessages({
+                        'resolve': resolve,
+                        'reject': reject
+                    });
+                    cb();
+                },
+                function(cb) {
+                    this._connect_timeout = setInterval(
+                        () => this._start_telemetry(), 1500
+                    );
+                    cb();
+                    // Then we wait for the promise to be resolved
+                    // on receiving the first message...
+                }
+            ];
+            const boundTasks = [];
+            unboundTasks.forEach(func => boundTasks.push(func.bind(this)), this);
+            series(boundTasks, (err) => {
+                if (err) {
+                    reject(err);
+                }
+            });
         });
-        socket.on('listening', () => this._bindMessages());
-        socket.bind(25565);
-        console.log('Creating socket...');
     }
 
-    _bindMessages() {
+    _connectSuccess(connectPromiseDecision) {
+        if (this._cxnState === ConnectionState.NOT_CONNECTED) {
+            console.log('Connection established to plane');
+            connectPromiseDecision.resolve();
+            this._cxnState = ConnectionState.IDLE;
+            clearInterval(this._connect_timeout);
+            delete this._connect_timeout;
+        }
+    }
+
+    _bindMessages(connectPromiseDecision) {
         console.log('Created socket, binding messages now');
         const mav = this._mav;
         this._socket.on('message', (data) => {
-            if (this._cxnState === ConnectionState.NOT_CONNECTED) {
-                this._cxnState = ConnectionState.IDLE;
-                clearInterval(this._connect_timeout);
-                delete this._connect_timeout;
-            }
             this._mav.parse(data);
             //console.log(data);
         });
@@ -139,6 +180,7 @@ class PlaneLink {
             s.altMSL = fields.alt / 1000;
             s.altAGL = fields.relative_alt / 1000;
             s.yaw = fields.hdg / 100;
+            this._connectSuccess(connectPromiseDecision);
             //console.log(`${fields.lat}, ${fields.lon}`);
         });
         mav.on('HEARTBEAT', (msg, fields) => {
@@ -156,9 +198,6 @@ class PlaneLink {
             s.groundSpeed = fields.groundspeed;
             s.altMSL = fields.alt;
         });
-
-
-        this._connect_timeout = setInterval(() => this._start_telemetry(), 1500);
     }
 
     _start_telemetry() {
@@ -184,15 +223,19 @@ class PlaneLink {
             });
     }
 
-    _fulfillMissionRequests(missions) {
+    _fulfillMissionRequests(missions, err) {
         clearTimeout(this._missionFailTimeout);
-        this._missions = missions;
-        //this._missionCallbacks.forEach(cb => process.nextTick(() => cb(missions)));
+        this._waypoints = missions;
         // Check if a mission promise exists - it may not if we did not
         // initiate the request...
         if (typeof(this._missionPromise) !== 'undefined') {
-            this._missionPromise.resolve(missions);
+            if (err) {
+                this._missionPromiseDecision.reject(err);
+            } else {
+                this._missionPromiseDecision.resolve(missions);
+            }
             delete this._missionPromise;
+            delete this._missionPromiseDecision;
         }
     }
 
@@ -222,15 +265,22 @@ class PlaneLink {
      * Performs a mission list request if one is not already underway.
      * Returns a promise.
      */
-    requestMissions() {
+    async requestMissions() {
         if (typeof(this._missionPromise) === 'undefined') {
-            this._missionPromise = new Promise(() => {
-                this._enqueueTask(ConnectionState.READING, () => {
-                    this._setupMissionRequest();
-                });
+            this._missionPromise = new Promise((resolve, reject) => {
+                this._missionPromiseDecision = {
+                    'resolve': resolve,
+                    'reject': reject
+                };
+            });
+            this._taskQueue.push(async () => {
+                this._cxnState = ConnectionState.READING;
+                this._setupMissionRequest();
+                await this._missionPromise;
+                this._cxnState = ConnectionState.IDLE;
             });
         }
-        return this._missionPromise;
+        return await this._missionPromise;
     }
 
     _setupMissionRequest() {
@@ -240,71 +290,52 @@ class PlaneLink {
             // is received. But we don't want to do a request twice
             // accidentally, so we'll set it to null.
             this._missionHandler = null;
-            this._sendMissionRequest();
+            this._sendMissionListRequest();
             // Retry initial request every 1500 ms. After 3000 ms, fail.
             this._missionInitialTimer = setInterval(
-                () => this._sendMissionRequest(), 1500
+                () => this._sendMissionListRequest(), 1500
             );
             this._missionFailTimeout = setTimeout(
                 () => {
                     clearInterval(this._missionInitialTimer);
-                    this._fulfillMissionRequests(null);
-                }, 3000
+                    this._fulfillMissionRequests(null, 'timeout');
+                }, 5000
             );
         }
     }
 
-    _sendMissionRequest() {
-        this._mav.createMessage('MISSION_REQUEST_LIST',
+    _sendMissionListRequest() {
+        this._mav.createMessage(
+            'MISSION_REQUEST_LIST',
             {'target_system': 1, 'target_component': 1, 'mission_type': 0},
-            (msg) => {
-                this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                    if (err) {
-                        console.error(err);
-                    } else {
-                        console.log('Requesting mission list');
-                    }
-                });
-            }
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('Requesting mission list');
+                }
+            })
         );
     }
 
-    /**
-     * Enqueue an I/O task to the MAV host.
-     * The callback may be called instantly if the queue is empty;
-     * otherwise it will have to wait for its turn.
-     * 
-     * @param {ConnectionState} newState the state that the task will set
-     * @param {function:Promise} callback the task that returns a promise
-     *   that the task queue can wait on
-     */
-    _enqueueTask(newState, callback) {
-        this._taskQueue.push(() => {
-            this._cxnState = newState;
-            // Call the callback, which should return a promise.
-            // We'll wait on the promise for a reasonable amount of time
-            // and then go on to the next task.
-            process.nextTick(() => {
-                new Promise((resolve) => resolve(callback())).then(() => {
-                    this._taskCompleted();
-                });
-            });
-        });
-        // Call task immediately if it is the only thing
-        // in the queue.
-        if (this._taskQueue.length === 1) {
-            this._taskQueue[0]();
-        }
+    _sendMissionListAck() {
+        this._mav.createMessage(
+            'MISSION_ACK',
+            {
+                'target_system': 1,
+                'target_component': 1,
+                'type': 0,
+                'mission_type': 0
+            },
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log('Requesting mission list');
+                }
+            })
+        );
     }
-
-    _taskCompleted() {
-        this._taskQueue.shift();
-        this._cxnState = ConnectionState.IDLE;
-        if (this._taskQueue.length !== 0) {
-            this._taskQueue[0]();
-        }
-    }
-
 }
 
 class MissionReceiver {
@@ -400,6 +431,7 @@ function sendJsonOrProto(req, res, proto) {
 
 const app = express();
 const plane = new PlaneLink();
+const connectPromise = plane.connect();
 
 app.get('/', (req, res) => {
     res.set('content-type', 'text/plain');
@@ -408,49 +440,67 @@ app.get('/', (req, res) => {
 
 app.get('/api/alive', (req, res) => {
     res.set('content-type', 'text/plain');
-    if (plane.state.isPopulated()) {
-        res.send('Yes, I\'m alive!\n');
-    } else {
-        res.send(503, 'No plane data available yet\n');
-    }
+    connectPromise.then(() => {
+        if (plane.state.isPopulated()) {
+            res.send('Yes, I\'m alive!\n');
+        } else {
+            res.send(503, 'No plane data available yet\n');
+        }
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
+    });
 });
 
 app.get('/api/interop-telem', (req, res) => {
-    if (!plane.state.isPopulated()) {
-        res.send(503);
-        return;
-    }
-    let telem = new InteropTelem();
-    // Unix time in seconds, with decimal precision
-    telem.setTime(Date.now() / 1000);
-    telem.setPos(plane.state.getAerialPositionProto());
-    telem.setYaw(plane.state.yaw);
-    sendJsonOrProto(req, res, telem);
+    connectPromise.then(() => {
+        if (!plane.state.isPopulated()) {
+            res.send(503);
+            return;
+        }
+        let telem = new InteropTelem();
+        // Unix time in seconds, with decimal precision
+        telem.setTime(Date.now() / 1000);
+        telem.setPos(plane.state.getAerialPositionProto());
+        telem.setYaw(plane.state.yaw);
+        sendJsonOrProto(req, res, telem);
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
+    });
 });
 
 app.get('/api/overview', (req, res) => {
-    if (!plane.state.isPopulated()) {
-        res.send(503);
-        return;
-    }
-    const state = plane.state;
-    let msg = new Overview();
-    msg.setPos(state.getPositionProto());
-    msg.setRot(state.getRotationProto());
-    msg.setAlt(state.getAltitudeProto());
-    msg.setVel(state.getVelocityProto());
-    msg.setSpeed(state.getSpeedProto());
-    sendJsonOrProto(req, res, msg);
+    connectPromise.then(() => {
+        if (!plane.state.isPopulated()) {
+            res.send(503);
+            return;
+        }
+        const state = plane.state;
+        let msg = new Overview();
+        msg.setPos(state.getPositionProto());
+        msg.setRot(state.getRotationProto());
+        msg.setAlt(state.getAltitudeProto());
+        msg.setVel(state.getVelocityProto());
+        msg.setSpeed(state.getSpeedProto());
+        sendJsonOrProto(req, res, msg);
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
+    });
 });
 
 app.get('/api/missions', (req, res) => {
-    res.set('content-type', 'application/json');
-    plane.requestMissions((missions) => {
-        if (missions !== null) {
+    connectPromise.then(() => {
+        res.set('content-type', 'application/json');
+        plane.requestMissions().then((missions) => {
             res.send(missions);
-        } else {
-            res.send(504, {'error': 'timeout'});
-        }
+        }).catch((err) => {
+            res.send(504, {'error': err});
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
     });
 });
 
