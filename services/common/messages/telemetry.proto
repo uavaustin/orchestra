@@ -57,6 +57,20 @@ message Speed {
     double ground_speed = 2;
 }
 
+// Camera telemtry
+message CameraTelem {
+    double time = 1;
+    double lat = 2;
+    double lon = 3;
+    // Relative to ground
+    double alt = 4;
+    double yaw = 5;
+    // 0 pitch points to the front of the plane, -90 points down
+    double pitch = 6;
+    // 0 roll points down, 90 points to the right
+    double roll = 7;
+}
+
 // This has direct mappings to the Mavlink protocol.
 message RawMission {
     message Command {

@@ -6,7 +6,8 @@ import series from 'async/series';
 
 import {
     Overview, Position, Rotation,
-    Altitude, Velocity, Speed
+    Altitude, Velocity, Speed,
+    RawMission, CameraTelem
 } from './messages/telemetry_pb';
 import { AerialPosition, InteropTelem } from './messages/interop_pb';
 
@@ -88,11 +89,33 @@ class PlaneState {
         return speed;
     }
 
+    getInteropTelemProto() {
+        let telem = new InteropTelem();
+        // Unix time in seconds, with decimal precision
+        telem.setTime(Date.now() / 1000);
+        telem.setPos(this.getAerialPositionProto());
+        telem.setYaw(this.yaw);
+        return telem;
+    }
+
+    getCameraTelemProto() {
+        let telem = new CameraTelem();
+        telem.setTime(Date.now() / 1000);
+        telem.setLat(this.lat);
+        telem.setLon(this.lon);
+        telem.setAlt(this.altAGL);
+        telem.setYaw(this.yaw);
+        telem.setPitch(this.pitch);
+        telem.setRoll(this.roll);
+        return telem;
+    }
+
     /*
      * Returns whether or not enough telemetry data has been received.
      */
     isPopulated() {
-        return !([this.lat, this.lon, this.yaw, this.altAGL, this.altMSL].includes(null));
+        return !([this.lat, this.lon, this.yaw,
+            this.roll, this.pitch, this.altAGL].includes(null));
     }
 }
 
@@ -144,7 +167,7 @@ class PlaneLink {
                     // on receiving the first message...
                 }
             ];
-            const boundTasks = [];
+            let boundTasks = [];
             unboundTasks.forEach(func => boundTasks.push(func.bind(this)), this);
             series(boundTasks, (err) => {
                 if (err) {
@@ -157,8 +180,10 @@ class PlaneLink {
     _connectSuccess(connectPromiseDecision) {
         if (this._cxnState === ConnectionState.NOT_CONNECTED) {
             console.log('Connection established to plane');
+
             connectPromiseDecision.resolve();
             this._cxnState = ConnectionState.IDLE;
+
             clearInterval(this._connect_timeout);
             delete this._connect_timeout;
         }
@@ -173,6 +198,8 @@ class PlaneLink {
         });
         mav.on('MISSION_COUNT', (msg, fields) => this._handleMissionList(msg, fields));
         mav.on('MISSION_ITEM', (msg, fields) => this._handleMissionEntry(msg, fields));
+        mav.on('MISSION_REQUEST', (msg, fields) => this._handleMissionRequest(msg, fields));
+        mav.on('MISSION_ACK', (msg, fields) => this._handleMissionAck(msg, fields));
         mav.on('GLOBAL_POSITION_INT', (msg, fields) => {
             const s = this.state;
             s.lat = fields.lat / 1e7;
@@ -181,7 +208,6 @@ class PlaneLink {
             s.altAGL = fields.relative_alt / 1000;
             s.yaw = fields.hdg / 100;
             this._connectSuccess(connectPromiseDecision);
-            //console.log(`${fields.lat}, ${fields.lon}`);
         });
         mav.on('HEARTBEAT', (msg, fields) => {
             // useful stuff like what the plane is trying to do right now
@@ -261,6 +287,22 @@ class PlaneLink {
         this._missionHandler.handleMessage(msg, fields);
     }
 
+    _handleMissionRequest(msg, fields) {
+        if (typeof(this._missionSender) === 'undefined') {
+            console.warn('Mission request was received without a mission sender. Ignoring message.');
+            return;
+        }
+        this._missionSender.handleMissionRequest(msg, fields);
+    }
+
+    _handleMissionAck(msg, fields) {
+        if (typeof(this._missionSender) === 'undefined') {
+            console.warn('Mission ack was received without a mission sender. Ignoring message.');
+            return;
+        }
+        this._missionSender.handleMissionAck(msg, fields);
+    }
+
     /**
      * Performs a mission list request if one is not already underway.
      * Returns a promise.
@@ -335,6 +377,49 @@ class PlaneLink {
                 }
             })
         );
+    }
+
+    getRawMissionProto() {
+        const mission = this._mission;
+        let raw = new RawMission();
+        raw.setTime(Date.now() / 1000);
+
+        let i = 0;
+        let waypoints = [];
+        for (const waypointData in mission) {
+            let waypoint = new RawMission.Command();
+            waypoint.setTargetSystem(waypointData.target_system);
+            waypoint.setTargetComponent(waypointData.target_component);
+            waypoint.setSeq(waypointData.seq);
+            waypoint.setFrame(waypointData.frame);
+            waypoint.setCommand(waypointData.command);
+            waypoint.setParam1(waypointData.param1);
+            waypoint.setParam2(waypointData.param2);
+            waypoint.setParam3(waypointData.param3);
+            waypoint.setParam4(waypointData.param4);
+            waypoint.setParam5(waypointData.x);
+            waypoint.setParam6(waypointData.y);
+            waypoint.setParam7(waypointData.z);
+            waypoints.push(waypoint);
+            i++;
+            if (waypointData.current) {
+                raw.setNext(i);
+            }
+        }
+        raw.setCommandsList(waypoints);
+        return raw;
+    }
+
+    async sendMission(mission) {
+        return await new Promise((resolve, reject) => {
+            this._taskQueue.push(async () => {
+                this._cxnState = ConnectionState.WRITING;
+                this._missionSender = new MissionSender(this._mav, this._socket, mission, resolve, reject);
+                await this._missionSender.send();
+                delete this._missionSender;
+                this._cxnState = ConnectionState.IDLE;
+            });
+        });
     }
 }
 
@@ -418,6 +503,107 @@ class MissionReceiver {
     }
 }
 
+class MissionSender {
+    constructor(mav, socket, mission, resolve, reject) {
+        this._mav = mav;
+        this._socket = socket;
+        this._mission = mission;
+
+        this._reqPromiseDecision = null;
+
+        this._resolve = resolve;
+        this._reject = reject;
+
+        this._curWaypoint = 0;
+    }
+
+    handleMissionRequest(msg, fields) {
+        if (this._reqPromiseDecision && fields.seq == this._curWaypoint) {
+            this._reqPromiseDecision.resolve();
+            this._reqPromiseDecision = null;
+        } else {
+            console.warn('Received an unexpected mission request!');
+        }
+    }
+
+    handleMissionAck(msg, fields) {
+        if (fields.type === 0) {
+            if (this._reqPromiseDecision) {
+                this._reqPromiseDecision.resolve();
+            }
+            this._resolve();
+        } else {
+            if (this._reqPromiseDecision) {
+                this._reqPromiseDecision.reject();
+            }
+            this._reject(fields.type);
+        }
+    }
+
+    _sendCount() {
+        this._mav.createMessage(
+            'MISSION_COUNT',
+            {
+                'target_system': 1,
+                'target_component': 1,
+                'count': this._mission.length,
+                'mission_type': 0
+            },
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log(`Requesting to write ${this._mission.length} missions`);
+                }
+            })
+        );
+    }
+
+    _sendWaypoint(waypoint) {
+        this._mav.createMessage(
+            'MISSION_ITEM',
+            waypoint,
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log(`Sending waypoint ${waypoint.seq}`);
+                }
+            })
+        );
+    }
+
+    async send() {
+        let repeatTimer = null;
+        try {
+            await new Promise((resolve, reject) => {
+                this._reqPromiseDecision = {
+                    'resolve': resolve,
+                    'reject': reject
+                };
+                this._sendCount();
+                repeatTimer = setInterval(() => this._sendCount(), 1000);
+            });
+            clearInterval(repeatTimer);
+            for (let waypoint in this._mission) {
+                this._curWaypoint++;
+                await new Promise((resolve, reject) => {
+                    this._reqPromiseDecision = {
+                        'resolve': resolve,
+                        'reject': reject
+                    };
+                    this._sendWaypoint(waypoint);
+                    repeatTimer = setInterval(() => this._sendWaypoint(waypoint), 1000);
+                });
+                clearInterval(repeatTimer);
+            }
+        } catch (e) {
+            console.error(e);
+            clearInterval(repeatTimer);
+        }
+    }
+}
+
 function sendJsonOrProto(req, res, proto) {
     const accept = req.get('accept');
 
@@ -444,7 +630,7 @@ app.get('/api/alive', (req, res) => {
         if (plane.state.isPopulated()) {
             res.send('Yes, I\'m alive!\n');
         } else {
-            res.send(503, 'No plane data available yet\n');
+            res.status(503).send('No plane data available yet\n');
         }
     }).catch((err) => {
         console.error(err);
@@ -454,16 +640,24 @@ app.get('/api/alive', (req, res) => {
 
 app.get('/api/interop-telem', (req, res) => {
     connectPromise.then(() => {
-        if (!plane.state.isPopulated()) {
+        if (plane.state.isPopulated()) {
+            sendJsonOrProto(req, res, plane.state.getInteropTelemProto());
+        } else {
             res.send(503);
-            return;
         }
-        let telem = new InteropTelem();
-        // Unix time in seconds, with decimal precision
-        telem.setTime(Date.now() / 1000);
-        telem.setPos(plane.state.getAerialPositionProto());
-        telem.setYaw(plane.state.yaw);
-        sendJsonOrProto(req, res, telem);
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
+    });
+});
+
+app.get('/api/camera-telem', (req, res) => {
+    connectPromise.then(() => {
+        if (plane.state.isPopulated()) {
+            sendJsonOrProto(req, res, plane.state.getCameraTelemProto());
+        } else {
+            res.send(503);
+        }
     }).catch((err) => {
         console.error(err);
         res.send(504);
@@ -490,13 +684,14 @@ app.get('/api/overview', (req, res) => {
     });
 });
 
-app.get('/api/missions', (req, res) => {
+app.get('/api/mission', (req, res) => {
     connectPromise.then(() => {
         res.set('content-type', 'application/json');
         plane.requestMissions().then((missions) => {
             res.send(missions);
         }).catch((err) => {
-            res.send(504, {'error': err});
+            console.error(err);
+            res.status(504).send({'error': err});
         });
     }).catch((err) => {
         console.error(err);
@@ -504,8 +699,47 @@ app.get('/api/missions', (req, res) => {
     });
 });
 
-app.post('api/missions', (req, res) => {
-    
+app.get('/api/raw-mission', (req, res) => {
+    connectPromise.then(() => {
+        plane.requestMissions().then(() => {
+            sendJsonOrProto(req, res, plane.getRawMissionProto());
+        }).catch((err) => {
+            console.error(err);
+            res.status(504).send({'error': err});
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
+    });
+});
+
+app.post('/api/raw-mission', (req, res) => {
+    connectPromise.then(() => {
+        const rawMission = new RawMission(req.body);
+        let mission = [];
+        for (const waypoint in rawMission.getCommandsList()) {
+            mission.push({
+                'target_system': waypoint.getTargetSystem(),
+                'target_component': waypoint.getTargetComponent(),
+                'seq': waypoint.getSeq(),
+                'frame': waypoint.getFrame(),
+                'command': waypoint.getCommand(),
+                'param_1': waypoint.getParam1(),
+                'param_2': waypoint.getParam2(),
+                'param_3': waypoint.getParam3(),
+                'param_4': waypoint.getParam4(),
+                'x': waypoint.getParam5(),
+                'y': waypoint.getParam6(),
+                'z': waypoint.getParam7()
+            });
+        }
+        plane.sendMission(mission).then(() => {
+            res.send(200);
+        }).catch((err) => {
+            console.error(err);
+            res.send(504);
+        });
+    });
 });
 
 let server = app.listen(5000);
