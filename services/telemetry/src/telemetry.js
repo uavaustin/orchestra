@@ -8,7 +8,12 @@ import {
 } from './messages/telemetry_pb';
 import { AerialPosition, InteropTelem } from './messages/interop_pb';
 
-const destAddr = '172.16.238.10', destPort = 14550;
+// Parse CXN_STR (defined in Docker config)
+// Capture group 0: IP address (IPv4, IPv6, and hostname are all acceptable)
+// Capture group 1: port
+const mavHost = /(?:udpout:)?(.+):(\d+)/.exec(process.env['CXN_STR']);
+const destAddr = mavHost[0];
+const destPort = parseInt(mavHost[1]);
 
 // Python-like remainder.
 // https://stackoverflow.com/a/3417242
@@ -85,12 +90,20 @@ class PlaneState {
     }
 }
 
+const ConnectionState = Object.freeze({
+    NOT_CONNECTED: Symbol('not_connected'),
+    IDLE:          Symbol('idle'),
+    READING:       Symbol('reading'),
+    WRITING:       Symbol('writing')
+});
+
 class PlaneLink {
     constructor() {
         this._mav = new mavlink(1, 1);
         this._mav.on('ready', () => this._createSocket());
         this.state = new PlaneState();
-        this._missionCallbacks = [];
+        this._cxnState = ConnectionState.NOT_CONNECTED;
+        this._taskQueue = [];
         console.log('Establishing mavlink...');
     }
 
@@ -109,9 +122,10 @@ class PlaneLink {
         console.log('Created socket, binding messages now');
         const mav = this._mav;
         this._socket.on('message', (data) => {
-            if (typeof(this._connect_timeout) !== 'undefined') {
+            if (this._cxnState === ConnectionState.NOT_CONNECTED) {
+                this._cxnState = ConnectionState.IDLE;
                 clearInterval(this._connect_timeout);
-                this._connect_timeout = null;
+                delete this._connect_timeout;
             }
             this._mav.parse(data);
             //console.log(data);
@@ -173,8 +187,13 @@ class PlaneLink {
     _fulfillMissionRequests(missions) {
         clearTimeout(this._missionFailTimeout);
         this._missions = missions;
-        this._missionCallbacks.forEach(cb => process.nextTick(() => cb(missions)));
-        this._missionCallbacks = [];
+        //this._missionCallbacks.forEach(cb => process.nextTick(() => cb(missions)));
+        // Check if a mission promise exists - it may not if we did not
+        // initiate the request...
+        if (typeof(this._missionPromise) !== 'undefined') {
+            this._missionPromise.resolve(missions);
+            delete this._missionPromise;
+        }
     }
 
     _handleMissionList(msg, fields) {
@@ -186,26 +205,35 @@ class PlaneLink {
                 delete this._missionHandler;
             });
         this._missionHandler = handler;
+        this._cxnState = ConnectionState.READING;
         clearInterval(this._missionInitialTimer);
         handler.start();
     }
 
     _handleMissionEntry(msg, fields) {
         if (typeof(this._missionHandler) === 'undefined') {
-            console.error('Mission was received without a mission receiver. Ignoring message.');
+            console.warn('Mission was received without a mission receiver. Ignoring message.');
             return;
         }
         this._missionHandler.handleMessage(msg, fields);
     }
 
     /**
-     * Subscribes a callback to the mission receiver and performs
-     * a mission list request if one is not already underway.
-     * @param {function(missions):void} callback called when all missions are received
+     * Performs a mission list request if one is not already underway.
+     * Returns a promise.
      */
-    requestMissions(callback) {
-        this._missionCallbacks.push(callback);
+    requestMissions() {
+        if (typeof(this._missionPromise) === 'undefined') {
+            this._missionPromise = new Promise(() => {
+                this._enqueueTask(ConnectionState.READING, () => {
+                    this._setupMissionRequest();
+                });
+            });
+        }
+        return this._missionPromise;
+    }
 
+    _setupMissionRequest() {
         // Do a mission list request if there's no mission receiver
         if (typeof(this._missionHandler) === 'undefined') {
             // HACK: missionHandler will be created once the first packet
@@ -240,7 +268,43 @@ class PlaneLink {
             }
         );
     }
-    
+
+    /**
+     * Enqueue an I/O task to the MAV host.
+     * The callback may be called instantly if the queue is empty;
+     * otherwise it will have to wait for its turn.
+     * 
+     * @param {ConnectionState} newState the state that the task will set
+     * @param {function:Promise} callback the task that returns a promise
+     *   that the task queue can wait on
+     */
+    _enqueueTask(newState, callback) {
+        this._taskQueue.push(() => {
+            this._cxnState = newState;
+            // Call the callback, which should return a promise.
+            // We'll wait on the promise for a reasonable amount of time
+            // and then go on to the next task.
+            process.nextTick(() => {
+                new Promise((resolve) => resolve(callback())).then(() => {
+                    this._taskCompleted();
+                });
+            });
+        });
+        // Call task immediately if it is the only thing
+        // in the queue.
+        if (this._taskQueue.length === 1) {
+            this._taskQueue[0]();
+        }
+    }
+
+    _taskCompleted() {
+        this._taskQueue.shift();
+        this._cxnState = ConnectionState.IDLE;
+        if (this._taskQueue.length !== 0) {
+            this._taskQueue[0]();
+        }
+    }
+
 }
 
 class MissionReceiver {
@@ -352,6 +416,10 @@ app.get('/api/alive', (req, res) => {
 });
 
 app.get('/api/interop-telem', (req, res) => {
+    if (!plane.state.isPopulated()) {
+        res.send(503);
+        return;
+    }
     let telem = new InteropTelem();
     // Unix time in seconds, with decimal precision
     telem.setTime(Date.now() / 1000);
@@ -361,6 +429,10 @@ app.get('/api/interop-telem', (req, res) => {
 });
 
 app.get('/api/overview', (req, res) => {
+    if (!plane.state.isPopulated()) {
+        res.send(503);
+        return;
+    }
     const state = plane.state;
     let msg = new Overview();
     msg.setPos(state.getPositionProto());
@@ -371,16 +443,8 @@ app.get('/api/overview', (req, res) => {
     sendJsonOrProto(req, res, msg);
 });
 
-/* Probably will not be needed anymore.
-app.get('/api/camera-telem', (req, res) => {
-    res.set('content-type', 'text/plain');
-    res.send('telemetry::CameraTelem');
-});
-*/
-
 app.get('/api/missions', (req, res) => {
     res.set('content-type', 'application/json');
-    //res.send('telemetry::RawMission');
     plane.requestMissions((missions) => {
         if (missions !== null) {
             res.send(missions);
@@ -388,6 +452,10 @@ app.get('/api/missions', (req, res) => {
             res.send(504, {'error': 'timeout'});
         }
     });
+});
+
+app.post('api/missions', (req, res) => {
+    
 });
 
 let server = app.listen(5000);
