@@ -1,0 +1,15 @@
+# Python defaults
+__pycache__/
+*.py[cod]
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# protoc output
+messages/
+
+# pytest
+.pytest_cache/

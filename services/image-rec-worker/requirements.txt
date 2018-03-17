@@ -1,0 +1,5 @@
+protobuf==3.4.0
+redis>=2.10
+requests>=2.18
+git+https://github.com/uavaustin/target-finder.git#73ff998
+termcolor==1.1.0
