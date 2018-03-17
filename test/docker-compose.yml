@@ -101,6 +101,8 @@ services:
   imagery-db:
     image: redis:alpine
     command: redis-server --save "" --appendonly no
+    ports:
+      - '6379:6379'
     networks:
       test_net:
         ipv4_address: 172.16.238.51
@@ -118,6 +120,17 @@ services:
     networks:
       test_net:
         ipv4_address: 172.16.238.52
+
+  image-rec-worker:
+    image: uavaustin/image-rec-worker
+    environment:
+      - IMAGERY_URL=172.16.238.50:8081
+      - REDIS_URL=172.16.238.51:6379
+    depends_on:
+      - imagery-db
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.53
 
 networks:
   test_net:
