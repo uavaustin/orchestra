@@ -173,22 +173,30 @@ def run_iter(imagery_url, redis_client):
 
     t_1 = curr_time()
 
-    # The image retrieved from the imagery service.
+    # The image retrieved from the imagery service (note that this is
+    # a protobuf message object).
     image = get_image(imagery_url, image_id)
+
+    # Converting the image to a Pillow one, we'll use the warped one
+    # if it's available, and otherwise, the original.
+    pillow_image = PIL.Image.open(BytesIO(
+        image.warped_image if image.has_warped else image.image
+    ))
 
     t_2 = curr_time()
 
     print(' --> retreived image in {:d} ms'.format(t_2 - t_1))
 
-    # Getting the list of blobs (without images).
-    blobs = target_finder.find_blobs(image, crop=False, limit=20)
+    # Getting the list of blobs using the unwarped image or the
+    # warped image (if we have it).
+    blobs = target_finder.find_blobs(pillow_image, limit=20)
 
     t_3 = curr_time()
 
     print(' --> {:d} blobs found in {:d} ms'.format(len(blobs), t_3 - t_2))
 
     # Getting targets in our set of blobs (if there are any).
-    targets = target_finder.find_targets(image, blobs=blobs)
+    targets = target_finder.find_targets(blobs=blobs)
 
     t_4 = curr_time()
 
