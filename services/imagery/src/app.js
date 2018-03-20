@@ -48,13 +48,13 @@ export function createApp(imageStore) {
         sendMessage(req, res, msg);
     });
 
-    app.get('/api/image/:id', async (req, res) => {
+    app.get('/api/image/:id', (req, res) => {
         // Carry out the response, gets the image message for the
         // requested id, and then sends it.
-        async function respondFor(id) {
-            let msg = await getImageMessage(id, req.query);
-
-            sendMessage(req, res, msg);
+        function respondFor(id) {
+            getImageMessage(id, req.query)
+                .then(msg => sendMessage(req, res, msg))
+                .catch(err => console.error(err) || res.sendStatus(500));
         }
 
         if (req.params.id === 'next') {
