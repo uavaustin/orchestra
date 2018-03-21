@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     g++ \
     git \
     python-dev \
-    libgphoto2-dev
+    libgphoto2-dev \
+    graphicsmagick
 
 COPY imagery/package.json .
 
