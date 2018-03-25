@@ -7,9 +7,14 @@ extern crate tokio_core;
 mod messages { pub mod interop; pub mod telemetry; }
 
 use std::{env,str};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use protobuf::*;
 use messages::telemetry::*;
 use messages::interop::*;
+use Obstacle_Path_Finder::PathFinder;
+use Obstacle_Path_Finder::Point;
 
 use futures::future::Future;
 use futures::stream::Stream;
@@ -22,12 +27,42 @@ const PROTOCOL: &str = "http://";
 const DEFAULT_TELEMETRY_URL: &str = "0.0.0.0:5000";
 const DEFAULT_INTEROP_PROXY_URL: &str = "0.0.0.0:8000";
 
+#[derive(Clone)]
 struct Autopilot {
     telemetry_host: String,
-    interop_proxy_host: String
+    interop_proxy_host: String,
+    pathfinder: Option<Rc<RefCell<PathFinder>>>
 }
 
 impl Autopilot {
+    pub fn new() -> Autopilot {
+        let mut autopilot = Autopilot {
+            telemetry_host: PROTOCOL.to_string() + &env::var("TELEMETRY_URL").
+                unwrap_or(String::from(DEFAULT_TELEMETRY_URL)),
+            interop_proxy_host: PROTOCOL.to_string() + &env::var("INTEROP_PROXY_URL").
+                unwrap_or(String::from(DEFAULT_INTEROP_PROXY_URL)),
+            pathfinder: None
+        };
+
+        println!("Getting flyzone...");
+        let mission = autopilot.get_mission().unwrap();
+        let raw_flyzones = &mission.get_fly_zones();
+        let mut flyzones = Vec::new();
+        for i in 0..raw_flyzones.len() {
+            let boundary = raw_flyzones[i].get_boundary();
+            let mut flyzone = Vec::new();
+            for j in 0..boundary.len() {
+                flyzone.push(Point::from_degrees(boundary[j].lat, boundary[j].lon));
+            }
+            flyzones.push(flyzone);
+        }
+        let pathfinder = PathFinder::new(1.0, flyzones);
+        autopilot.pathfinder = Some(Rc::new(RefCell::new(pathfinder)));
+        
+        println!("Initialization complete.");
+        autopilot
+    }
+
     fn get_object<T: protobuf::MessageStatic>(&self, uri: Uri) -> Result<T, hyper::Error> {
         let mut core = Core::new()?;
         let client = Client::new(&core.handle());
@@ -85,12 +120,9 @@ impl Service for Autopilot {
 }
 
 fn main() {
+    println!("Initializing...");
+    let autopilot = Autopilot::new();
     let addr = "0.0.0.0:7500".parse().unwrap();
-    let server = Http::new().bind(&addr, || Ok(Autopilot {
-        telemetry_host: PROTOCOL.to_string() + &env::var("TELEMETRY_URL").
-            unwrap_or(String::from(DEFAULT_TELEMETRY_URL)),
-        interop_proxy_host: PROTOCOL.to_string() + &env::var("INTEROP_PROXY_URL").
-            unwrap_or(String::from(DEFAULT_INTEROP_PROXY_URL))
-    })).unwrap();
+    let server = Http::new().bind(&addr, move || Ok(autopilot.clone())).unwrap();
     server.run().unwrap();
 }
