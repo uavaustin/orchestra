@@ -42,13 +42,10 @@ export default class SyncBackend {
 
                     // Getting the image data from the message.
                     let image = msg.getImage();
-                    let warped = msg.getHasWarped() ?
-                            msg.getWarpedImage() : undefined;
 
                     // Clearing the image data so only metadata is
                     // left.
                     msg.setImage(null);
-                    msg.setWarpedImage(null);
 
                     // Adding it to the image store.
                     await this._imageStore.addImage(image, warped, msg);

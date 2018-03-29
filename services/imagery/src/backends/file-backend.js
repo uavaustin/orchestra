@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 
 import { Image } from '../messages/imagery_pb';
 
-import { convertJpeg } from '../util';
+import { convertPng } from '../util';
 
 const WATCH_FOLDER_NAME = '/opt/new-images';
 
@@ -34,27 +34,27 @@ export default class FileBackend {
         this._watcher = chokidar.watch(WATCH_FOLDER_NAME)
             .on('add', async (path) => {
                 // Check if it's a JPEG or PNG image.
-                let isPng = path.match(/\.png$/i);
                 let isJpeg = path.match(/\.jpe?g$/i);
+                let isPng = path.match(/\.png$/i);
 
                 // Don't process this if it isn't either of the
                 // above.
-                if (!(isPng || isJpeg)) return;
+                if (!(isJpeg || isPng)) return;
 
                 // On each new file, read and then delete it.
                 let data = await fs.readFile(path, { encoding: null });
                 await fs.unlink(path);
 
-                // If this is a JPEG, we'll go ahead and convert it
-                // to a PNG.
-                if (isJpeg) data = await convertJpeg(data);
+                // If this is a PNG, we'll go ahead and convert it to
+                // to a JPEG.
+                if (isPng) data = await convertPng(data);
 
                 // The only metadata here is the timestamp.
                 let metadata = new Image();
 
                 metadata.setTime((new Date()).getTime() / 1000);
 
-                // Add it to the image store without a warped image.
+                // Add it to the image store.
                 await this._imageStore.addImage(data, metadata);
             });
     }

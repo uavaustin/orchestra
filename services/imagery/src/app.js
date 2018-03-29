@@ -19,20 +19,11 @@ export function createApp(imageStore) {
         }
     }
 
-    /** Get a protobuf Image message based on id and query. */
-    async function getImageMessage(id, query) {
+    /** Get a protobuf Image message based on id. */
+    async function getImageMessage(id) {
         let msg = await imageStore.getMetadata(id);
 
-        // By default, we should return the original image if it is
-        // available, but not the warped unless it is requested.
-        let original = query.original !== '0' && query.original !== 'false';
-        let warped = query.warped === '1' || query.warped === 'true';
-
-        if (original)
-            msg.setImage(await imageStore.getImage(id));
-
-        if (warped && msg.getHasWarped())
-            msg.setWarpedImage(await imageStore.getImage(id, true));
+        msg.setImage(await imageStore.getImage(id));
 
         return msg;
     }
@@ -52,7 +43,7 @@ export function createApp(imageStore) {
         // Carry out the response, gets the image message for the
         // requested id, and then sends it.
         function respondFor(id) {
-            getImageMessage(id, req.query)
+            getImageMessage(id)
                 .then(msg => sendMessage(req, res, msg))
                 .catch(err => console.error(err) || res.sendStatus(500));
         }

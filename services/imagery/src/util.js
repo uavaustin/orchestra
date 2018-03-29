@@ -12,10 +12,10 @@ export async function wait(milliseconds) {
     return await (new Promise(resolve => setTimeout(resolve, milliseconds)));
 }
 
-/** Convert a JPEG buffer to a PNG. */
-export async function convertJpeg(image) {
+/** Convert a PNG buffer to a JPEG. */
+export async function convertPng(image) {
     return await (new Promise((resolve, reject) => {
-        gm(image, 'image.jpeg').toBuffer('PNG', (err, buffer) => {
+        gm(image, 'image.png').toBuffer('JPEG', (err, buffer) => {
             if (err) reject(err);
             else resolve(buffer);
         });
