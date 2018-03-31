@@ -48,7 +48,7 @@ export default class SyncBackend {
                     msg.setImage(null);
 
                     // Adding it to the image store.
-                    await this._imageStore.addImage(image, warped, msg);
+                    await this._imageStore.addImage(image, msg);
                 }
 
                 lastId = latestId;
