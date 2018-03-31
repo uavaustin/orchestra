@@ -1,19 +1,17 @@
-ARG BASE=node:8-slim
+ARG BASE=node:8-alpine
 
-# Not using a builder for this since we need a bunch of things anways
-# just to build the gphoto2 library from source.
-FROM ${BASE}
+# Compile our js source.
+FROM ${BASE} AS builder
 
-WORKDIR /app
+WORKDIR /builder
 
-# We need packages to install gphoto2 node dependency.
-RUN apt-get update && apt-get install -y \
+# We need packages to install the gphoto2 node dependency.
+RUN apk --no-cache add \
     make \
     g++ \
     git \
     python-dev \
-    libgphoto2-dev \
-    graphicsmagick
+    libgphoto2-dev
 
 COPY imagery/package.json .
 
@@ -22,6 +20,26 @@ RUN npm install
 COPY imagery .
 
 RUN npm run build
+
+# Making the actual image now.
+FROM ${BASE}
+
+WORKDIR /app
+
+# We need both libgphoto2 and graphicsmagick at runtime.
+RUN apk --no-cache add \
+    libgphoto2-dev \
+    graphicsmagick
+
+# Copying over gphoto2 since we don't have to build it again.
+COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2
+
+COPY imagery/package.json .
+
+RUN export NODE_ENV=production && npm install
+
+# Adding in the output from the js builder above.
+COPY --from=builder /builder/lib lib
 
 # Must be one of "camera", "file", "sync".
 ENV BACKEND='camera' \
