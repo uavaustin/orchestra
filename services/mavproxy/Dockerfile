@@ -20,7 +20,6 @@ RUN pip install mavproxy
 
 # TODO: multi-stage
 
-COPY mavproxy/.mavinit.scr .
+COPY mavproxy/entrypoint.sh .
 
-ENTRYPOINT ["mavproxy.py"]
-
+ENTRYPOINT ["sh", "entrypoint.sh"]
