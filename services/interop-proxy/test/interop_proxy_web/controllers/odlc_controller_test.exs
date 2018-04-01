@@ -9,7 +9,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
   describe "index/2" do
     setup _context do
-      image_2 = TestHelper.get_image "image-2.png"
+      image_2 = TestHelper.get_image "image-2.jpg"
 
       odlc = post_odlc! %Odlc{
         type: :OFF_AXIS,
@@ -77,7 +77,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
   describe "show/2" do
     setup _context do
-      image_3 = TestHelper.get_image "image-3.png"
+      image_3 = TestHelper.get_image "image-3.jpg"
 
       odlc = post_odlc! %Odlc{
         type: :EMERGENT,
@@ -142,7 +142,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
   describe "create/2" do
     setup _context do
-      image_2 = TestHelper.get_image "image-2.png"
+      image_2 = TestHelper.get_image "image-2.jpg"
 
       {:ok, image: image_2}
     end
@@ -218,7 +218,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
   describe "update/2" do
     setup _context do
-      image = TestHelper.get_image "image-1.png"
+      image = TestHelper.get_image "image-1.jpg"
       odlc = post_odlc! %Odlc{type: :STANDARD}
 
       {:ok, id: odlc.id, image: image}
