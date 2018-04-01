@@ -63,7 +63,7 @@ defmodule InteropProxyTest do
   end
 
   test "post a new odlc with an image" do
-    image_1 = TestHelper.get_image "image-1.png"
+    image_1 = TestHelper.get_image "image-1.jpg"
 
     odlc = %Odlc{type: :STANDARD, image: image_1}
 
@@ -98,8 +98,8 @@ defmodule InteropProxyTest do
   end
 
   test "post and update a new odlc, once with an image" do
-    image_1 = TestHelper.get_image "image-1.png"
-    image_2 = TestHelper.get_image "image-2.png"
+    image_1 = TestHelper.get_image "image-1.jpg"
+    image_2 = TestHelper.get_image "image-2.jpg"
 
     # Posting a new odlc.
     %{id: id} = post_odlc! %Odlc{
