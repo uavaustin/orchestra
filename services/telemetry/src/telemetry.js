@@ -1,4 +1,5 @@
 import express from 'express';
+import bodyParser from 'body-parser';
 
 import { Overview, RawMission } from './messages/telemetry_pb';
 import { sendJsonOrProto } from './util';
@@ -7,6 +8,9 @@ import PlaneLink from './link';
 const app = express();
 const plane = new PlaneLink();
 const connectPromise = plane.connect();
+
+app.use(bodyParser.json());
+app.use(bodyParser.raw({ type: 'application/x-protobuf' }));
 
 app.get('/', (req, res) => {
     res.set('content-type', 'text/plain');
@@ -88,6 +92,21 @@ app.get('/api/mission', (req, res) => {
     });
 });
 
+app.post('/api/mission', (req, res) => {
+    if (!req.get('Content-Type').startsWith('application/json')) {
+        res.status(502).send('Sorry, we don\'t accept your type of credit card.');
+    }
+    connectPromise.then(() => {
+        console.log(req.body);
+        plane.sendMission(req.body).then(() => {
+            res.send(200);
+        }).catch((err) => {
+            console.error(err);
+            res.send(504);
+        });
+    });
+});
+
 app.get('/api/raw-mission', (req, res) => {
     connectPromise.then(() => {
         plane.requestMissions().then(() => {
@@ -113,10 +132,12 @@ app.post('/api/raw-mission', (req, res) => {
                 'seq': waypoint.getSeq(),
                 'frame': waypoint.getFrame(),
                 'command': waypoint.getCommand(),
-                'param_1': waypoint.getParam1(),
-                'param_2': waypoint.getParam2(),
-                'param_3': waypoint.getParam3(),
-                'param_4': waypoint.getParam4(),
+                'current': 0,
+                'autocontinue': 1,
+                'param1': waypoint.getParam1(),
+                'param2': waypoint.getParam2(),
+                'param3': waypoint.getParam3(),
+                'param4': waypoint.getParam4(),
                 'x': waypoint.getParam5(),
                 'y': waypoint.getParam6(),
                 'z': waypoint.getParam7()
