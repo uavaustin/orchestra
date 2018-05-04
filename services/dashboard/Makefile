@@ -2,7 +2,7 @@
 DOCKERFLAGS :=
 
 PROTOC_IMAGE    := uavaustin/protoc
-TELEMETRY_IMAGE := uavaustin/telemetry
+DASHBOARD_IMAGE := uavaustin/dashboard
 
 current_dir := $(shell pwd)
 
@@ -10,7 +10,7 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: lib/messages/interop_pb.js lib/messages/telemetry_pb.js
+proto: lib/messages/stats_pb.js
 
 lib/messages/%_pb.js: ../common/messages/%.proto
 	docker run -it \
@@ -22,9 +22,9 @@ lib/messages/%_pb.js: ../common/messages/%.proto
 
 .PHONY: image
 image:
-	docker build -t $(TELEMETRY_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
+	docker build -t $(DASHBOARD_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: clean
 clean:
 	rm -rf node_modules lib package-lock.json
-	docker rmi -f $(TELEMETRY_IMAGE)
+	docker rmi -f $(DASHBOARD_IMAGE)

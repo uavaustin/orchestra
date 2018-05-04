@@ -3,7 +3,7 @@
 # here.
 
 .PHONY: all
-all: telemetry interop-proxy pong forward-interop
+all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard
 
 .PHONY: test
 test: interop-proxy-test pong-test
@@ -11,6 +11,10 @@ test: interop-proxy-test pong-test
 .PHONY: protoc
 protoc:
 	$(MAKE) -C tools/protoc
+
+.PHONY: mavproxy
+mavproxy:
+	$(MAKE) -C services/mavproxy
 
 .PHONY: telemetry
 telemetry: protoc
@@ -36,10 +40,21 @@ pong-test: protoc
 forward-interop: protoc
 	$(MAKE) -C services/forward-interop
 
+.PHONY: imagery
+imagery: protoc
+	$(MAKE) -C services/imagery
+
+.PHONY: dashboard
+dashboard: protoc
+	$(MAKE) -C services/dashboard
+
 .PHONY: clean
 clean:
 	$(MAKE) -C tools/protoc clean
+	$(MAKE) -C tools/mavproxy clean
 	$(MAKE) -C services/telemetry clean
 	$(MAKE) -C services/interop-proxy clean
 	$(MAKE) -C services/pong clean
 	$(MAKE) -C services/forward-interop clean
+	$(MAKE) -C services/imagery clean
+	$(MAKE) -C services/dashboard clean

@@ -25,6 +25,9 @@ RUN export NODE_ENV=production && npm install
 # Adding in the output from the js builder above
 COPY --from=builder /builder/lib lib
 
+# Amount of time in a request until a service is said to be offline
+ENV REQUEST_TIMEOUT=5000
+
 EXPOSE 7000
 
 ENTRYPOINT ["npm", "start", "--silent"]

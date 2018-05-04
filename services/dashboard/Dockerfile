@@ -5,11 +5,11 @@ FROM ${BASE} AS builder
 
 WORKDIR /builder
 
-COPY telemetry/package.json .
+COPY dashboard/package.json .
 
 RUN npm install
 
-COPY telemetry .
+COPY dashboard .
 
 RUN npm run build
 
@@ -18,15 +18,16 @@ FROM ${BASE}
 
 WORKDIR /app
 
-COPY telemetry/package.json .
+COPY dashboard/package.json .
 
 RUN export NODE_ENV=production && npm install
 
 # Adding in the output from the js builder above
 COPY --from=builder /builder/lib lib
 
-ENV CXN_STR=0.0.0.0:14550
+ENV FORWARD_INTEROP_URL='0.0.0.0:4000' \
+    PONG_URL='0.0.0.0:7000'
 
-EXPOSE 5000
+ENV LANG=en_US.UTF-8
 
 CMD npm start --silent

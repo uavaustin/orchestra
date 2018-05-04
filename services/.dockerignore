@@ -39,6 +39,10 @@ interop-proxy/mix.lock
 pong/lib
 !pong/lib/messages
 
-# pathfinding
-pathfinding/target
-pathfinding/Cargo.lock
+# imagery
+imagery/lib
+!imagery/lib/messages
+
+# dashboard
+dashboard/lib
+!dashboard/lib/messages

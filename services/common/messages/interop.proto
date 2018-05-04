@@ -56,13 +56,13 @@ message InteropMission {
 // Lists the stationary and moving obstacles.
 message Obstacles {
     message StationaryObstacle {
-        AerialPosition pos = 1;
+        Position pos = 1;
         double height = 2;
         double radius = 3;
     }
 
     message MovingObstacle {
-        Position pos = 1;
+        AerialPosition pos = 1;
         double radius = 2;
     }
 
@@ -141,7 +141,7 @@ message Odlc {
     Color alphanumeric_color = 9;
     string description = 10;
     bool autonomous = 11;
-    // Must be a png if provided.
+    // Must be a JPEG if provided.
     bytes image = 12;
 }
 

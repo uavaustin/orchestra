@@ -1,21 +1,13 @@
-ARG BASE=debian:stretch-slim
-ARG BASE_RUST=rust:1.23.0
+ARG BASE=alpine
 
 FROM ${BASE} AS builder
 
-WORKDIR /builder
+RUN apk --no-cache add \
+    protobuf=3.4.1-r1 \
+    rust \
+    cargo
 
-COPY protobuf-version.sh .
-COPY install-protoc.sh .
-
-RUN ./install-protoc.sh
-
-# Copying over protoc and adding in the ability to make rust files as
-# well.
-FROM ${BASE_RUST}
-
-WORKDIR /builder
-
-RUN cargo install protobuf
-
-COPY --from=builder /usr/local/bin/protoc /usr/local/bin/protoc
+# Installing the rust protobuf library so we can generate rust files
+# as well.
+RUN cargo install protobuf --vers 1.4.3 && \
+    cp /root/.cargo/bin/protoc-gen-rust /usr/bin/

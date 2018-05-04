@@ -15,6 +15,8 @@ use messages::telemetry::*;
 use messages::interop::*;
 use Obstacle_Path_Finder::PathFinder;
 use Obstacle_Path_Finder::Point;
+use Obstacle_Path_Finder::Obstacle;
+use Obstacle_Path_Finder::Plane;
 
 use futures::future::Future;
 use futures::stream::Stream;
@@ -56,9 +58,13 @@ impl Autopilot {
             }
             flyzones.push(flyzone);
         }
-        let pathfinder = PathFinder::new(1.0, flyzones);
+        let mut pathfinder = PathFinder::new(1.0, flyzones);
+
+        let obstacle_list = autopilot.get_obstacles().unwrap();
+        pathfinder.set_obstacle_list(obstacle_list);
+
         autopilot.pathfinder = Some(Rc::new(RefCell::new(pathfinder)));
-        
+
         println!("Initialization complete.");
         autopilot
     }
@@ -86,9 +92,21 @@ impl Autopilot {
         self.get_object(uri)
     }
 
-    fn get_obstacles(&self) -> Result<Obstacles, hyper::Error> {
+    fn get_obstacles(&self) -> Result<Vec<Obstacle>, hyper::Error> {
         let uri = format!("{}/api/obstacles", self.interop_proxy_host).parse()?;
-        self.get_object(uri)
+        let obstacles : Obstacles = self.get_object(uri)?;
+        let mut obstacle_list = Vec::new();
+        for obstacle in obstacles.get_stationary() {
+            obstacle_list.push(
+                Obstacle{
+                    coords: Point::from_degrees(
+                        obstacle.get_pos().lat, obstacle.get_pos().lon),
+                    radius: obstacle.radius as f32,
+                    height: obstacle.height as f32}
+            );
+        }
+
+        Ok(obstacle_list)
     }
 }
 
@@ -106,10 +124,18 @@ impl Service for Autopilot {
             }
             (&Method::Post, "/api/update_path") => {
                 response.set_status(StatusCode::Ok);
-                let obj1 = self.get_obstacles();
-                let obj2 = self.get_telemetry();
-                let obj3 = self.get_mission();
-                println!("{:?}\n{:?}\n{:?}", obj1, obj2, obj3);
+                let telemetry = self.get_telemetry().unwrap();
+                let pos = telemetry.get_pos();
+                let pathfinder = self.pathfinder.clone().unwrap();
+                let path = pathfinder.borrow_mut().adjust_path(
+                    Plane::new(pos.lat, pos.lon, pos.alt_msl as f32));
+
+                if let Some(path) = path {
+                    println!("A* Result");
+                    for node in path {
+                        println!("{:.5}, {:.5}", node.location.lat_degree(), node.location.lon_degree());
+                    }
+                }
             }
             _ => {
                 response.set_status(StatusCode::NotFound);

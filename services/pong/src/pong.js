@@ -19,10 +19,15 @@
  * services.
  */
 
+import async from 'async';
 import express from 'express';
 import request from 'request';
 
 import { PingTimes } from './messages/stats_pb';
+
+// Get the amount of time until a service is said to be offline in
+// milliseconds.
+let requestTimeout = parseInt(process.env.REQUEST_TIMEOUT) || 5000;
 
 // Get the list of services to be pinged.
 let input = process.argv.slice(2);
@@ -85,50 +90,40 @@ for (let name in ping) {
 }
 
 function startWorker(name) {
-    // Tracking if a request is still going and how many requests
-    // were skipped so we can still log ping time if a request is
-    // taking a while.
-    let activeRequest = false;
-    let skipped = 0;
+    // Storing the current worker timeout, if there is one at the
+    // moment, in case the worker needs to be killed.
+    let currTimeout = undefined;
 
-    function recordPing() {
-        // If there's an active request going, we just say the time
-        // is how many requests are going (times 3 seconds).
-        if (activeRequest) {
-            skipped++;
-            ping[name].ms = 3000 * skipped;
-
-            return;
-        }
-
-        let activeRequest = true;
-
-        let start = (new Date()).getTime();
-
+    // Starting a task that repeats forever for each service. There's
+    // a 3 second downtime after a request is made before it goes to
+    // the next.
+    async.forever((next) => {
         // Making the request, if it's not successful, the service is
         // offline, otherwise, it's online and we'll record the
         // amount of time passed.
         request.get({
             url: 'http://' + ping[name].host + ':' + ping[name].port +
                     ping[name].endpoint,
-            followRedirect: false
+            followRedirect: false,
+            time: true,
+            timeout: 5000
         }, (err, res) => {
             if (err || res.statusCode >= 400) {
                 ping[name].online = false;
                 ping[name].ms = 0.0;
             } else {
                 ping[name].online = true;
-                ping[name].ms = (new Date()).getTime() - start;
+                ping[name].ms = res.elapsedTime;
             }
 
-            activeRequest = false;
-            skipped = 0;
+            // Repeat again in 3 seconds.
+            currTimeout = setTimeout(next, 3000);
         });
-    }
+    });
 
-    // Running the function once now, then put it on an interval.
-    recordPing();
-    return setInterval(recordPing, 3000);
+    // Return an object to that'll allow this worker to be killed if
+    // needed.
+    return { close: () => clearTimeout(currTimeout) };
 }
 
 // Making the api to get the ping times.
@@ -184,7 +179,7 @@ console.log('Running server with Express at http://0.0.0.0:7000');
 let defaultClose = server.close;
 
 server.close = function () {
-    workers.map(worker => clearInterval(worker));
+    workers.map(worker => worker.close());
     return defaultClose.apply(this, arguments);
 }
 
