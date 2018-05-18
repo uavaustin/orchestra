@@ -44,7 +44,10 @@ COPY --from=builder /builder/lib lib
 # Must be one of "camera", "file", "sync".
 ENV BACKEND='camera' \
     # Must be set if using the sync backend.
-    IMAGERY_SYNC_URL=''
+    IMAGERY_SYNC_URL='' \
+    # Interval to trigger camera images at in the sync backend.
+    # Defaults to 2 seconds.
+    CAPTURE_INTERVAL='2'
 
 EXPOSE 8081
 

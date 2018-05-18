@@ -14,12 +14,15 @@ export default class Service {
      *
      * @param {Object}  options
      * @param {number}  options.port
-     * @param {string}  options.backend          - one of 'camera',
-     *                                             'file', 'sync'
-     * @param {string}  [options.imagerySyncUrl] - url to sync
-     *                                             imagery against
-     * @param {boolean} [options.printNew=false] - prints when a new
-     *                                             image is added
+     * @param {string}  options.backend           - one of 'camera',
+     *                                              'file', 'sync'
+     * @param {string}  [options.imagerySyncUrl]  - url to sync
+     *                                              imagery against
+     * @param {boolean} [options.printNew=false]  - prints when a new
+     *                                              image is added
+     * @param {number}  [options.captureInterval] - capture interval
+     *                                              for the camera
+     *                                              backend
      */
     constructor(options) {
         if (BACKENDS.indexOf(options.backend) === -1) {
@@ -32,6 +35,8 @@ export default class Service {
         this._imagerySyncUrl = options.imagerySyncUrl;
 
         this._printNew = options.printNew;
+
+        this._captureInterval = options.captureInterval;
     }
 
     /**
@@ -53,7 +58,7 @@ export default class Service {
 
         switch (this._backend) {
             case 'camera':
-                backend = new CameraBackend(imageStore);
+                backend = new CameraBackend(imageStore, this._captureInterval);
                 break;
             case 'file':
                 backend = new FileBackend(imageStore);

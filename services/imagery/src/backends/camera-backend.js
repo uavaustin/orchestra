@@ -6,8 +6,9 @@ import { removeExif, wait } from '../util';
 
 export default class CameraBackend {
     /** Create a new camera backend. */
-    constructor(imageStore) {
+    constructor(imageStore, interval) {
         this._imageStore = imageStore;
+        this._interval = interval;
         this._active = false;
 
         this._gphoto2 = new GPhoto2();
@@ -16,12 +17,14 @@ export default class CameraBackend {
     /** Continuously take photos. */
     async _runLoop(camera) {
         while (this._active) {
+            let startTime = (new Date()).getTime() / 1000;
+
+            // The only metadata here is the timestamp.
+            let metadata = new Image();
+
+            metadata.setTime(startTime);
+
             try {
-                // The only metadata here is the timestamp.
-                let metadata = new Image();
-
-                metadata.setTime((new Date()).getTime() / 1000);
-
                 let data = await this._takePhoto(camera);
 
                 // Taking off EXIF data to prevent image preview
@@ -35,8 +38,21 @@ export default class CameraBackend {
                 console.error('Encountered an error in camera loop: '
                         + message);
 
-                // Wait 250 ms to continue.
+                // If we have an error, we'll wait for a little to
+                // prevent these errors from happening too rapidly
+                // and then continue;
                 await wait(250);
+                continue;
+            }
+
+            let endTime = (new Date()).getTime() / 1000;
+
+            // If we haven't hit the interval time yet, wait some
+            // more time.
+            let duration = endTime - startTime;
+
+            if (duration < this._interval) {
+                await wait((this._interval - duration) * 1000);
             }
         }
     }
