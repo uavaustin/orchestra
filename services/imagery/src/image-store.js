@@ -32,13 +32,17 @@ export default class ImageStore extends EventEmitter {
         this._count = 0;
     }
 
-    /** Creates an empty directory for the image store. */
+    /** Creates an empty directory for the image store if needed. */
     async setup() {
         if (this._clearExisting === true) {
-            await fs.emptyDir(COUNT_FILE);
+            await fs.emptyDir(FOLDER_NAME);
         } else if (await fs.exists(COUNT_FILE)) {
             // Reading the file and getting the count from there.
             this._count = JSON.parse(await fs.readFile(COUNT_FILE)).count;
+        } else {
+            // If there isn't a count file, we'll make sure this
+            // directory exists.
+            await fs.mkdirp(FOLDER_NAME);
         }
     }
 
