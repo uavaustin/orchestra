@@ -5,23 +5,22 @@
  * somewhat-graphical terminal dashboard display.
  */
 
-import async from 'async';
 import blessed from 'blessed';
 import contrib from 'blessed-contrib';
 import chalk from 'chalk';
 import _ from 'lodash';
-import request from 'request';
 import { sprintf } from 'sprintf-js';
 
-import { PingTimes, InteropUploadRate } from './messages/stats_pb';
-
-import { parseMessage } from './util';
+import DataRetriever from './data-retriever';
+import { sparkline, sparklineHeading } from './sparkline';
 
 // The main screen object.
 let screen = blessed.screen();
 
 // The screen is set up in a 12x12 grid.
 let grid = new contrib.grid({ rows: 12, cols: 12, screen: screen });
+
+let dataRetriever = new DataRetriever();
 
 // The ping table shows the output from the pong service. This
 // differs from the built-in table in that we can specify a more
@@ -71,44 +70,12 @@ function setPingTableData(data) {
 // Initially, we show that there isn't any ping data.
 setPingTableData([]);
 
-// Keep making requests to the pong service to get the current ping
-// times.
-async.forever((next) => {
-    request.get({
-        uri: 'http://' + process.env.PONG_URL + '/api/ping',
-        encoding: null,
-        timeout: 2000,
-    }, (err, resp) => {
-        // Parse the message as the PingTimes protobuf.
-        let message = parseMessage(err, resp, PingTimes);
-        let data = [];
-
-        // If we have a message (i.e. no error), then take each
-        // listing and put it in a 5 element array corresponding to
-        // the ping time headers, with the first being if the service
-        // is online or not. This is sorted first by increasing
-        // hostname, and then by increasing port number.
-        if (message !== null) {
-            data = message.getListList().sort((a, b) =>
-                a.getHost() !== b.getHost() ? a.getHost() > b.getHost() :
-                                              a.getPort() > b.getPort()
-            ).map(time => [
-                time.getOnline(),
-                time.getName(),
-                time.getHost(),
-                time.getPort(),
-                time.getMs()
-            ]);
-        }
-
-        setPingTableData(data);
-        screen.render();
-
-        setTimeout(next, 1000);
-    });
+dataRetriever.on('ping-times', (data) => {
+    setPingTableData(data);
+    screen.render();
 });
 
-// The telemetry upload data graphs the stats from forward interop.
+// The telemetry upload graph has the stats from forward interop.
 // This is the rate at which telemetry is uploaded (over 1 and 5
 // seconds), and the rate at which new telemetry is being uploaded as
 // well, which excludes any stale or duplicated data that we're
@@ -118,85 +85,35 @@ let telemUploadGraph = grid.set(0, 0, 6, 12, blessed.box, {
 });
 
 function setTelemUploadGraphData(data, available = true) {
-    // Makes the bar that goes above the sparkline.
-    function stylizeRate(desc, rateList, width) {
-        desc = chalk.bold.green(desc);
-
-        // The rate is simply the last element in the list or n/a if
-        // we don't have any current rate.
-        if (available) {
-            let rate = rateList[rateList.length - 1] || 0.0;
-            let rateStr = sprintf(`%${width - 13}.1f Hz`, rate);
-
-            // We'll say that a rate of 3.0 seconds is good, but 1.0
-            // is the bare minimum.
-            if (rate >= 3.0) {
-                return desc + chalk.green(rateStr);
-            } else if (rate >= 1.0) {
-                return desc + chalk.yellow(rateStr);
-            } else {
-                return desc + chalk.bold.red(rateStr);
-            }
-        } else {
-            return desc + chalk.bold.red(sprintf(`%${width - 10}s`, '(n/a)'));
-        }
-    }
-
-    // Makes a sparkline in the same manner as shiwano/sparkline on
-    // github. Also colors them with the same rules for displaying
-    // the rate.
-    function makeSparkline(rateList, width) {
-        let str = ' ';
-
-        for (let i = rateList.length - width; i < rateList.length; i++) {
-            // If there's not enough points, just add spaces.
-            if (i < 0) {
-                str += ' ';
-                continue;
-            }
-
-            let rate = rateList[i];
-
-            // FIXME: This is a ton of escape codes that could
-            //        ideally be grouped together by color.
-
-            if (rate >= 5.0) {
-                str += chalk.cyan('\u2587');
-            } else if (rate >= 4.0) {
-                str += chalk.cyan('\u2586');
-            } else if (rate >= 3.0) {
-                str += chalk.cyan('\u2585');
-            } else if (rate >= 2.0) {
-                str += chalk.yellow('\u2584');
-            } else if (rate >= 1.0) {
-                str += chalk.yellow('\u2583');
-            } else if (rate > 0.0) {
-                str += chalk.bold.red('\u2582');
-            } else {
-                str += chalk.bold.red('\u2581');
-            }
-        }
-
-        return str;
-    }
-
     // The graph box is a 2x2 sparkline display with total telemetry
     // on the left and the fresh on the right.
     let leftWidth = Math.floor((telemUploadGraph.width - 8) / 2);
     let rightWidth = telemUploadGraph.width - 8 - leftWidth;
 
+    let levels = [5.0, 4.0, 3.0, 2.0, 1.0, 0.001];
+    let low = 3.0;
+    let critical = 1.0;
+
     let leftStrs = [
-        stylizeRate('Total (1s):', data[0], leftWidth),
-        makeSparkline(data[0], leftWidth),
-        stylizeRate('Total (5s):', data[1], leftWidth),
-        makeSparkline(data[1], leftWidth)
+        sparklineHeading(
+            'Total (1s):', 'Hz', data[0], available, low, critical, leftWidth
+        ),
+        ' ' + sparkline(data[0], levels, low, critical, leftWidth),
+        sparklineHeading(
+            'Total (5s):', 'Hz', data[1], available, low, critical, leftWidth
+        ),
+        ' ' + sparkline(data[1], levels, low, critical, leftWidth)
     ];
 
     let rightStrs = [
-        stylizeRate('Fresh (1s):', data[2], rightWidth),
-        makeSparkline(data[2], rightWidth ),
-        stylizeRate('Fresh (5s):', data[3], rightWidth),
-        makeSparkline(data[3], rightWidth),
+        sparklineHeading(
+            'Fresh (1s):', 'Hz', data[2], available, low, critical, rightWidth
+        ),
+        ' ' + sparkline(data[2], levels, low, critical, rightWidth),
+        sparklineHeading(
+            'Fresh (5s):', 'Hz', data[3], available, low, critical, rightWidth
+        ),
+        ' ' + sparkline(data[3], levels, low, critical, rightWidth)
     ];
 
     // Take the left and right string arrays, format them to be to
@@ -210,49 +127,22 @@ function setTelemUploadGraphData(data, available = true) {
 }
 
 let telemUploadData = [[], [], [], []];
-let telemUploadAvailable = false;
 
 // At the beginning we'll mark the telem upload as being not
 // available.
-setTelemUploadGraphData(telemUploadData, telemUploadAvailable);
+setTelemUploadGraphData(telemUploadData, false);
 
-// Keep making requests to the pong service to get the current ping
-// times.
-async.forever((next) => {
-    request.get({
-        uri: 'http://' + process.env.FORWARD_INTEROP_URL + '/api/upload-rate',
-        encoding: null,
-        timeout: 2000,
-    }, (err, resp) => {
-        // Parse the message as the InteropUploadRate protobuf.
-        let message = parseMessage(err, resp, InteropUploadRate);
-        let data = [];
+dataRetriever.on('telem-upload-rate', (data) => {
+    // Add the latest rates to the current lists, and trim off the
+    // first one if if we already have 40 points).
+    for (let i = 0; i < 4; i++)
+        telemUploadData[i].push(data.rates[i]);
 
-        // If we have a message (i.e. no error) then add the latest
-        // rates to the current lists, (and trim off the first one if
-        // if we already have 40 points).
-        let available = message !== null;
+    if (telemUploadData[0].length === 40)
+        telemUploadData.map(list => list.shift());
 
-        if (available) {
-            telemUploadData[0].push(message.getTotal1());
-            telemUploadData[1].push(message.getTotal5());
-            telemUploadData[2].push(message.getFresh1());
-            telemUploadData[3].push(message.getFresh5());
-        } else {
-            telemUploadData[0].push(0.0);
-            telemUploadData[1].push(0.0);
-            telemUploadData[2].push(0.0);
-            telemUploadData[3].push(0.0);
-        }
-
-        if (telemUploadData[0].length === 40)
-            telemUploadData.map(list => list.shift());
-
-        setTelemUploadGraphData(telemUploadData, available);
-        screen.render();
-
-        setTimeout(next, 1000);
-    });
+    setTelemUploadGraphData(telemUploadData, data.available);
+    screen.render();
 });
 
 // Allow escape, q, and Ctrl+C to exit the process. Note this is only
