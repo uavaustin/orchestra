@@ -10,7 +10,8 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: lib/messages/telemetry_pb.js lib/messages/imagery_pb.js
+proto: lib/messages/telemetry_pb.js lib/messages/imagery_pb.js \
+       lib/messages/stats_pb.js
 
 lib/messages/%_pb.js: ../common/messages/%.proto
 	docker run -it \

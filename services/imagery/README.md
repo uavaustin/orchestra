@@ -77,6 +77,14 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   On successful response: `200` status code with `imagery::ImageCount` Protobuf
   message.
 
+- `GET /api/capture-rate`
+
+  Gives the rate at which images are being captured.
+
+  On successful response: `200` status code with `stats::ImageCaptureRate`
+  Protobuf message.
+
+
 - `GET /api/image/latest`
 
   Get the latest image registered.

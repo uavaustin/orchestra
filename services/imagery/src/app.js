@@ -1,6 +1,7 @@
 import express from 'express';
 
 import { ImageCount } from './messages/imagery_pb';
+import { ImageCaptureRate } from './messages/stats_pb';
 
 export function createApp(imageStore) {
     let app = express();
@@ -35,6 +36,16 @@ export function createApp(imageStore) {
 
         msg.setTime((new Date()).getTime() / 1000);
         msg.setCount(imageStore.getCount());
+
+        sendMessage(req, res, msg);
+    });
+
+    app.get('/api/capture-rate', (req, res) => {
+        // Returning the rate that images are being captured.
+        let msg = new ImageCaptureRate();
+
+        msg.setTime((new Date()).getTime() / 1000);
+        msg.setRate5(imageStore.getRate());
 
         sendMessage(req, res, msg);
     });

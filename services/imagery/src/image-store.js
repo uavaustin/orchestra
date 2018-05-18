@@ -22,6 +22,10 @@ export default class ImageStore extends EventEmitter {
      * called count.json holds the number of the images taken, so
      * when the image stores starts with an existing directory, it
      * can use the previous images.
+     *
+     * The rate at which images are added is also stored. Note that
+     * this does not take in consideration the timestamp of the
+     * images.
      */
 
     /** Create a new image store. */
@@ -30,6 +34,9 @@ export default class ImageStore extends EventEmitter {
 
         this._clearExisting = clearExisting;
         this._count = 0;
+
+        // The time of the last images in the store.
+        this._times = [];
     }
 
     /** Creates an empty directory for the image store if needed. */
@@ -83,6 +90,9 @@ export default class ImageStore extends EventEmitter {
         // Recording the count in case the image store restarts.
         await fs.writeFile(COUNT_FILE, JSON.stringify({ count: id + 1 }));
 
+        // Adding this to the list for rate calculations.
+        this._recordImageTime();
+
         // The count in incremented towards the end, to prevent image
         // requests while still writing them.
         this._count++;
@@ -127,5 +137,27 @@ export default class ImageStore extends EventEmitter {
         let basename = sprintf('meta-%06d.pb', id);
 
         return path.join(FOLDER_NAME, basename);
+    }
+
+    /** Get the rate that images are being added. */
+    getRate() {
+        this._trimTimeArray();
+        return this._times.length / 5;
+    }
+
+    /** Add an image timestamp to the list. **/
+    _recordImageTime() {
+        this._times.push((new Date()).getTime() / 1000);
+        this._trimTimeArray();
+    }
+
+    /** Remove timestamps out of the 5 second period. */
+    _trimTimeArray() {
+        let threshold = (new Date()).getTime() / 1000 - 5;
+
+        // Removing old times until there are none for 5 sec.
+        while (this._times[0] < threshold) {
+            this._times.shift();
+        }
     }
 }
