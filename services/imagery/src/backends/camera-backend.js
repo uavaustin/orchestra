@@ -2,7 +2,7 @@ import { GPhoto2 } from 'gphoto2';
 
 import { Image } from '../messages/imagery_pb';
 
-import { wait } from '../util';
+import { removeExif, wait } from '../util';
 
 export default class CameraBackend {
     /** Create a new camera backend. */
@@ -23,6 +23,10 @@ export default class CameraBackend {
                 metadata.setTime((new Date()).getTime() / 1000);
 
                 let data = await this._takePhoto(camera);
+
+                // Taking off EXIF data to prevent image preview
+                // applications from rotating it.
+                data = await removeExif(data);
 
                 // Add it to the image store.
                 await this._imageStore.addImage(data, metadata);

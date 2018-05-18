@@ -21,3 +21,13 @@ export async function convertPng(image) {
         });
     }));
 }
+
+/** Take EXIF data off of an image. */
+export async function removeExif(image) {
+    return await (new Promise((resolve, reject) => {
+        gm(image, 'image.jpg').noProfile().toBuffer('JPEG', (err, buffer) => {
+            if (err) reject(err);
+            else resolve(buffer);
+        });
+    }));
+}
