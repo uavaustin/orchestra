@@ -80,7 +80,7 @@ dataRetriever.on('ping-times', (data) => {
 // seconds), and the rate at which new telemetry is being uploaded as
 // well, which excludes any stale or duplicated data that we're
 // sending.
-let telemUploadGraph = grid.set(0, 0, 6, 12, blessed.box, {
+let telemUploadGraph = grid.set(0, 0, 6, 8, blessed.box, {
     label: 'Telemetry Uplink'
 });
 
@@ -134,7 +134,7 @@ setTelemUploadGraphData(telemUploadData, false);
 
 dataRetriever.on('telem-upload-rate', (data) => {
     // Add the latest rates to the current lists, and trim off the
-    // first one if if we already have 40 points).
+    // first one if if we already have 40 points.
     for (let i = 0; i < 4; i++)
         telemUploadData[i].push(data.rates[i]);
 
@@ -142,6 +142,70 @@ dataRetriever.on('telem-upload-rate', (data) => {
         telemUploadData.map(list => list.shift());
 
     setTelemUploadGraphData(telemUploadData, data.available);
+    screen.render();
+});
+
+let imageCapGraph = grid.set(0, 8, 6, 4, blessed.box, {
+    label: 'Image Capture Rate'
+});
+
+function setImageCapGraphData(data, available = [true, true]) {
+    // The graph box is a 1x2 sparkline display with the plane image
+    // rate on top and the ground image rate on the bottom.
+    let width = imageCapGraph.width - 5;
+
+    let levels = [1.0, 0.8, 0.6, 0.4, 0.2, 0.001];
+    let low = 0.4;
+    let critical = 0.2;
+
+    let strs = [
+        sparklineHeading(
+            'Plane (5s):', 'Hz', data[0], available[0], low, critical, width
+        ),
+        ' ' + sparkline(data[0], levels, low, critical, width),
+        sparklineHeading(
+            'Ground (5s):', 'Hz', data[1], available[1], low, critical, width
+        ),
+        ' ' + sparkline(data[1], levels, low, critical, width)
+    ];
+
+    imageCapGraph.setContent(
+        '\n' + strs.map(str => ' ' + str + ' ').join('\n\n')
+    );
+}
+
+let imageCapData = [[], []];
+let imageCapAvailable = [false, false];
+
+// At the beginning we'll mark the image capture rate as being not
+// available.
+setImageCapGraphData(telemUploadData, imageCapAvailable);
+
+dataRetriever.on('image-cap-rate-plane', (data) => {
+    // Add the latest rate to the plane list, and trim off the first
+    // one if if we already have 40 points.
+    imageCapData[0].push(data.rate);
+
+    if (imageCapData[0].length === 40)
+        imageCapData.map(list => list.shift());
+
+    imageCapAvailable = [data.available, imageCapAvailable[1]];
+
+    setImageCapGraphData(imageCapData, imageCapAvailable);
+    screen.render();
+});
+
+dataRetriever.on('image-cap-rate-ground', (data) => {
+    // Add the latest rate to the ground list, and trim off the first
+    // one if if we already have 40 points.
+    imageCapData[1].push(data.rate);
+
+    if (imageCapData[1].length === 40)
+        imageCapData.map(list => list.shift());
+
+    imageCapAvailable = [imageCapAvailable[0], data.available];
+
+    setImageCapGraphData(imageCapData, imageCapAvailable);
     screen.render();
 });
 

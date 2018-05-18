@@ -16,6 +16,7 @@ export default class DataRetriever extends EventEmitter {
 
         this._startPingTimesWorker();
         this._startTelemUploadRateWorker();
+        this._startImageCapRateWorker();
     }
 
     _startPingTimesWorker() {
@@ -31,6 +32,22 @@ export default class DataRetriever extends EventEmitter {
         async.forever((next) => {
             _getTelemUploadRate((data) => {
                 this.emit('telem-upload-rate', data);
+                setTimeout(next, 1000);
+            });
+        });
+    }
+
+    _startImageCapRateWorker() {
+        async.forever((next) => {
+            _getImageCapRate('plane', (data) => {
+                this.emit('image-cap-rate-plane', data);
+                setTimeout(next, 1000);
+            });
+        });
+
+        async.forever((next) => {
+            _getImageCapRate('ground', (data) => {
+                this.emit('image-cap-rate-ground', data);
                 setTimeout(next, 1000);
             });
         });
@@ -102,5 +119,35 @@ function _getTelemUploadRate(cb) {
         }
 
         cb({ rates, available });
+    });
+}
+
+function _getImageCapRate(source, cb) {
+    let url;
+
+    if (source === 'plane') {
+        url = process.env.PLANE_IMAGERY_URL;
+    } else if (source === 'ground') {
+        url = process.env.GROUND_IMAGERY_URL;
+    }
+
+    request.get({
+        uri: 'http://' + url + '/api/capture-rate',
+        encoding: null,
+        timeout: 2000,
+    }, (err, resp) => {
+        // Parse the message as the ImageCaptureRate protobuf.
+        let message = _parseMessage(err, resp, ImageCaptureRate);
+
+        let available = message !== null;
+        let rate;
+
+        if (available) {
+            rate = message.getRate5();
+        } else {
+            rate = [0.0];
+        }
+
+        cb({ rate, available });
     });
 }
