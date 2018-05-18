@@ -41,8 +41,13 @@ export default class CameraBackend {
     async _takePhoto(camera) {
         return await (new Promise((resolve, reject) => {
             camera.takePicture({ download: true }, (err, data) => {
-                if (err) reject(Error('Error while taking photo: ' + err));
-                else resolve(data);
+                if (err) {
+                    reject(Error('Error while taking photo: ' + err));
+                } else if (!data) {
+                    reject(Error('Image was empty'));
+                } else {
+                    resolve(data);
+                }
             });
         }));
     }
