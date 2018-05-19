@@ -14,6 +14,8 @@ The service has three backends which can be used:
   By default, the capture rate is set to take a photo every two seconds. To set
   a different interval, set the `CAPTURE_INTERVAL` environment variable.
 
+  To add telemetry to images, set the `TELEMETRY_URL` environment variable.
+
 - `file`
 
   Monitors a file and watches for new PNG files to be added.
@@ -36,7 +38,9 @@ The `BACKEND` environment variable should be set to one of `camera`, `file`, or
 
 If using `camera`, the `CAPTURE_INTERVAL` environment variable can be set to
 set the rate at which images are taken in seconds. This defaults to every two
-seconds.
+seconds. To add telemetry to images, set the `TELEMETRY_URL` environment
+variable. Without this, the image metadata will not contain any camera
+telemetry.
 
 If using `sync`, the `IMAGERY_SYNC_URL` should be set to the imagery service to
 be synced from.
@@ -55,6 +59,7 @@ $ docker run -it -p 8081:8081 \
     --privileged
     -e BACKEND=camera
     -e CAPTURE_INTERVAL=2.5
+    -e TELEMETRY_URL=192.168.0.4:5000
     -v '$HOME/Desktop/imagery:/opt/imagery'
     uavaustin/forward-interop
 ```

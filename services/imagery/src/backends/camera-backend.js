@@ -1,14 +1,17 @@
 import { GPhoto2 } from 'gphoto2';
+import request from 'request-promise-native';
 
+import { CameraTelem } from '../messages/telemetry_pb';
 import { Image } from '../messages/imagery_pb';
 
-import { removeExif, wait } from '../util';
+import { toUint8Array, removeExif, wait } from '../util';
 
 export default class CameraBackend {
     /** Create a new camera backend. */
-    constructor(imageStore, interval) {
+    constructor(imageStore, interval, telemUrl) {
         this._imageStore = imageStore;
         this._interval = interval;
+        this._telemUrl = telemUrl;
         this._active = false;
 
         this._gphoto2 = new GPhoto2();
@@ -19,20 +22,11 @@ export default class CameraBackend {
         while (this._active) {
             let startTime = (new Date()).getTime() / 1000;
 
-            // The only metadata here is the timestamp.
-            let metadata = new Image();
-
-            metadata.setTime(startTime);
+            let photo;
+            let metadataPromise = this._getMeta();
 
             try {
-                let data = await this._takePhoto(camera);
-
-                // Taking off EXIF data to prevent image preview
-                // applications from rotating it.
-                data = await removeExif(data);
-
-                // Add it to the image store.
-                await this._imageStore.addImage(data, metadata);
+                photo = await this._takePhoto(camera);
             } catch (err) {
                 let message = err.name + ': ' + err.message;
                 console.error('Encountered an error in camera loop: '
@@ -44,6 +38,17 @@ export default class CameraBackend {
                 await wait(250);
                 continue;
             }
+
+            // Register the photo in the background (no await). Note
+            // that this allows the telemetry to be collected if it
+            // takes longer than the photo, and doesn't prevent the
+            // next photo from being taken if the telemetry still
+            // hasn't been received yet.
+            this._registerPhoto(photo, metadataPromise)
+                .catch((err) => {
+                    let message = err.name + ': ' + err.message;
+                    console.error('Error while registering photo: ' + message);
+                });
 
             let endTime = (new Date()).getTime() / 1000;
 
@@ -57,9 +62,55 @@ export default class CameraBackend {
         }
     }
 
+    /** Get the metadata for the image. */
+    async _getMeta() {
+        let metadata = new Image();
+
+        // By default, we'll always list the current time.
+        metadata.setTime((new Date()).getTime() / 1000);
+
+        // If a telemetry service url was given, we'll try requesting
+        // the latest camera telemetry. If it works, then we'll add
+        // it to the metadata.
+        if (!!this._telemUrl) {
+            try {
+                let telem = await this._getCameraTelem();
+
+                // FIXME: since we don't have gimbal data we'll just
+                //        have to assume that the camera is pointed
+                //        straight down.
+                telem.setRoll(0);
+                telem.setPitch(0);
+
+                metadata.setHasTelem(true);
+                metadata.setTelem(telem);
+            } catch (err) {
+                let message = err.name + ': ' + err.message;
+                console.error('Error while requesting telemetry: ' + message);
+            }
+        }
+
+        return metadata;
+    }
+
+    /** Request the latest camera telemetry. */
+    async _getCameraTelem() {
+        return await request({
+            uri: `http://${this._telemUrl}/api/camera-telem`,
+            encoding: null,
+            transform: buffer => CameraTelem.deserializeBinary(
+                toUint8Array(buffer)
+            ),
+            transform2xxOnly: true,
+            // The timeout is short because telemetry data loses it's
+            // relevance quickly while the plane is flying.
+            timeout: 1500
+        });
+    }
+
     /** Take a photo and return the data. */
     async _takePhoto(camera) {
-        return await (new Promise((resolve, reject) => {
+        let photo = await (new Promise((resolve, reject) => {
             camera.takePicture({ download: true }, (err, data) => {
                 if (err) {
                     reject(Error('Error while taking photo: ' + err));
@@ -70,6 +121,15 @@ export default class CameraBackend {
                 }
             });
         }));
+
+        // Taking off EXIF data to prevent image preview applications
+        // from rotating it.
+        return await removeExif(photo);
+    }
+
+    /** Add the photo with the metadata to the image store. */
+    async _registerPhoto(photo, metadataPromise) {
+        await this._imageStore.addImage(photo, await metadataPromise);
     }
 
     /** Get the camera gphoto2 object. */

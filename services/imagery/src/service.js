@@ -18,6 +18,8 @@ export default class Service {
      *                                              'file', 'sync'
      * @param {string}  [options.imagerySyncUrl]  - url to sync
      *                                              imagery against
+     * @param {string}  [options.telemUrl]        - url to get
+     *                                              telemetry from
      * @param {boolean} [options.printNew=false]  - prints when a new
      *                                              image is added
      * @param {number}  [options.captureInterval] - capture interval
@@ -33,6 +35,7 @@ export default class Service {
         this._backend = options.backend;
 
         this._imagerySyncUrl = options.imagerySyncUrl;
+        this._telemUrl = options.telemUrl;
 
         this._printNew = options.printNew;
 
@@ -58,7 +61,9 @@ export default class Service {
 
         switch (this._backend) {
             case 'camera':
-                backend = new CameraBackend(imageStore, this._captureInterval);
+                backend = new CameraBackend(
+                    imageStore, this._captureInterval, this._telemUrl
+                );
                 break;
             case 'file':
                 backend = new FileBackend(imageStore);
