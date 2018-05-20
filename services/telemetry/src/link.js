@@ -3,7 +3,7 @@ import dgram from 'dgram';
 import queue from 'async/queue';
 import series from 'async/series';
 
-import { RawMission } from './messages/telemetry_pb';
+import { telemetry } from './messages';
 import PlaneState from './state';
 import { wrapIndex } from './util';
 
@@ -124,33 +124,33 @@ export default class PlaneLink {
      */
     getRawMissionProto() {
         const mission = this._mission;
-        let raw = new RawMission();
-        raw.setTime(Date.now() / 1000);
+        let raw = new telemetry.RawMission();
+        raw.time = Date.now() / 1000;
 
         let i = 0;
         let waypoints = [];
         while (i < mission.length) {
-            let waypoint = new RawMission.Command();
-            const waypointData = mission[i];
-            waypoint.setTargetSystem(waypointData.target_system);
-            waypoint.setTargetComponent(waypointData.target_component);
-            waypoint.setSeq(waypointData.seq);
-            waypoint.setFrame(waypointData.frame);
-            waypoint.setCommand(waypointData.command);
-            waypoint.setParam1(waypointData.param1);
-            waypoint.setParam2(waypointData.param2);
-            waypoint.setParam3(waypointData.param3);
-            waypoint.setParam4(waypointData.param4);
-            waypoint.setParam5(waypointData.x);
-            waypoint.setParam6(waypointData.y);
-            waypoint.setParam7(waypointData.z);
-            waypoints.push(waypoint);
+            let waypointData = mission[i];
+
+            waypoints.push(telemetry.RawMission.RawMissionItem.create({
+                target_system: waypointData.target_system,
+                target_component: waypointData.target_component,
+                seq: waypointData.seq,
+                frame: waypointData.frame,
+                command: waypointData.command,
+                param_1: waypointData.param1,
+                param_2: waypointData.param2,
+                param_3: waypointData.param3,
+                param_4: waypointData.param4,
+                x: waypointData.x,
+                y: waypointData.y,
+                z: waypointData.z
+            }));
+
             i++;
-            if (waypointData.current) {
-                raw.setNext(i);
-            }
         }
-        raw.setCommandsList(waypoints);
+
+        raw.mission_items = waypoints;
         return raw;
     }
 
@@ -477,6 +477,13 @@ class MissionSender {
 
     _sendWaypoint(waypoint) {
         console.log(`Assembling waypoint ${waypoint.seq}`);
+
+        // node-mavlink wants param1 instead of param_1 and so on.
+        waypoint.param1 = waypoint.param_1;
+        waypoint.param2 = waypoint.param_2;
+        waypoint.param3 = waypoint.param_3;
+        waypoint.param4 = waypoint.param_4;
+
         this._mav.createMessage(
             'MISSION_ITEM',
             waypoint,

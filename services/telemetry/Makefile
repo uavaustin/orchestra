@@ -7,21 +7,17 @@ TELEMETRY_IMAGE := uavaustin/telemetry
 current_dir := $(shell pwd)
 
 .PHONY: all
-all: proto image
+all: image
 
-.PHONY: proto
-proto: lib/messages/interop_pb.js lib/messages/telemetry_pb.js
+.PHONY: message-src
+message-src: src/messages/interop.proto src/messages/telemetry.proto
 
-lib/messages/%_pb.js: ../common/messages/%.proto
-	docker run -it \
-		-v $(current_dir)/../common/messages:/messages \
-		-v $(current_dir)/lib/messages:/dist \
-		$(PROTOC_IMAGE) \
-		protoc -I=/messages \
-			--js_out=import_style=commonjs,binary:/dist /messages/$(notdir $<)
+src/messages/%.proto: ../common/messages/%.proto
+	mkdir -p src/messages
+	cp ../common/messages/$(notdir $@) src/messages/
 
 .PHONY: image
-image:
+image: message-src
 	docker build -t $(TELEMETRY_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: clean

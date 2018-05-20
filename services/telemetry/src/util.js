@@ -8,9 +8,9 @@ export function sendJsonOrProto(req, res, proto) {
 
     if (accept === undefined || !accept.startsWith('application/json')) {
         res.set('content-type', 'application/x-protobuf');
-        res.send(Buffer.from(proto.serializeBinary()));
+        res.send(proto.constructor.encode(proto).finish());
     } else {
-        res.send(proto.toObject());
+        res.send(proto.constructor.toObject(proto));
     }
 }
 

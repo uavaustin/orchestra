@@ -58,16 +58,6 @@ information has been captured from the plane at request time.
 
   If information currently unavailable: `503` status code with an empty body.
 
-- `GET /api/mission`
-
-  JSON mission data from the plane parsed by the MAVLink library.
-
-  Very similar to `/api/raw-mission`.
-
-  On successful response: `200` status code with JSON data.
-  On failure: `504` status code with a JSON field called `err` stating
-  an error reason.
-
 - `GET /api/raw-mission`
 
   Raw mission data from the plane.

@@ -1,8 +1,4 @@
-import {
-    Position, Rotation, Altitude,
-    Velocity, Speed, CameraTelem
-} from './messages/telemetry_pb';
-import { AerialPosition, InteropTelem } from './messages/interop_pb';
+import { interop, telemetry } from './messages';
 
 export default class PlaneState {
     constructor() {
@@ -21,69 +17,68 @@ export default class PlaneState {
     }
 
     getPositionProto() {
-        let pos = new Position();
-        pos.setLat(this.lat);
-        pos.setLon(this.lon);
-        return pos;
+        return telemetry.Position.create({
+            lat: this.lat,
+            lon: this.lon
+        });
     }
 
     getAerialPositionProto() {
-        let aerpos = new AerialPosition();
-        aerpos.setLat(this.lat);
-        aerpos.setLon(this.lon);
-        aerpos.setAltMsl(this.altMSL);
-        return aerpos;
+        return interop.AerialPosition.create({
+            lat: this.lat,
+            lon: this.lon,
+            alt_msl: this.altMSL
+        })
     }
 
     getRotationProto() {
-        let rot = new Rotation();
-        rot.setYaw(this.yaw);
-        rot.setPitch(this.pitch);
-        rot.setRoll(this.roll);
-        return rot;
+        return telemetry.Rotation.create({
+            yaw: this.yaw,
+            pitch: this.pitch,
+            roll: this.roll
+        });
     }
 
     getAltitudeProto() {
-        let alt = new Altitude();
-        alt.setMsl(this.altMSL);
-        alt.setAgl(this.altAGL);
-        return alt;
+        return telemetry.Altitude.create({
+            msl: this.altMSL,
+            agl: this.altAGL
+        });
     }
 
     getVelocityProto() {
-        let vel = new Velocity();
-        vel.setX(this.vx);
-        vel.setY(this.vy);
-        vel.setZ(this.vz);
-        return vel;
+        return telemetry.Velocity.create({
+            x: this.vx,
+            y: this.vy,
+            z: this.vz
+        });
     }
 
     getSpeedProto() {
-        let speed = new Speed();
-        speed.setAirspeed(this.airspeed);
-        speed.setGroundSpeed(this.groundSpeed);
-        return speed;
+        return telemetry.Speed.create({
+            airspeed: this.airspeed,
+            ground_speed: this.groundSpeed
+        });
     }
 
     getInteropTelemProto() {
-        let telem = new InteropTelem();
-        // Unix time in seconds, with decimal precision
-        telem.setTime(Date.now() / 1000);
-        telem.setPos(this.getAerialPositionProto());
-        telem.setYaw(this.yaw);
-        return telem;
+        return interop.InteropTelem.create({
+            time: Date.now() / 1000,
+            pos: this.getAerialPositionProto(),
+            yaw: this.yaw
+        });
     }
 
     getCameraTelemProto() {
-        let telem = new CameraTelem();
-        telem.setTime(Date.now() / 1000);
-        telem.setLat(this.lat);
-        telem.setLon(this.lon);
-        telem.setAlt(this.altAGL);
-        telem.setYaw(this.yaw);
-        telem.setPitch(this.pitch);
-        telem.setRoll(this.roll);
-        return telem;
+        return telemetry.CameraTelem.create({
+            time: Date.now() / 1000,
+            lat: this.lat,
+            lon: this.lon,
+            alt: this.altAGL,
+            yaw: this.yaw,
+            pitch: this.pitch,
+            roll: this.roll
+        });
     }
 
     /*
