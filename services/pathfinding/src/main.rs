@@ -9,19 +9,19 @@ mod messages { pub mod interop; pub mod telemetry; }
 use std::{env,str};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::thread;
+use std::time::{Duration, SystemTime};
 
 use protobuf::*;
 use messages::telemetry::*;
 use messages::interop::*;
-use Obstacle_Path_Finder::PathFinder;
-use Obstacle_Path_Finder::Point;
-use Obstacle_Path_Finder::Obstacle;
-use Obstacle_Path_Finder::Plane;
+use Obstacle_Path_Finder::{Obstacle, PathFinder, Plane, Point};
 
 use futures::future::Future;
 use futures::stream::Stream;
 use hyper::client::Client;
 use hyper::server::{Http, Request, Response, Service};
+use hyper::header::{ContentLength, ContentType, Date};
 use hyper::{Method, StatusCode, Uri};
 use tokio_core::reactor::Core;
 
@@ -46,8 +46,9 @@ impl Autopilot {
             pathfinder: None
         };
 
-        println!("Getting flyzone...");
-        let mission = autopilot.get_mission().unwrap();
+        eprintln!("Getting flyzone...");
+
+        let mission = autopilot.get_mission();
         let raw_flyzones = &mission.get_fly_zones();
         let mut flyzones = Vec::new();
         for i in 0..raw_flyzones.len() {
@@ -59,42 +60,83 @@ impl Autopilot {
             flyzones.push(flyzone);
         }
         let mut pathfinder = PathFinder::new(1.0, flyzones);
-
-        let obstacle_list = autopilot.get_obstacles().unwrap();
+        let obstacle_list = autopilot.get_obstacles();
         pathfinder.set_obstacle_list(obstacle_list);
-
         autopilot.pathfinder = Some(Rc::new(RefCell::new(pathfinder)));
 
-        println!("Initialization complete.");
+        eprintln!("Initialization complete.");
         autopilot
     }
 
-    fn get_object<T: protobuf::MessageStatic>(&self, uri: Uri) -> Result<T, hyper::Error> {
+    fn get<T: protobuf::MessageStatic>(&self, uri: Uri)
+        -> Result<hyper::Chunk, hyper::Error> {
         let mut core = Core::new()?;
         let client = Client::new(&core.handle());
         let request = client.get(uri).and_then(|res| {
+            eprintln!("{:?}", &res);
             res.body().concat2()
         });
-        let response = core.run(request)?;
-        match core::parse_from_bytes::<T>(&response) {
-            Ok(res) => Ok(res),
-            Err(_e) => Err(hyper::Error::Incomplete)
+        core.run(request)
+        // core::parse_from_bytes::<T>(&response)
+    }
+
+    fn post(&self, uri: Uri, message: Vec<u8>)
+        -> Result<(), hyper::Error> {
+        let mut core = Core::new()?;
+        let client = Client::new(&core.handle());
+        let mut request = Request::new(Method::Post, uri);
+        {
+            let header = request.headers_mut();
+            header.set(ContentType("application/x-protobuf".parse().unwrap()));
+            header.set(ContentLength(message.len() as u64));
+            header.set(Date(SystemTime::now().into()));
+        }
+        request.set_body(message);
+        eprintln!("{:?}", request.headers());
+        eprintln!("{:?}", request.body_ref().unwrap());
+        eprintln!("{:?}", &request);
+        let post = client.request(request);
+        let response = core.run(post)?;
+        eprintln!("{:?}", response);
+        if response.status() != StatusCode::Ok {
+            return Err(hyper::Error::Status)
+        }
+        Ok(())
+    }
+
+    fn get_object<T: protobuf::MessageStatic>(&self, uri: Uri) -> T {
+        match self.get::<T>(uri.clone()) {
+            Ok(res) => {
+                eprintln!("{:?}", &res);
+                parse_from_bytes::<T>(&res).unwrap()
+            },
+            Err(e) => {
+                eprintln!("Error getting object: {}", e);
+                eprintln!("Attempting connection in 20 seconds");
+                thread::sleep(Duration::new(20, 0));
+                parse_from_bytes::<T>(&self.get::<T>(uri).unwrap()).unwrap()
+            }
         }
     }
 
-    fn get_telemetry(&self) -> Result<InteropTelem, hyper::Error> {
-        let uri = format!("{}/api/interop-telem", self.telemetry_host).parse()?;
+    fn get_telemetry(&self) -> InteropTelem {
+        let uri = format!("{}/api/interop-telem", self.telemetry_host).parse().unwrap();
         self.get_object(uri)
     }
 
-    fn get_mission(&self) -> Result<InteropMission, hyper::Error> {
-        let uri = format!("{}/api/mission", self.interop_proxy_host).parse()?;
+    fn get_raw_mission(&self) -> RawMission {
+        let uri = format!("{}/api/raw-mission", self.telemetry_host).parse().unwrap();
         self.get_object(uri)
     }
 
-    fn get_obstacles(&self) -> Result<Vec<Obstacle>, hyper::Error> {
-        let uri = format!("{}/api/obstacles", self.interop_proxy_host).parse()?;
-        let obstacles : Obstacles = self.get_object(uri)?;
+    fn get_mission(&self) -> InteropMission {
+        let uri = format!("{}/api/mission", self.interop_proxy_host).parse().unwrap();
+        self.get_object(uri)
+    }
+
+    fn get_obstacles(&self) -> Vec<Obstacle> {
+        let uri = format!("{}/api/obstacles", self.interop_proxy_host).parse().unwrap();
+        let obstacles : Obstacles = self.get_object(uri);
         let mut obstacle_list = Vec::new();
         for obstacle in obstacles.get_stationary() {
             obstacle_list.push(
@@ -106,7 +148,21 @@ impl Autopilot {
             );
         }
 
-        Ok(obstacle_list)
+        obstacle_list
+    }
+
+    fn post_mission(&self, message: RawMission) {
+        let uri: Uri = format!("{}/api/raw-mission", self.telemetry_host).parse().unwrap();
+        let body = message.write_to_bytes().unwrap();
+        match self.post(uri.clone(), body.clone()) {
+            Ok(res) => res,
+            Err(e) => {
+                eprintln!("Error posting mission: {}", e);
+                eprintln!("Attempting connection in 20 seconds");
+                thread::sleep(Duration::new(20, 0));
+                self.post(uri, body).unwrap();
+            }
+        }
     }
 }
 
@@ -124,18 +180,26 @@ impl Service for Autopilot {
             }
             (&Method::Post, "/api/update_path") => {
                 response.set_status(StatusCode::Ok);
-                let telemetry = self.get_telemetry().unwrap();
+                let raw_mission = self.get_raw_mission();
+                println!("{:?}", &raw_mission);
+                println!("missions length: {:?}", raw_mission.get_commands().len());
+                for mission in raw_mission.get_commands() {
+                    println!("{:?}", &mission);
+                }
+                println!("current; {:?}", raw_mission.get_next());
+                let telemetry = self.get_telemetry();
                 let pos = telemetry.get_pos();
                 let pathfinder = self.pathfinder.clone().unwrap();
-                let path = pathfinder.borrow_mut().adjust_path(
-                    Plane::new(pos.lat, pos.lon, pos.alt_msl as f32));
-
-                if let Some(path) = path {
-                    println!("A* Result");
-                    for node in path {
-                        println!("{:.5}, {:.5}", node.location.lat_degree(), node.location.lon_degree());
-                    }
-                }
+                // let path = pathfinder.borrow_mut().adjust_path(
+                //     Plane::new(pos.lat, pos.lon, pos.alt_msl as f32));
+                //
+                // if let Some(path) = path {
+                //     println!("A* Result");
+                //     for node in path {
+                //         println!("{:.5}, {:.5}", node.location.lat_degree(), node.location.lon_degree());
+                //     }
+                // }
+                self.post_mission(raw_mission);
             }
             _ => {
                 response.set_status(StatusCode::NotFound);
