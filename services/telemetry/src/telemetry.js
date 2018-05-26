@@ -1,7 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 
-import { Overview, RawMission } from './messages/telemetry_pb';
+import { telemetry } from './messages';
 import { sendJsonOrProto } from './util';
 import PlaneLink from './link';
 
@@ -9,8 +9,9 @@ const app = express();
 const plane = new PlaneLink();
 const connectPromise = plane.connect();
 
-app.use(bodyParser.json());
-app.use(bodyParser.raw({ type: 'application/x-protobuf' }));
+// By default, the bodies are assumed to be protobufs.
+app.use(bodyParser.json({ type: 'application/json' }));
+app.use(bodyParser.raw({ type: '*/*' }));
 
 app.get('/', (req, res) => {
     res.set('content-type', 'text/plain');
@@ -64,7 +65,7 @@ app.get('/api/overview', (req, res) => {
             return;
         }
         const state = plane.state;
-        let msg = new Overview();
+        let msg = new telemetry.Overview();
         msg.setPos(state.getPositionProto());
         msg.setRot(state.getRotationProto());
         msg.setAlt(state.getAltitudeProto());
@@ -74,36 +75,6 @@ app.get('/api/overview', (req, res) => {
     }).catch((err) => {
         console.error(err);
         res.send(504);
-    });
-});
-
-app.get('/api/mission', (req, res) => {
-    connectPromise.then(() => {
-        res.set('content-type', 'application/json');
-        plane.requestMissions().then((missions) => {
-            res.send(missions);
-        }).catch((err) => {
-            console.error(err);
-            res.status(504).send({'error': err});
-        });
-    }).catch((err) => {
-        console.error(err);
-        res.send(504);
-    });
-});
-
-app.post('/api/mission', (req, res) => {
-    if (!req.get('Content-Type').startsWith('application/json')) {
-        res.status(502).send('Sorry, we don\'t accept your type of credit card.');
-    }
-    connectPromise.then(() => {
-        console.log(req.body);
-        plane.sendMission(req.body).then(() => {
-            res.send(200);
-        }).catch((err) => {
-            console.error(err);
-            res.send(504);
-        });
     });
 });
 
@@ -122,34 +93,30 @@ app.get('/api/raw-mission', (req, res) => {
 });
 
 app.post('/api/raw-mission', (req, res) => {
+    let rawMission;
+
+    if (req.get('content-type') === 'application/json') {
+        let err = telemetry.RawMission.verify(req.body);
+        if (err) throw err;
+
+        rawMission = telemetry.RawMission.fromObject(req.body);
+    } else {
+        rawMission = telemetry.RawMission.decode(req.body);
+    }
+
     connectPromise.then(() => {
-        const rawMission = new RawMission(req.body);
-        let mission = [];
-        for (const waypoint in rawMission.getCommandsList()) {
-            mission.push({
-                'target_system': waypoint.getTargetSystem(),
-                'target_component': waypoint.getTargetComponent(),
-                'seq': waypoint.getSeq(),
-                'frame': waypoint.getFrame(),
-                'command': waypoint.getCommand(),
-                'current': 0,
-                'autocontinue': 1,
-                'param1': waypoint.getParam1(),
-                'param2': waypoint.getParam2(),
-                'param3': waypoint.getParam3(),
-                'param4': waypoint.getParam4(),
-                'x': waypoint.getParam5(),
-                'y': waypoint.getParam6(),
-                'z': waypoint.getParam7()
-            });
-        }
+        let mission = rawMission.mission_items;
+
         plane.sendMission(mission).then(() => {
             res.send(200);
         }).catch((err) => {
             console.error(err);
             res.send(504);
         });
-    });
+    }).catch((err) => {
+        console.error(err);
+        res.send(504);
+    });;
 });
 
 let server = app.listen(5000);

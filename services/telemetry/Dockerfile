@@ -9,6 +9,10 @@ COPY telemetry/package.json .
 
 RUN npm install
 
+COPY telemetry/src/messages src/messages
+
+RUN npm run build-msg
+
 COPY telemetry .
 
 RUN npm run build
