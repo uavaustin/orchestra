@@ -258,8 +258,7 @@ export default class PlaneLink {
 
     _handleMissionEntry(msg, fields) {
         if (typeof(this._missionHandler) === 'undefined') {
-            console.warn('Mission was received without a mission receiver. Ignoring message.');
-            console.warn(`  (It has waypoint ${fields.seq})`);
+            console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
             return;
         }
         this._missionHandler.handleMessage(msg, fields);
@@ -267,8 +266,7 @@ export default class PlaneLink {
 
     _handleMissionRequest(msg, fields) {
         if (typeof(this._missionSender) === 'undefined') {
-            console.warn('Mission request was received without a mission sender. Ignoring message.');
-            console.warn(`  (It wanted waypoint ${fields.seq})`);
+            console.warn(`Request for waypoint ${fields.seq} was received without a mission sender. Ignoring.`);
             return;
         }
         this._missionSender.handleMissionRequest(msg, fields);
@@ -456,6 +454,24 @@ class MissionSender {
         }
     }
 
+    _sendClearAll() {
+        this._mav.createMessage(
+            'MISSION_CLEAR_ALL',
+            {
+                'target_system': 1,
+                'target_component': 1,
+                'mission_type': 255
+            },
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(`Error sending mission clear request: ${err}`);
+                } else {
+                    console.log('Requesting to clear all missions');
+                }
+            })
+        );
+    }
+
     _sendCount() {
         this._mav.createMessage(
             'MISSION_COUNT',
@@ -507,6 +523,31 @@ class MissionSender {
                     'resolve': resolve,
                     'reject': reject
                 };
+                this._sendClearAll();
+                repeatTimer = setInterval(() => {
+                    this._sendClearAll();
+
+                    repeatCount++;
+                    if (repeatCount == maxRepeats) {
+                        reject('timeout clearing waypoints');
+                    }
+                }, 1000);
+            }).catch((err) => {
+                throw err;
+            });
+
+            repeatCount = 0;
+            clearInterval(repeatTimer);
+
+            if (this._mission.length == 0) {
+                return;
+            }
+
+            await new Promise((resolve, reject) => {
+                this._reqPromiseDecision = {
+                    'resolve': resolve,
+                    'reject': reject
+                };
                 this._sendCount();
                 repeatTimer = setInterval(() => {
                     this._sendCount();
@@ -516,6 +557,8 @@ class MissionSender {
                         reject('timeout sending mission count');
                     }
                 }, 1000);
+            }).catch((err) => {
+                throw err;
             });
 
             repeatCount = 0;
@@ -538,6 +581,8 @@ class MissionSender {
                             reject(`timeout sending waypoint ${this._curWaypoint}`);
                         }
                     }, 1000);
+                }).catch((err) => {
+                    throw err;
                 });
                 repeatCount = 0;
                 clearInterval(repeatTimer);

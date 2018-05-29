@@ -95,10 +95,13 @@ app.get('/api/raw-mission', (req, res) => {
 app.post('/api/raw-mission', (req, res) => {
     let rawMission;
 
+    console.log(`Received raw mission (${req.body.length} bytes)`);
+
     if (req.get('content-type') === 'application/json') {
         let err = telemetry.RawMission.verify(req.body);
-        if (err) throw err;
-
+        if (err) {
+            throw err;
+        }
         rawMission = telemetry.RawMission.fromObject(req.body);
     } else {
         rawMission = telemetry.RawMission.decode(req.body);
@@ -108,15 +111,15 @@ app.post('/api/raw-mission', (req, res) => {
         let mission = rawMission.mission_items;
 
         plane.sendMission(mission).then(() => {
-            res.send(200);
+            res.sendStatus(200);
         }).catch((err) => {
             console.error(err);
-            res.send(504);
+            res.sendStatus(504);
         });
     }).catch((err) => {
         console.error(err);
-        res.send(504);
-    });;
+        res.sendStatus(504);
+    });
 });
 
 let server = app.listen(5000);
