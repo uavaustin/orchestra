@@ -2,7 +2,7 @@
 /target
 
 # Ignoring Cargo.lock
-Cargo.lock
+# Cargo.lock
 
 # Ignoring message files
 src/messages

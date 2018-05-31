@@ -1,0 +1,20 @@
+/*
+ * Pathfinding message definitions
+ *
+ * Note that all units will be in meters, meters/second, seconds,
+ * degrees, etc. unless otherwise noted.
+ *
+ * Time is in seconds from 1970 epoch.
+ *
+ * Yaw is in the range [0, 360) degrees and lat, lon, pitch and roll
+ * are in the range (-180, 180].
+ */
+
+syntax = "proto3";
+
+package pathfinding;
+
+// Represents options for pathfinding
+message PathfinderParameter {
+    uint32 process_time = 1;
+}

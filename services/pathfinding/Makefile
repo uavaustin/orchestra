@@ -10,7 +10,7 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: src/messages/interop.rs src/messages/telemetry.rs
+proto: src/messages/interop.rs src/messages/telemetry.rs src/messages/pathfinding.rs
 
 src/messages/%.rs: ../common/messages/%.proto
 	docker run -it \
