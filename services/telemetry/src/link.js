@@ -138,13 +138,16 @@ export default class PlaneLink {
                 seq: waypointData.seq,
                 frame: waypointData.frame,
                 command: waypointData.command,
+                current: waypointData.current,
+                autocontinue: waypointData.autocontinue,
                 param_1: waypointData.param1,
                 param_2: waypointData.param2,
                 param_3: waypointData.param3,
                 param_4: waypointData.param4,
                 x: waypointData.x,
                 y: waypointData.y,
-                z: waypointData.z
+                z: waypointData.z,
+                mission_type: waypointData.mission_type
             }));
 
             i++;
