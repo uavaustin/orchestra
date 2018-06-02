@@ -21,7 +21,7 @@ use protobuf::*;
 use messages::telemetry::*;
 use messages::interop::*;
 use messages::pathfinding::*;
-use Obstacle_Path_Finder::{Obstacle, PathFinder, Plane, Point};
+use Obstacle_Path_Finder::{Obstacle, PathFinder, Plane, Point, Waypoint};
 
 use futures::future;
 use futures::future::Future;
@@ -57,33 +57,23 @@ impl Autopilot {
 
         let object_requests = autopilot.get_mission().join(autopilot.get_obstacles());
         let (mission, obstacles) = core.run(object_requests).unwrap();
-        println!("{:?}", mission);
-        // eprintln!("Getting mission...");
-        // let mission = autopilot.get_mission();
-        // eprintln!("Getting flyzone...");
-        // let raw_flyzones = &mission.get_fly_zones();
-        // let mut flyzones = Vec::new();
-        // for i in 0..raw_flyzones.len() {
-        //     let boundary = raw_flyzones[i].get_boundary();
-        //     let mut flyzone = Vec::new();
-        //     for j in 0..boundary.len() {
-        //         flyzone.push(Point::from_degrees(boundary[j].lat, boundary[j].lon));
-        //     }
-        //     flyzones.push(flyzone);
-        // }
-        //
-        // {
-        //     let mut pathfinder = autopilot.pathfinder.borrow_mut();
-        //     pathfinder.init(1.0, flyzones);
-        //     let obstacle_list = autopilot.get_obstacles();
-        //     pathfinder.set_obstacle_list(obstacle_list);
-        // }
+        let raw_flyzones = &mission.get_fly_zones();
+        let mut flyzones = Vec::new();
+        for i in 0..raw_flyzones.len() {
+            let boundary = raw_flyzones[i].get_boundary();
+            let mut flyzone = Vec::new();
+            for j in 0..boundary.len() {
+                flyzone.push(Point::from_degrees(boundary[j].lat, boundary[j].lon, 0f32));
+            }
+            flyzones.push(flyzone);
+        }
+
+        {
+            let mut pathfinder = autopilot.pathfinder.borrow_mut();
+            pathfinder.init(1.0, flyzones, obstacles);
+        }
         eprintln!("Initialization complete.");
         autopilot
-    }
-
-    fn set_handle(&mut self, handle: Handle) {
-        self.handle = handle;
     }
 
     fn set_json_header(header: &mut Headers, message: &String) {
@@ -101,46 +91,44 @@ impl Autopilot {
     fn get(&self, uri: Uri)
         -> Box<Future<Item = hyper::Chunk, Error = hyper::Error>> {
         let client = Client::new(&self.handle);
-        let mut request = client.get(uri).and_then(|res| {
+        Box::new(client.get(uri).and_then(|res| {
             res.body().concat2()
-        });
-
-        Box::new(request)
-        // core.run(request)
+        }))
     }
 
     fn post(&self, uri: Uri, message: Vec<u8>)
-        -> Result<(), hyper::Error> {
+        -> Box<Future<Item = (), Error = hyper::Error>> {
         let client = Client::new(&self.handle);
         let mut request = Request::new(Method::Post, uri);
         Autopilot::set_protobuf_header(request.headers_mut(), &message);
         request.set_body(message);
 
-        let post = client.request(request).wait()?;
-        // let response = core.run(post)?;
-        if post.status() != StatusCode::Ok {
-            return Err(hyper::Error::Status)
-        }
-        Ok(())
+        Box::new(client.request(request).and_then(|res| {
+            if res.status() != StatusCode::Ok {
+                return Err(hyper::Error::Status)
+            }
+            Ok(())
+        }))
     }
 
     fn get_object<T: protobuf::MessageStatic>(&self, uri: Uri) ->
         Box<Future<Item = T, Error = ProtobufError>> {
-        let res = self.get(uri.clone());
-        let obj: Box<Future<Item = T, Error = ProtobufError>>;
-        Box::new(res.then(|res| {
+        Box::new(self.get(uri).then(|res| {
             match res {
                 Ok(res) => parse_from_bytes::<T>(&res),
                 Err(err) => {
                     eprintln!("Error getting object: {}", err);
-                    Err(ProtobufError::IoError(io::Error::new(io::ErrorKind::Other, err.to_string())))
+                    Err(ProtobufError::IoError(
+                        io::Error::new(io::ErrorKind::Other, err.to_string())
+                    ))
                     // eprintln!("Attempting connection in 20 seconds");
                     // thread::sleep(Duration::from_secs(20));
-                    // self.get(uri).then(|res| {
-                    //     match res {
-                    //         Ok(res) => parse_from_bytes::<T>(&res),
-                    //         Err(err) => Err(ProtobufError::IoError)
-                    //     }
+                    // self.get(uri).map_err(|err| {
+                    //     ProtobufError::IoError(
+                    //         io::Error::new(io::ErrorKind::Other, err.to_string())
+                    //     )
+                    // }).and_then(|res| {
+                    //     parse_from_bytes::<T>(&res)
                     // })
                 }
             }
@@ -173,7 +161,7 @@ impl Autopilot {
                         obstacle_list.push(
                             Obstacle{
                                 coords: Point::from_degrees(
-                                    obstacle.get_pos().lat, obstacle.get_pos().lon),
+                                    obstacle.get_pos().lat, obstacle.get_pos().lon, 0f32),
                                 radius: obstacle.radius as f32,
                                 height: obstacle.height as f32
                             }
@@ -187,18 +175,137 @@ impl Autopilot {
         }))
     }
 
-    fn post_mission(&self, message: RawMission) {
+    fn post_mission(&self, message: RawMission) -> Box<Future<Item = (), Error = hyper::Error>> {
         let uri: Uri = format!("{}/api/raw-mission", self.telemetry_host).parse().unwrap();
         let body = message.write_to_bytes().unwrap();
-        match self.post(uri.clone(), body.clone()) {
-            Ok(res) => res,
-            Err(e) => {
-                eprintln!("Error posting mission: {}", e);
-                eprintln!("Attempting connection in 20 seconds");
-                thread::sleep(Duration::new(20, 0));
-                self.post(uri, body).unwrap();
+        self.post(uri, body)
+        // Box::new(self.post(uri.clone(), body.clone()).then(|res| {
+        //     Ok(res) => ,
+        //     Err(e) => {
+        //         eprintln!("Error posting mission: {}", e);
+                // eprintln!("Attempting connection in 20 seconds");
+                // thread::sleep(Duration::new(20, 0));
+            //     // self.post(uri, body).unwrap();
+            // }
+        // }
+    }
+
+    fn parse_waypoint(&self, raw_mission: &RawMission)
+        -> LinkedList<Waypoint> {
+        let mut waypoints = LinkedList::new();
+        let mut iter = raw_mission.get_mission_items()
+            .iter().skip_while(|mission| mission.current == 0);
+
+        while let Some(mission) = iter.next() {
+            if mission.command != 16 {
+                continue;
+            }
+            waypoints.push_back(Waypoint::new(
+                mission.seq,
+                Point::from_degrees(mission.x as f64, mission.y as f64, mission.z),
+                mission.param_2
+            ));
+        }
+
+        waypoints
+    }
+
+    fn extend_command(&self, seq: u32, waypoint: &Waypoint, command: &RawMission_RawMissionItem)
+        -> RawMission_RawMissionItem {
+        let mut new: RawMission_RawMissionItem = command.clone();
+        new.seq = seq;
+        new.x = waypoint.location.lat_degree() as f32;
+        new.y = waypoint.location.lon_degree() as f32;
+        new.z = waypoint.location.alt();
+        new
+    }
+
+    fn update_mission(&self, path: &LinkedList<Waypoint>, mission: &mut RawMission) {
+        let mut new_mission: Vec<RawMission_RawMissionItem> = Vec::new();
+        let mut seq = 0;
+        {
+            let mut iter = path.iter();
+            let commands = mission.mut_mission_items();
+            commands.reverse();      // To use pop
+            let mut current_wp;
+            match iter.next() {
+                Some(wp) => current_wp = wp,
+                None => return
+            }
+            while let Some(mut command) = commands.pop() {
+                while command.seq == current_wp.index as u32 {
+                    new_mission.push(self.extend_command(seq, &current_wp, &command));
+                    seq += 1;
+                    match iter.next() {
+                        Some(wp) => current_wp = wp,
+                        None => break
+                    }
+                }
+
+                command.seq = seq;
+                seq += 1;
+                new_mission.push(command);
             }
         }
+
+        mission.set_mission_items(RepeatedField::from_vec(new_mission));
+    }
+
+    fn process_mission(&self, mut raw_mission: RawMission, telemetry: InteropTelem)
+        -> Box<Future<Item = Response, Error = hyper::Error>> {
+        let mut response = Response::new();
+        response.set_status(StatusCode::Ok);
+
+        if raw_mission.get_mission_items().len() == 0 {
+            eprintln!("Empty Mission.");
+            response.set_status(StatusCode::PreconditionFailed);
+            response.set_body("Empty Mission");
+            return Box::new(future::ok(response));
+        }
+
+        println!("Before");
+        for mission in raw_mission.get_mission_items() {
+            println!("{:?}", mission);
+        }
+        println!();
+
+        let pos = telemetry.get_pos();
+        let mut pathfinder = self.pathfinder.borrow_mut();
+        let path = pathfinder.get_adjust_path(
+            Plane::new(pos.lat, pos.lon, pos.alt_msl as f32),
+            self.parse_waypoint(&raw_mission)
+        );
+
+        let waypoints = self.parse_waypoint(&raw_mission);
+        println!("Waypoint Inputs");
+        for waypoint in waypoints {
+            println!("{} {:?} {}", waypoint.index, waypoint.location, waypoint.radius);
+        }
+
+        println!("A* Result");
+        for node in path {
+            println!("{:.5}, {:.5}", node.location.lat_degree(), node.location.lon_degree());
+        }
+
+        self.update_mission(&path, &mut raw_mission);
+
+        println!("After");
+        for mission in raw_mission.get_mission_items() {
+            println!("{:?}", mission);
+        }
+
+        Box::new(self.post_mission(raw_mission).then(|res| {
+            if res.is_err() {
+                let errlog = format!("Failed to post mission: {}",
+                    res.unwrap_err());
+                eprintln!("{}", errlog);
+                response.set_status(StatusCode::ServiceUnavailable);
+                response.set_body(errlog);
+            }
+            eprintln!("Path updated.");
+            future::ok(response)
+        }))
+        // Box::new(future::ok(response))
     }
 }
 
@@ -210,53 +317,31 @@ impl Service for Autopilot {
 
     fn call(&self, req: Request) -> Self::Future {
         let mut response = Response::new();
+        response.set_status(StatusCode::BadRequest);
+
         match (req.method(), req.path()) {
             (&Method::Get, "/api/alive") => {
+                response.set_status(StatusCode::Ok);
                 response.set_body("Alive and well!");
             }
             (&Method::Post, "/api/update-path") => {
-                let pathfinder = self.pathfinder.clone();
-                return Box::new(self.get_raw_mission().join(self.get_telemetry()).then(move |res| {
+                let autopilot = self.clone();
+                return Box::new(
+                    self.get_raw_mission().join(self.get_telemetry()).then(move |res| {
                     match res {
                         Ok(result) => {
-                            response.set_status(StatusCode::Ok);
                             let (raw_mission, telemetry) = result;
-                            if raw_mission.get_mission_items().len() == 0 {
-                                eprintln!("Empty Mission.");
-                                response.set_status(StatusCode::PreconditionFailed);
-                                response.set_body("Empty Mission");
-                            } else {
-                                println!("Mission Received:");
-                                println!("{:?}", &raw_mission);
-                                println!("missions length: {:?}", raw_mission.get_mission_items().len());
-                                for mission in raw_mission.get_mission_items() {
-                                    println!("{:?}", &mission);
-                                }
-                                let pos = telemetry.get_pos();
-                                let mut path_ref = pathfinder.borrow_mut();
-                                let path = path_ref.get_adjust_path(
-                                    Plane::new(pos.lat, pos.lon, pos.alt_msl as f32),
-                                    LinkedList::new()
-                                );
-
-                        //         if let Some(path) = path {
-                        //             println!("A* Result");
-                        //             for node in path {
-                        //                 println!("{:.5}, {:.5}", node.location.lat_degree(), node.location.lon_degree());
-                        //             }
-                        //         }
-                        //         let commands = raw_mission.mut_mission_items();
-                        //
-                        //         self.post_mission(raw_mission);
-                        //             println!("Done!");
-                            }
+                            return autopilot.process_mission(raw_mission, telemetry);
                         }
-                        Err(_err) => {
+                        Err(err) => {
+                            let errlog = format!("Failed to get objects: {}", err);
+                            eprintln!("{}", errlog);
                             response.set_status(StatusCode::PreconditionFailed);
+                            response.set_body(errlog);
                         }
                     }
 
-                    future::ok(response)
+                    Box::new(future::ok(response))
                 }));
             }
             (&Method::Get, "/api/pathfinder-parameter") => {
@@ -265,6 +350,7 @@ impl Service for Autopilot {
                     if accept.eq(&Accept::json()) {
                         let json = format!("{{\"process_time\": \"{}\"}}", process_time.to_string());
                         Autopilot::set_json_header(response.headers_mut(), &json);
+                        response.set_status(StatusCode::Ok);
                         response.set_body(json);
                     }
                 } else {
@@ -272,11 +358,11 @@ impl Service for Autopilot {
                     param.set_process_time(process_time);
                     let body = param.write_to_bytes().unwrap();
                     Autopilot::set_protobuf_header(response.headers_mut(), &body);
+                    response.set_status(StatusCode::Ok);
                     response.set_body(body);
                 }
             }
             (&Method::Post, "/api/pathfinder-parameter") => {
-                response.set_status(StatusCode::BadRequest);
                 if let Ok(body) = req.body().concat2().wait() {
                     if let Ok(param) = parse_from_bytes::<PathfinderParameter>(&body) {
                         response.set_status(StatusCode::Ok);
@@ -296,7 +382,7 @@ fn main() {
     eprintln!("Initializing...");
     let mut core = Core::new().unwrap();
     let handle = core.handle().clone();
-    let mut autopilot = Autopilot::new(&mut core);
+    let autopilot = Autopilot::new(&mut core);
     let addr = "0.0.0.0:7500".parse().unwrap();
     let server = Http::new().serve_addr_handle(&addr, &core.handle(),
         move || Ok(autopilot.clone())).unwrap();

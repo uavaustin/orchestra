@@ -12,5 +12,5 @@ serde_json = "1.0"
 
 [dependencies.Obstacle-Path-Finder]
 git = "https://github.com/uavaustin/Obstacle-Path-Finder/"
-# branch = "switch-to-rust"
-rev= "670aa8b"
+branch = "switch-to-rust"
+# rev= "670aa8b"
