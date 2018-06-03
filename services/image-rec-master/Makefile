@@ -1,27 +1,22 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
 
-PROTOC_IMAGE           := uavaustin/protoc
 IMAGE_REC_MASTER_IMAGE := uavaustin/image-rec-master
 
 current_dir := $(shell pwd)
 
 .PHONY: all
-all: proto image
+all: image
 
-.PHONY: proto
-proto: lib/messages/telemetry_pb.js lib/messages/imagery_pb.js
+.PHONY: message-src
+message-src: src/messages/telemetry.proto src/messages/imagery.proto
 
-lib/messages/%_pb.js: ../common/messages/%.proto
-	docker run -it \
-		-v $(current_dir)/../common/messages:/messages \
-		-v $(current_dir)/lib/messages:/dist \
-		$(PROTOC_IMAGE) \
-		protoc -I=/messages \
-			--js_out=import_style=commonjs,binary:/dist /messages/$(notdir $<)
+src/messages/%.proto: ../common/messages/%.proto
+	mkdir -p src/messages
+	cp ../common/messages/$(notdir $@) src/messages/
 
 .PHONY: image
-image:
+image: message-src
 	docker build -t $(IMAGE_REC_MASTER_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: clean

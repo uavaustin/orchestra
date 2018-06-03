@@ -9,6 +9,10 @@ COPY image-rec-master/package.json .
 
 RUN npm install
 
+COPY image-rec-master/src/messages src/messages
+
+RUN npm run build-msg
+
 COPY image-rec-master .
 
 RUN npm run build

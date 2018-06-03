@@ -2,13 +2,15 @@
  * Feeds new images into a redis server so workers can process them.
  */
 
+import { promisify } from 'util';
+
 import async from 'async';
 import express from 'express';
 import _ from 'lodash';
 import redis from 'redis';
-import request from 'request';
+import request from 'request-promise-native';
 
-import { ImageCount, UnprocessedImages } from './messages/imagery_pb';
+import { imagery } from './messages';
 
 let imageryUrl = process.env.IMAGERY_URL;
 let redisUrl = process.env.REDIS_URL;
@@ -18,49 +20,59 @@ let redisPort = redisUrl.split(':')[1] || '6379';
 
 let client = redis.createClient({ host: redisHost, port: redisPort });
 
-/** Convert a Buffer to a Uint8Array for Protobuf message objects. */
-function toUint8Array(buffer) {
-    return new Uint8Array(buffer.buffer.slice(
-        buffer.byteOffset, buffer.byteOffset + buffer.byteLength
-    ));
+// Promisifying the redis client methods.
+client.lrangeAsync = promisify(client.lrange).bind(client);
+client.rpushAsync = promisify(client.rpush).bind(client);
+
+// The list of unprocessed images already on redis.
+let initialUnprocessed;
+
+/* Get a list of numbers from redis. */
+async function getIntList(key) {
+    return (await client.lrangeAsync(key, 0, -1)).map(id => parseInt(id));
 }
 
-// Constantly check for new images, and put them in the unprocessed
-// images list in redis.
+// Last id number in the imagery service.
 let lastId = -1;
 
-async.forever((next) => {
-    request.get({
-        url: 'http://' + imageryUrl + '/api/count',
+/* Find the latest image number, and then add it to redis. */
+async function updateUnprocessed() {
+    let msg = await request({
+        uri: `http://${imageryUrl}/api/count`,
         encoding: null,
+        transform: buffer => imagery.ImageCount.decode(buffer),
+        transform2xxOnly: true,
         timeout: 5000
-    }, (err, res) => {
-        if (err) {
-            console.error(err);
-            setTimeout(next, 500);
-        } else {
-            let msg = ImageCount.deserializeBinary(toUint8Array(res.body));
-            let nextId = msg.getCount() - 1;
-
-            if (nextId > lastId) {
-                // Making sure we add all the images after the last,
-                // and including the most recent.
-                let range = _.range(lastId + 1, nextId + 1);
-
-                // Adding the new images on the left side of the
-                // list.
-                client.rpush('unprocessed-images', range, (err) => {
-                    if (err) console.error(err);
-                    else lastId = nextId;
-
-                    setTimeout(next, 500);
-                });
-            } else {
-                setTimeout(next, 500);
-            }
-        }
     });
-});
+
+    let nextId = msg.count - 1;
+
+    if (nextId > lastId) {
+        // Making sure we add all the images after the last, and
+        // including the most recent.
+        let range = _.range(lastId + 1, nextId + 1);
+
+        // Adding the new images on the left side of the list (as
+        // long as they are not in the initial list.
+        if (!_.includes(initialUnprocessed, nextId))
+            await client.rpushAsync('unprocessed-images', range);
+
+        lastId = nextId;
+    }
+}
+
+// First populate the initial unprocessed list, then constantly check
+// for new images, and put them in the unprocessed images list in
+// redis.
+(async function () {
+    initialUnprocessed = await getIntList('unprocessed-images');
+
+    async.forever((next) => {
+        updateUnprocessed()
+            .then(() => setTimeout(next, 500))
+            .catch((err) => console.error(err) || setTimeout(next, 500));
+    });
+})();
 
 // Making a simple api to show what's left to be processed.
 let app = express();
@@ -73,27 +85,22 @@ function sendMessage(req, res, msg) {
 
     if (accept === undefined || !accept.startsWith('application/json')) {
         res.set('content-type', 'application/x-protobuf');
-        res.send(Buffer.from(msg.serializeBinary()));
+        res.send(msg.constructor.encode(msg).finish());
     } else {
-        res.send(msg.toObject());
+        res.json(msg.constructor.toObject(msg));
     }
 }
 
 // Returning the list of unprocessed images.
 app.get('/api/unprocessed', (req, res) => {
-    client.lrange('unprocessed-images', 0, -1, (err, list) => {
-        if (err) {
-            res.sendStatus(500);
-            return;
-        }
-
-        let msg = new UnprocessedImages();
-
-        msg.setCount(list.length);
-        msg.setListList(list.map(id => parseInt(id)));
-
-        sendMessage(req, res, msg);
-    });
+    getIntList('unprocessed-images')
+        .then((list) => {
+            sendMessage(req, res, imagery.UnprocessedImages.create({
+                count: list.length,
+                list: list
+            }));
+        })
+        .catch(err => console.error(err) || res.sendStatus(500));
 });
 
 app.get('/api/alive', (req, res) => {
