@@ -17,6 +17,10 @@ COPY imagery/package.json .
 
 RUN npm install
 
+COPY imagery/src/messages src/messages
+
+RUN npm run build-msg
+
 COPY imagery .
 
 RUN npm run build

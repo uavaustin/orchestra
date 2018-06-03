@@ -1,10 +1,9 @@
 import { GPhoto2 } from 'gphoto2';
 import request from 'request-promise-native';
 
-import { CameraTelem } from '../messages/telemetry_pb';
-import { Image } from '../messages/imagery_pb';
+import { imagery, telemetry } from '../messages';
 
-import { toUint8Array, removeExif, wait } from '../util';
+import { removeExif, wait } from '../util';
 
 export default class CameraBackend {
     /** Create a new camera backend. */
@@ -64,10 +63,10 @@ export default class CameraBackend {
 
     /** Get the metadata for the image. */
     async _getMeta() {
-        let metadata = new Image();
-
         // By default, we'll always list the current time.
-        metadata.setTime((new Date()).getTime() / 1000);
+        let metadata = imagery.Image.create({
+            time: (new Date()).getTime() / 1000
+        });
 
         // If a telemetry service url was given, we'll try requesting
         // the latest camera telemetry. If it works, then we'll add
@@ -79,11 +78,11 @@ export default class CameraBackend {
                 // FIXME: since we don't have gimbal data we'll just
                 //        have to assume that the camera is pointed
                 //        straight down.
-                telem.setRoll(0);
-                telem.setPitch(0);
+                telem.roll = 0;
+                telem.pitch = 0;
 
-                metadata.setHasTelem(true);
-                metadata.setTelem(telem);
+                metadata.has_telem = true;
+                metadata.telem = telem;
             } catch (err) {
                 let message = err.name + ': ' + err.message;
                 console.error('Error while requesting telemetry: ' + message);
@@ -98,9 +97,7 @@ export default class CameraBackend {
         return await request({
             uri: `http://${this._telemUrl}/api/camera-telem`,
             encoding: null,
-            transform: buffer => CameraTelem.deserializeBinary(
-                toUint8Array(buffer)
-            ),
+            transform: buffer => telemetry.CameraTelem.decode(buffer),
             transform2xxOnly: true,
             // The timeout is short because telemetry data loses it's
             // relevance quickly while the plane is flying.

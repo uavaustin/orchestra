@@ -3,7 +3,7 @@ import path from 'path';
 import chokidar from 'chokidar';
 import fs from 'fs-extra';
 
-import { Image } from '../messages/imagery_pb';
+import { imagery } from '../messages';
 
 import { convertPng, removeExif } from '../util';
 
@@ -54,9 +54,9 @@ export default class FileBackend {
                 data = await removeExif(data);
 
                 // The only metadata here is the timestamp.
-                let metadata = new Image();
-
-                metadata.setTime((new Date()).getTime() / 1000);
+                let metadata = imagery.Image.create({
+                    time: (new Date()).getTime() / 1000
+                });
 
                 // Add it to the image store.
                 await this._imageStore.addImage(data, metadata);

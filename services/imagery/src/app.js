@@ -1,7 +1,6 @@
 import express from 'express';
 
-import { ImageCount } from './messages/imagery_pb';
-import { ImageCaptureRate } from './messages/stats_pb';
+import { imagery, stats } from './messages';
 
 export function createApp(imageStore) {
     let app = express();
@@ -14,9 +13,9 @@ export function createApp(imageStore) {
         // JSON instead, otherwise, send the Protobuf.
         if (accept === undefined || !accept.startsWith('application/json')) {
             res.set('content-type', 'application/x-protobuf');
-            res.send(Buffer.from(msg.serializeBinary()));
+            res.send(msg.constructor.encode(msg).finish());
         } else {
-            res.send(msg.toObject());
+            res.json(msg.constructor.toObject(msg));
         }
     }
 
@@ -24,7 +23,7 @@ export function createApp(imageStore) {
     async function getImageMessage(id) {
         let msg = await imageStore.getMetadata(id);
 
-        msg.setImage(await imageStore.getImage(id));
+        msg.image = await imageStore.getImage(id);
 
         return msg;
     }
@@ -32,20 +31,20 @@ export function createApp(imageStore) {
     app.get('/api/count', (req, res) => {
         // Just return the image count in a ImageCount protobuf
         // message.
-        let msg = new ImageCount();
-
-        msg.setTime((new Date()).getTime() / 1000);
-        msg.setCount(imageStore.getCount());
+        let msg = imagery.ImageCount.create({
+            time: (new Date()).getTime() / 1000,
+            count: imageStore.getCount()
+        });
 
         sendMessage(req, res, msg);
     });
 
     app.get('/api/capture-rate', (req, res) => {
         // Returning the rate that images are being captured.
-        let msg = new ImageCaptureRate();
-
-        msg.setTime((new Date()).getTime() / 1000);
-        msg.setRate5(imageStore.getRate());
+        let msg = stats.ImageCaptureRate.create({
+            time: (new Date()).getTime() / 1000,
+            rate_5: imageStore.getRate()
+        });
 
         sendMessage(req, res, msg);
     });
