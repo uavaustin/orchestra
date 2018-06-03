@@ -24,7 +24,7 @@ export default class CameraBackend {
 
                 let data = await this._takePhoto(camera);
 
-                // Add it to the image store without a warped image.
+                // Add it to the image store.
                 await this._imageStore.addImage(data, metadata);
             } catch (err) {
                 let message = err.name + ': ' + err.message;

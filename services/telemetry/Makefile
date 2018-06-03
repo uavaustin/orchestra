@@ -10,14 +10,15 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: messages/interop_pb2.py messages/telemetry_pb2.py
+proto: lib/messages/interop_pb.js lib/messages/telemetry_pb.js
 
-messages/%_pb2.py: ../common/messages/%.proto
+lib/messages/%_pb.js: ../common/messages/%.proto
 	docker run -it \
 		-v $(current_dir)/../common/messages:/messages \
-		-v $(current_dir)/messages:/dist \
+		-v $(current_dir)/lib/messages:/dist \
 		$(PROTOC_IMAGE) \
-		protoc -I=/messages --python_out=/dist /messages/$(notdir $<)
+		protoc -I=/messages \
+			--js_out=import_style=commonjs,binary:/dist /messages/$(notdir $<)
 
 .PHONY: image
 image:
@@ -25,5 +26,5 @@ image:
 
 .PHONY: clean
 clean:
-	rm -rf __pycache__ *.pyc messages
+	rm -rf node_modules lib package-lock.json
 	docker rmi -f $(TELEMETRY_IMAGE)

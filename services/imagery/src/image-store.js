@@ -50,41 +50,27 @@ export default class ImageStore extends EventEmitter {
     /**
      * Feed an image into the image store.
      *
-     * If a warped image is also available it can be passed as well.
-     *
      * The metadata attached is the Image proto message without the
      * images included.
      *
      * Returns the id number for the image (the first one is 0).
      *
      * @param  {Buffer}      image
-     * @param  {Buffer}      [warped]
      * @param  {Image}       metadata
      * @return {Promise.<number>} The id number for the image.
      */
-    async addImage(image, warped, metadata) {
-        if (arguments.length == 2) {
-            metadata = warped;
-            warped = undefined;
-        }
-
+    async addImage(image, metadata) {
         let id = this._count;
 
         // Set the id number in the metadata.
         metadata.setId(id);
 
-        let filenameNormal = this._formatFilename(id);
-        let filenameWarped = this._formatFilename(id, true);
+        let filename = this._formatFilename(id);
         let filenameMeta = this._formatMetadataFilename(id);
 
-        await fs.writeFile(filenameNormal, image, {
+        await fs.writeFile(filename, image, {
             encoding: null
         });
-
-        if (warped !== undefined)
-            await fs.writeFile(filenameWarped, warped, {
-                encoding: null
-            });
 
         await fs.writeFile(filenameMeta, metadata.serializeBinary(), {
             encoding: null
@@ -104,8 +90,8 @@ export default class ImageStore extends EventEmitter {
     }
 
     /** Return the image for the id in an Uint8Array. */
-    async getImage(id, warped = false) {
-        let filename = this._formatFilename(id, warped);
+    async getImage(id) {
+        let filename = this._formatFilename(id);
 
         let buffer = await fs.readFile(filename, {
             encoding: null
@@ -126,14 +112,8 @@ export default class ImageStore extends EventEmitter {
     }
 
     /** Get the filename for an image by id. */
-    _formatFilename(id, warped = false) {
-        let basename;
-
-        if (warped) {
-            basename = sprintf('warped-%06d.png', id);
-        } else {
-            basename = sprintf('image-%06d.png', id);
-        }
+    _formatFilename(id) {
+        let basename = sprintf('image-%06d.jpg', id);
 
         return path.join(FOLDER_NAME, basename);
     }

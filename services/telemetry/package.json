@@ -1,6 +1,6 @@
 {
-    "name": "dashboard",
-    "main": "lib/dashboard.js",
+    "name": "telemetry",
+    "main": "lib/telemetry.js",
     "private": true,
     "license": "MIT",
     "scripts": {
@@ -9,14 +9,10 @@
     },
     "dependencies": {
         "async": "^2.6.0",
-        "blessed": "^0.1.81",
-        "blessed-contrib": "^4.8.5",
-        "chalk": "^2.3.1",
+        "express": "^4.16.2",
         "google-protobuf": "3.4.0",
-        "lodash": "^4.17.5",
-        "request": "^2.83.0",
-        "source-map-support": "^0.5.6",
-        "sprintf-js": "^1.1.1"
+        "mavlink": "^1.0.1",
+        "source-map-support": "^0.5.6"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",

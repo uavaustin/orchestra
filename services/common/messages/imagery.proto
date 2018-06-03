@@ -16,42 +16,20 @@ import "telemetry.proto";
 
 package imagery;
 
-message Position {
-    double lat = 1;
-    double lon = 2;
-}
-
 message ImageCount {
     double time = 1;
     uint32 count = 2;
 }
 
 message Image {
-    message CornerCoords {
-        Position top_left = 1;
-        Position top_right = 2;
-        Position bottom_right = 3;
-        Position bottom_left = 4;
-        double min_lat = 5;
-        double max_lat = 6;
-        double min_lon = 7;
-        double max_lon = 8;
-    }
-
     // Time at which the image was taken.
     double time = 1;
     uint32 id = 2;
     // True if we have telemetry for this image.
     bool has_telem = 3;
     telemetry.CameraTelem telem = 4;
-    // True if we're able to get coords for this image.
-    bool found_corners = 5;
-    CornerCoords corners = 6;
-    // Both images are PNG images. The warped image will have
-    // transparency around the edges.
-    bytes image = 7;
-    bool has_warped = 8;
-    bytes warped_image = 9;
+    // The image is a JPEG.
+    bytes image = 5;
 }
 
 message UnprocessedImages {
