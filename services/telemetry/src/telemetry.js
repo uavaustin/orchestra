@@ -112,15 +112,23 @@ app.post('/api/raw-mission', (req, res) => {
 
         plane.sendMission(mission).then(() => {
             res.sendStatus(200);
-        }).catch((err) => {
-            console.error(err);
-            res.sendStatus(504);
         });
     }).catch((err) => {
         console.error(err);
         res.sendStatus(504);
     });
 });
+
+app.get('/api/current-waypoint', (req, res) => {
+    connectPromise.then(() => {
+        plane.getCurrentWaypoint().then((waypoint) => {
+            res.send(waypoint);
+        });
+    }).catch((err) => {
+        console.err(err);
+        res.sendStatus(504);
+    });
+})
 
 let server = app.listen(5000);
 
