@@ -13,7 +13,7 @@ protoc:
 	$(MAKE) -C tools/protoc
 
 .PHONY: telemetry
-telemetry: protoc
+telemetry:
 	$(MAKE) -C services/telemetry
 
 .PHONY: interop-proxy
