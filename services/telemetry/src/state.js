@@ -14,6 +14,14 @@ export default class PlaneState {
         this.yaw = null;
         this.airspeed = null;
         this.groundSpeed = null;
+        this.battery = {
+            temp: null,
+            voltages: null,
+            current: null,
+            currentSpent: null,
+            percentage: null,
+            approxTime: null
+        };
     }
 
     getPositionProto() {
@@ -78,6 +86,18 @@ export default class PlaneState {
             yaw: this.yaw,
             pitch: this.pitch,
             roll: this.roll
+        });
+    }
+
+    getBatteryProto() {
+        const battery = this.battery;
+        return telemetry.Battery.create({
+            temperature: battery.temp,
+            voltages: battery.voltages,
+            current: battery.current,
+            current_spent: battery.currentSpent,
+            percentage: battery.percentage,
+            approx_time: battery.approxTime
         });
     }
 

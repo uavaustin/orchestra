@@ -71,6 +71,7 @@ app.get('/api/overview', (req, res) => {
         msg.setAlt(state.getAltitudeProto());
         msg.setVel(state.getVelocityProto());
         msg.setSpeed(state.getSpeedProto());
+        msg.setBattery(state.getBatteryProto());
         sendJsonOrProto(req, res, msg);
     }).catch((err) => {
         console.error(err);

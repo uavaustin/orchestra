@@ -22,6 +22,7 @@ message Overview {
     Altitude alt = 3;
     Velocity vel = 4;
     Speed speed = 5;
+    Battery battery = 6;
 }
 
 // WGS84 in degrees
@@ -55,6 +56,18 @@ message Velocity {
 message Speed {
     double airspeed = 1;
     double ground_speed = 2;
+}
+
+// Voltage in millivolts; current in centiamperes;
+// temperature in centi-degrees Celsius.
+// Time in seconds.
+message Battery {
+    int32 temperature = 1;
+    repeated uint32 voltages = 2;
+    int32 current = 3;
+    int32 current_spent = 4;
+    int32 percentage = 5;
+    int32 approx_time = 6;
 }
 
 // Camera telemtry
