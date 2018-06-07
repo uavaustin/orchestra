@@ -122,13 +122,32 @@ app.post('/api/raw-mission', (req, res) => {
 app.get('/api/current-waypoint', (req, res) => {
     connectPromise.then(() => {
         plane.getCurrentWaypoint().then((waypoint) => {
-            res.send(waypoint);
+            res.send({
+                seq: waypoint
+            });
         });
     }).catch((err) => {
         console.err(err);
         res.sendStatus(504);
     });
-})
+});
+
+app.post('/api/current-waypoint', (req, res) => {
+    if (typeof req.body.seq === 'undefined') {
+        res.status(400);
+        res.send({err: 'Must contain seq'});
+        return;
+    }
+
+    connectPromise.then(() => {
+        plane.setCurrentWaypoint(req.body.seq).then((waypoint) => {
+            res.sendStatus(200);
+        });
+    }).catch((err) => {
+        console.err(err);
+        res.sendStatus(504);
+    });
+});
 
 let server = app.listen(5000);
 

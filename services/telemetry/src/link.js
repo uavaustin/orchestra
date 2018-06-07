@@ -137,6 +137,33 @@ export default class PlaneLink {
     }
 
     /**
+     * Sets the current waypoint.
+     * This method blocks until we have received a MISSION_CURRENT
+     * packet back.
+     */
+    async setCurrentWaypoint(seq) {
+        return await new Promise((resolve, reject) => {
+            this._taskQueue.push(async () => {
+                this._curWaypointPromise = {
+                    'resolve': resolve,
+                    'reject': reject
+                };
+                this._cxnState = ConnectionState.WRITING;
+                this._sendSetCurrentWaypoint(seq);
+
+                const timeout = setTimeout(() => {
+                    reject('timeout waiting for MISSION_CURRENT');
+                }, 2000);
+                await this._curWaypointPromise;
+                clearTimeout(timeout);
+
+                delete this._curWaypointPromise;
+                this._cxnState = ConnectionState.IDLE;
+            });
+        });
+    }
+
+    /**
      * Converts mission data to a RawMission protobuf.
      * @returns {RawMission} a RawMission protobuf
      */
@@ -198,10 +225,7 @@ export default class PlaneLink {
         mav.on('MISSION_ITEM', (msg, fields) => this._handleMissionEntry(msg, fields));
         mav.on('MISSION_REQUEST', (msg, fields) => this._handleMissionRequest(msg, fields));
         mav.on('MISSION_ACK', (msg, fields) => this._handleMissionAck(msg, fields));
-        mav.on('MISSION_CURRENT', (msg, fields) => {
-            console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
-            this._curWaypoint = fields.seq;
-        });
+        mav.on('MISSION_CURRENT', (msg, fields) => this._handleCurrentWaypoint(msg, fields));
         mav.on('GLOBAL_POSITION_INT', (msg, fields) => {
             const s = this.state;
             s.lat = fields.lat / 1e7;
@@ -306,6 +330,14 @@ export default class PlaneLink {
         this._missionSender.handleMissionAck(msg, fields);
     }
 
+    _handleCurrentWaypoint(msg, fields) {
+        console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
+        this._curWaypoint = fields.seq;
+        if (typeof this._curWaypointPromise !== 'undefined') {
+            this._curWaypointPromise.resolve(fields.seq);
+        }
+    }
+
     _setupMissionRequest() {
         // Do a mission list request if there's no mission receiver
         if (typeof(this._missionHandler) === 'undefined') {
@@ -355,6 +387,24 @@ export default class PlaneLink {
                     console.error(err);
                 } else {
                     console.log('Link: Sending ack after receiving mission list');
+                }
+            })
+        );
+    }
+
+    _sendSetCurrentWaypoint(seq) {
+        this._mav.createMessage(
+            'MISSION_SET_CURRENT',
+            {
+                'target_system': 1,
+                'target_component': 1,
+                'seq': seq
+            },
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log(`Link: Sending MISSION_SET_CURRENT (seq ${seq})`);
                 }
             })
         );
