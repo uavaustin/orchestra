@@ -17,7 +17,7 @@ mavproxy:
 	$(MAKE) -C services/mavproxy
 
 .PHONY: telemetry
-telemetry: protoc
+telemetry:
 	$(MAKE) -C services/telemetry
 
 .PHONY: interop-proxy

@@ -4,7 +4,7 @@ services:
   plane-sitl:
     image: uavaustin/plane-sitl
     environment:
-      - PLANE_HOME=30,60,1000,0
+      - PLANE_HOME=30.32356,-97.60333,100,0
     networks:
       test_net:
         ipv4_address: 172.16.238.9

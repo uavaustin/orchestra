@@ -30,6 +30,9 @@ export default class PlaneLink {
         this.state = new PlaneState();
         this._cxnState = ConnectionState.NOT_CONNECTED;
         this._taskQueue = queue((task, cb) => {task(); cb();});
+
+        // Will be assigned once missions are received
+        this._curWaypoint = null;
     }
     
     /**
@@ -119,6 +122,48 @@ export default class PlaneLink {
     }
 
     /**
+     * Gets the current waypoint.
+     * If the current waypoint is not known, get the plane's missions.
+     * Returns null if no missions.
+     * 
+     * @returns index of the current waypoint, or null if plane has no
+     * missions
+     */
+    async getCurrentWaypoint() {
+        if (this._curWaypoint === null) {
+            await this.requestMissions();
+        }
+        return this._curWaypoint;
+    }
+
+    /**
+     * Sets the current waypoint.
+     * This method blocks until we have received a MISSION_CURRENT
+     * packet back.
+     */
+    async setCurrentWaypoint(seq) {
+        return await new Promise((resolve, reject) => {
+            this._taskQueue.push(async () => {
+                this._curWaypointPromise = {
+                    'resolve': resolve,
+                    'reject': reject
+                };
+                this._cxnState = ConnectionState.WRITING;
+                this._sendSetCurrentWaypoint(seq);
+
+                const timeout = setTimeout(() => {
+                    reject('timeout waiting for MISSION_CURRENT');
+                }, 2000);
+                await this._curWaypointPromise;
+                clearTimeout(timeout);
+
+                delete this._curWaypointPromise;
+                this._cxnState = ConnectionState.IDLE;
+            });
+        });
+    }
+
+    /**
      * Converts mission data to a RawMission protobuf.
      * @returns {RawMission} a RawMission protobuf
      */
@@ -159,7 +204,7 @@ export default class PlaneLink {
 
     _connectSuccess(connectPromiseDecision) {
         if (this._cxnState === ConnectionState.NOT_CONNECTED) {
-            console.log('Connection established to plane');
+            console.log('Link: Connection established to plane');
 
             connectPromiseDecision.resolve();
             this._cxnState = ConnectionState.IDLE;
@@ -170,7 +215,7 @@ export default class PlaneLink {
     }
 
     _bindMessages(connectPromiseDecision) {
-        console.log('Created socket, binding messages now');
+        console.log('Link: Created socket, binding messages now');
         const mav = this._mav;
         this._socket.on('message', (data) => {
             this._mav.parse(data);
@@ -180,6 +225,7 @@ export default class PlaneLink {
         mav.on('MISSION_ITEM', (msg, fields) => this._handleMissionEntry(msg, fields));
         mav.on('MISSION_REQUEST', (msg, fields) => this._handleMissionRequest(msg, fields));
         mav.on('MISSION_ACK', (msg, fields) => this._handleMissionAck(msg, fields));
+        mav.on('MISSION_CURRENT', (msg, fields) => this._handleCurrentWaypoint(msg, fields));
         mav.on('GLOBAL_POSITION_INT', (msg, fields) => {
             const s = this.state;
             s.lat = fields.lat / 1e7;
@@ -204,6 +250,17 @@ export default class PlaneLink {
             s.groundSpeed = fields.groundspeed;
             s.altMSL = fields.alt;
         });
+        mav.on('BATTERY_INFO', (msg, fields) => {
+            const s = this.state;
+            Object.assign(s.battery, {
+                temp: fields.temperature,
+                voltages: fields.voltages,
+                current: fields.current_battery,
+                currentSpent: fields.current_consumed,
+                percentage: fields.battery_remaining,
+                approxTime: fields.time_remaining
+            });
+        })
     }
 
     _start_telemetry() {
@@ -223,7 +280,7 @@ export default class PlaneLink {
                     if (err) {
                         console.error(err);
                     } else {
-                        console.log('Requesting data stream...');
+                        console.log('Link: Requesting data stream...');
                     }
                 });
             });
@@ -247,9 +304,10 @@ export default class PlaneLink {
 
     _handleMissionList(msg, fields) {
         const missionCount = fields.count;
-        console.log(`Got mission list with ${missionCount} missions`);
+        console.log(`Link: Got mission list with ${missionCount} missions`);
         const handler = new MissionReceiver(this._mav, this._socket,
-            missionCount, (mission) => {
+            missionCount, (mission, cur) => {
+                this._curWaypoint = cur;
                 this._fulfillMissionRequests(mission);
                 delete this._missionHandler;
             });
@@ -261,7 +319,7 @@ export default class PlaneLink {
 
     _handleMissionEntry(msg, fields) {
         if (typeof(this._missionHandler) === 'undefined') {
-            console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
+            // console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
             return;
         }
         this._missionHandler.handleMessage(msg, fields);
@@ -269,7 +327,7 @@ export default class PlaneLink {
 
     _handleMissionRequest(msg, fields) {
         if (typeof(this._missionSender) === 'undefined') {
-            console.warn(`Request for waypoint ${fields.seq} was received without a mission sender. Ignoring.`);
+            console.warn(`Link: Request for wp ${fields.seq} was received without a mission sender. Ignoring.`);
             return;
         }
         this._missionSender.handleMissionRequest(msg, fields);
@@ -277,10 +335,18 @@ export default class PlaneLink {
 
     _handleMissionAck(msg, fields) {
         if (typeof(this._missionSender) === 'undefined') {
-            console.warn('Mission ack was received without a mission sender. Ignoring message.');
+            console.warn('Link: Mission ack was received without a mission sender. Ignoring.');
             return;
         }
         this._missionSender.handleMissionAck(msg, fields);
+    }
+
+    _handleCurrentWaypoint(msg, fields) {
+        console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
+        this._curWaypoint = fields.seq;
+        if (typeof this._curWaypointPromise !== 'undefined') {
+            this._curWaypointPromise.resolve(fields.seq);
+        }
     }
 
     _setupMissionRequest() {
@@ -298,7 +364,7 @@ export default class PlaneLink {
             this._missionFailTimeout = setTimeout(
                 () => {
                     clearInterval(this._missionInitialTimer);
-                    this._fulfillMissionRequests(null, 'timeout');
+                    this._fulfillMissionRequests(null, 'timeout receiving all missions');
                 }, 10000
             );
         }
@@ -312,7 +378,7 @@ export default class PlaneLink {
                 if (err) {
                     console.error(err);
                 } else {
-                    console.log('Requesting mission list');
+                    console.log('Link: Requesting mission list');
                 }
             })
         );
@@ -331,7 +397,25 @@ export default class PlaneLink {
                 if (err) {
                     console.error(err);
                 } else {
-                    console.log('Sending ack after receiving mission list');
+                    console.log('Link: Sending ack after receiving mission list');
+                }
+            })
+        );
+    }
+
+    _sendSetCurrentWaypoint(seq) {
+        this._mav.createMessage(
+            'MISSION_SET_CURRENT',
+            {
+                'target_system': 1,
+                'target_component': 1,
+                'seq': seq
+            },
+            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.log(`Link: Sending MISSION_SET_CURRENT (seq ${seq})`);
                 }
             })
         );
@@ -355,16 +439,19 @@ class MissionReceiver {
         this.missions = [];
 
         // Called when all missions have been received
-        // (missions) => {...}
+        // (missions, cur) => {...}
         this._done_callback = callback;
 
         // Timer for resending mission request
         this._sendTimer = null;
+
+        // The mission currently being executed by the autopilot
+        this._curMission = 0;
     }
 
     start() {
         if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done_callback(this.missions));
+            process.nextTick(() => this._done_callback(this.missions, this._curMission));
         } else {
             this._startRequestMission(this.missionNumber);
         }
@@ -389,9 +476,9 @@ class MissionReceiver {
             }, (msg) => {
                 this._socket.send(msg.buffer, destPort, destAddr, (err) => {
                     if (err) {
-                        console.error(`Error requesting mission ${id}: ${err}`);
+                        console.error(`MissionReceiver: Error requesting mission ${id}: ${err}`);
                     } else {
-                        console.log(`Requesting mission number ${id}`);
+                        console.log(`MissionReceiver: Requesting mission number ${id}`);
                     }
                 });
             }
@@ -404,12 +491,15 @@ class MissionReceiver {
 
     handleMessage(msg, fields) {
         if (fields.seq !== this.missionNumber) {
-            console.warn(`Received mission ${fields.seq} but wanted mission ${this.missionNumber}`);
+            console.warn(`MissionReceiver: Received mission ${fields.seq} but wanted mission ${this.missionNumber}`);
             return;
         }
-        console.log(`Got mission ${fields.seq}`);
+        console.log(`MissionReceiver: Got mission ${fields.seq}`);
         clearTimeout(this._sendTimer);
         this._sendTimer = null;
+        if (fields.cur == 1) {
+            this._curMission = this.missionNumber;
+        }
         this.missions.push(fields);
         this.missionNumber++;
         if (this.missionNumber === this.missionCount) {
@@ -431,7 +521,7 @@ class MissionSender {
         this._resolve = resolve;
         this._reject = reject;
 
-        this._curWaypoint = 0;
+        this._curWaypoint = null;
     }
 
     handleMissionRequest(msg, fields) {
@@ -439,7 +529,7 @@ class MissionSender {
             this._reqPromiseDecision.resolve();
             this._reqPromiseDecision = null;
         } else {
-            console.warn(`Received mission request for waypoint ${fields.seq}, not ${this._curWaypoint}!`);
+            console.warn(`MissionSender: Received mission request for waypoint ${fields.seq}, not ${this._curWaypoint}!`);
         }
     }
 
@@ -453,7 +543,7 @@ class MissionSender {
             if (this._reqPromiseDecision) {
                 this._reqPromiseDecision.reject();
             }
-            this._reject(`MISSION_ACK was returned with error code ${fields.type}`);
+            this._reject(`MissionSender: MISSION_ACK was returned with error code ${fields.type}`);
         }
     }
 
@@ -467,9 +557,9 @@ class MissionSender {
             },
             (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
                 if (err) {
-                    console.error(`Error sending mission clear request: ${err}`);
+                    console.error(`MissionSender: Error sending mission clear request: ${err}`);
                 } else {
-                    console.log('Requesting to clear all missions');
+                    console.log('MissionSender: Requesting to clear all missions');
                 }
             })
         );
@@ -486,16 +576,16 @@ class MissionSender {
             },
             (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
                 if (err) {
-                    console.error(`Error writing ${this._mission.length} waypoints: ${err}`);
+                    console.error(`MissionSender: Error writing ${this._mission.length} waypoints: ${err}`);
                 } else {
-                    console.log(`Requesting to write ${this._mission.length} waypoints`);
+                    console.log(`MissionSender: Requesting to write ${this._mission.length} waypoints`);
                 }
             })
         );
     }
 
     _sendWaypoint(waypoint) {
-        console.log(`Assembling waypoint ${waypoint.seq}`);
+        console.log(`MissionSender: Assembling waypoint ${waypoint.seq}`);
 
         // node-mavlink wants param1 instead of param_1 and so on.
         waypoint.param1 = waypoint.param_1;
@@ -508,9 +598,9 @@ class MissionSender {
             waypoint,
             (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
                 if (err) {
-                    console.error(`Error sending waypoint ${waypoint.seq}: ${err}`);
+                    console.error(`MissionSender: Error sending waypoint ${waypoint.seq}: ${err}`);
                 } else {
-                    console.log(`Sending waypoint ${waypoint.seq}`);
+                    console.log(`MissionSender: Sending waypoint ${waypoint.seq}`);
                 }
             })
         );

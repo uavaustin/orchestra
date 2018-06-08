@@ -71,6 +71,7 @@ app.get('/api/overview', (req, res) => {
         msg.setAlt(state.getAltitudeProto());
         msg.setVel(state.getVelocityProto());
         msg.setSpeed(state.getSpeedProto());
+        msg.setBattery(state.getBatteryProto());
         sendJsonOrProto(req, res, msg);
     }).catch((err) => {
         console.error(err);
@@ -112,12 +113,39 @@ app.post('/api/raw-mission', (req, res) => {
 
         plane.sendMission(mission).then(() => {
             res.sendStatus(200);
-        }).catch((err) => {
-            console.error(err);
-            res.sendStatus(504);
         });
     }).catch((err) => {
         console.error(err);
+        res.sendStatus(504);
+    });
+});
+
+app.get('/api/current-waypoint', (req, res) => {
+    connectPromise.then(() => {
+        plane.getCurrentWaypoint().then((waypoint) => {
+            res.send({
+                seq: waypoint
+            });
+        });
+    }).catch((err) => {
+        console.err(err);
+        res.sendStatus(504);
+    });
+});
+
+app.post('/api/current-waypoint', (req, res) => {
+    if (typeof req.body.seq === 'undefined') {
+        res.status(400);
+        res.send({err: 'Must contain seq'});
+        return;
+    }
+
+    connectPromise.then(() => {
+        plane.setCurrentWaypoint(req.body.seq).then((waypoint) => {
+            res.sendStatus(200);
+        });
+    }).catch((err) => {
+        console.err(err);
         res.sendStatus(504);
     });
 });
