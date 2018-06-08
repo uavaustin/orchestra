@@ -1,9 +1,13 @@
-import { GPhoto2 } from 'gphoto2';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
 import request from 'request-promise-native';
 
 import { imagery, telemetry } from '../messages';
 
 import { removeExif, wait } from '../util';
+
+const execAsync = promisify(exec);
 
 export default class CameraBackend {
     /** Create a new camera backend. */
@@ -12,12 +16,10 @@ export default class CameraBackend {
         this._interval = interval;
         this._telemUrl = telemUrl;
         this._active = false;
-
-        this._gphoto2 = new GPhoto2();
     }
 
     /** Continuously take photos. */
-    async _runLoop(camera) {
+    async _runLoop() {
         while (this._active) {
             let startTime = (new Date()).getTime() / 1000;
 
@@ -25,7 +27,7 @@ export default class CameraBackend {
             let metadataPromise = this._getMeta();
 
             try {
-                photo = await this._takePhoto(camera);
+                photo = await this._takePhoto();
             } catch (err) {
                 let message = err.name + ': ' + err.message;
                 console.error('Encountered an error in camera loop: '
@@ -106,18 +108,16 @@ export default class CameraBackend {
     }
 
     /** Take a photo and return the data. */
-    async _takePhoto(camera) {
-        let photo = await (new Promise((resolve, reject) => {
-            camera.takePicture({ download: true }, (err, data) => {
-                if (err) {
-                    reject(Error('Error while taking photo: ' + err));
-                } else if (!data) {
-                    reject(Error('Image was empty'));
-                } else {
-                    resolve(data);
-                }
-            });
-        }));
+    async _takePhoto() {
+        let { stdout, stderr } = await exec(
+             'gphoto2 --capture-image-and-download --no-keep --stdout',
+             {
+                encoding: 'buffer',
+                timeout: 5000
+             }
+        );
+
+        let photo = stdout;
 
         // Taking off EXIF data to prevent image preview applications
         // from rotating it.
@@ -129,30 +129,11 @@ export default class CameraBackend {
         await this._imageStore.addImage(photo, await metadataPromise);
     }
 
-    /** Get the camera gphoto2 object. */
-    async _getCamera() {
-        return await (new Promise((resolve) => {
-            this._gphoto2.list((list) => {
-                if (list.length == 0) {
-                    console.error('No camera found.');
-                    process.exit(1);
-                } else if (list.length >= 2) {
-                    console.error('More than 1 camera found.');
-                    process.exit(1);
-                } else {
-                    resolve(list[0]);
-                }
-            });
-        }));
-    }
-
     /** Get the camrea and then start the loop in the background. */
     async start() {
         this._active = true;
 
-        let camera = await this._getCamera();
-
-        this._runLoop(camera);
+        this._runLoop();
     }
 
     /** Set a flag to kill the camera loop. */

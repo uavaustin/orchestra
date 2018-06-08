@@ -10,8 +10,7 @@ RUN apk --no-cache add \
     make \
     g++ \
     git \
-    python-dev \
-    libgphoto2-dev
+    gphoto2
 
 COPY imagery/package.json .
 
@@ -32,7 +31,7 @@ WORKDIR /app
 
 # We need both libgphoto2 and graphicsmagick at runtime.
 RUN apk --no-cache add \
-    libgphoto2-dev \
+    gphoto2 \
     graphicsmagick
 
 # Copying over gphoto2 since we don't have to build it again.
