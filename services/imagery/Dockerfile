@@ -34,9 +34,6 @@ RUN apk --no-cache add \
     gphoto2 \
     graphicsmagick
 
-# Copying over gphoto2 since we don't have to build it again.
-COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2
-
 COPY imagery/package.json .
 
 RUN export NODE_ENV=production && npm install
