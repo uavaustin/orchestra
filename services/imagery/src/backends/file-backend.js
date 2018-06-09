@@ -3,9 +3,9 @@ import path from 'path';
 import chokidar from 'chokidar';
 import fs from 'fs-extra';
 
-import { Image } from '../messages/imagery_pb';
+import { imagery } from '../messages';
 
-import { convertPng } from '../util';
+import { convertPng, removeExif } from '../util';
 
 const WATCH_FOLDER_NAME = '/opt/new-images';
 
@@ -49,10 +49,14 @@ export default class FileBackend {
                 // to a JPEG.
                 if (isPng) data = await convertPng(data);
 
-                // The only metadata here is the timestamp.
-                let metadata = new Image();
+                // Taking off EXIF data to prevent image preview
+                // applications from rotating it.
+                data = await removeExif(data);
 
-                metadata.setTime((new Date()).getTime() / 1000);
+                // The only metadata here is the timestamp.
+                let metadata = imagery.Image.create({
+                    time: (new Date()).getTime() / 1000
+                });
 
                 // Add it to the image store.
                 await this._imageStore.addImage(data, metadata);

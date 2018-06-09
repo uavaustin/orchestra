@@ -1,8 +1,8 @@
 import request from 'request-promise-native';
 
-import { toUint8Array, wait } from '../util';
+import { wait } from '../util';
 
-import { Image, ImageCount } from '../messages/imagery_pb';
+import { imagery } from '../messages';
 
 export default class SyncBackend {
     /**
@@ -41,11 +41,11 @@ export default class SyncBackend {
                     let msg = await this._getImage(id);
 
                     // Getting the image data from the message.
-                    let image = msg.getImage();
+                    let image = msg.image;
 
                     // Clearing the image data so only metadata is
                     // left.
-                    msg.setImage(null);
+                    msg.image = null;
 
                     // Adding it to the image store.
                     await this._imageStore.addImage(image, msg);
@@ -67,14 +67,12 @@ export default class SyncBackend {
         let msg = await request({
             uri: `http://${this._syncUrl}/api/count`,
             encoding: null,
-            transform: buffer => ImageCount.deserializeBinary(
-                toUint8Array(buffer)
-            ),
+            transform: buffer => imagery.ImageCount.decode(buffer),
             transform2xxOnly: true,
             timeout: 5000
         });
 
-        return msg.getCount() - 1;
+        return msg.count - 1;
     }
 
     /** Get an image from the sync url by id. */
@@ -88,9 +86,7 @@ export default class SyncBackend {
                 warped: 'true'
             },
             encoding: null,
-            transform: buffer => Image.deserializeBinary(
-                toUint8Array(buffer)
-            ),
+            transform: buffer => imagery.Image.decode(buffer),
             transform2xxOnly: true,
             timeout: 5000
         });

@@ -17,6 +17,10 @@ COPY imagery/package.json .
 
 RUN npm install
 
+COPY imagery/src/messages src/messages
+
+RUN npm run build-msg
+
 COPY imagery .
 
 RUN npm run build
@@ -44,7 +48,12 @@ COPY --from=builder /builder/lib lib
 # Must be one of "camera", "file", "sync".
 ENV BACKEND='camera' \
     # Must be set if using the sync backend.
-    IMAGERY_SYNC_URL=''
+    IMAGERY_SYNC_URL='' \
+    # Can be set when using the camera backend.
+    TELEMETRY_URL='' \
+    # Interval to trigger camera images at in the camera backend.
+    # Defaults to 2 seconds.
+    CAPTURE_INTERVAL='2'
 
 EXPOSE 8081
 

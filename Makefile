@@ -41,7 +41,7 @@ forward-interop: protoc
 	$(MAKE) -C services/forward-interop
 
 .PHONY: imagery
-imagery: protoc
+imagery:
 	$(MAKE) -C services/imagery
 
 .PHONY: dashboard
