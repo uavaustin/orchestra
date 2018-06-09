@@ -1,6 +1,6 @@
 {
     "name": "telemetry",
-    "main": "lib/telemetry.js",
+    "main": "lib/server.js",
     "private": true,
     "license": "MIT",
     "scripts": {

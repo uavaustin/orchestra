@@ -83,6 +83,37 @@ export default class PlaneLink {
     }
 
     /**
+     * Waits for event queue to stop, and closes the UDP socket.
+     */
+    async disconnect() {
+        await new Promise((resolve, reject) => {
+            if (this._taskQueue.idle()) {
+                // Cleanup immediately if idle
+                this._cleanup();
+                resolve();
+            } else {
+                // Wait 10 seconds for the queue to clear up.
+                // Force cleanup after time has elapsed.
+                const timeout = setTimeout(() => {
+                    console.warn('Timed out waiting on task queue. Killing queue.');
+                    this._taskQueue.kill();
+                    this._cleanup();
+                    resolve();
+                }, 10000);
+                this._taskQueue.drain = () => {
+                    clearTimeout(timeout);
+                    this._cleanup();
+                    resolve();
+                };
+            }
+        });
+    }
+
+    _cleanup() {
+        this._socket.close();
+    }
+
+    /**
      * Performs a mission list request if one is not already underway.
      * @returns {Array} an array of waypoints that were received
      */
