@@ -373,7 +373,9 @@ export default class PlaneLink {
     }
 
     _handleCurrentWaypoint(msg, fields) {
-        console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
+        if (this._curWaypoint !== fields.seq) {
+            console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
+        }
         this._curWaypoint = fields.seq;
         if (typeof this._curWaypointPromise !== 'undefined') {
             this._curWaypointPromise.resolve(fields.seq);
