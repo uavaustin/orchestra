@@ -48,7 +48,11 @@ def get_next_id(redis_client):
 
 
 def get_image(imagery_url, image_id):
-    """Get the image from the imagery service by id."""
+    """Get the image from the imagery service by id.
+
+    Returns None if the status code is not 200.
+    """
+
     image = None
 
     # Keep trying to request from the imagery service until we get
@@ -57,6 +61,10 @@ def get_image(imagery_url, image_id):
         try:
             url = 'http://' + imagery_url + '/api/image/' + str(image_id)
             resp = requests.get(url)
+
+            # We'll just return None with an unexpected status code.
+            if resp.status_code != 200:
+                break
 
             # Parsing the protobuf response.
             image = imagery_pb2.Image()
@@ -176,6 +184,13 @@ def run_iter(imagery_url, redis_client):
     # The image retrieved from the imagery service (note that this is
     # a protobuf message object).
     image = get_image(imagery_url, image_id)
+
+    if image is None:
+        print(' --> ' + colored(
+            'imagery service gave non-200 status code, skipping image',
+            'red', attrs=['bold']
+        ))
+        return
 
     # Converting the image to a Pillow one
     pillow_image = PIL.Image.open(BytesIO(image.image))
