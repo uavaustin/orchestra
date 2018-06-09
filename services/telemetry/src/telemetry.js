@@ -115,7 +115,7 @@ export default class Telemetry {
         });
     }
 
-    start() {
+    async start() {
         if (this.server) {
             throw Error('Telemetry server is already running');
         }
@@ -123,21 +123,19 @@ export default class Telemetry {
         const PORT = 5000;
 
         this.plane = new PlaneLink();
-        this.plane.connect().then(() => {
-            this.server = this.app.listen(PORT);
-        }).catch((err) => {
-            // This error is intended to be fatal
-            throw err;
-        });
-
+        await this.plane.connect();
+        this.server = this.app.listen(PORT);
         console.log(`Running server with Express at http://0.0.0.0:${PORT}`);
     }
 
-    stop() {
-        this.plane.disconnect().then(() => {
-            this.server.close(() => {
-                console.log('Closed server.')
-                this.server = null;
+    async stop() {
+        await new Promise((resolve, reject) => {
+            this.plane.disconnect().then(() => {
+                this.server.close(() => {
+                    console.log('Closed server.')
+                    this.server = null;
+                    resolve();
+                });
             });
         });
     }
