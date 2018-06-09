@@ -2,10 +2,21 @@ import mavlink from 'mavlink';
 import dgram from 'dgram';
 import queue from 'async/queue';
 import series from 'async/series';
+import winston from 'winston';
+import path from 'path';
 
 import { telemetry } from './messages';
 import PlaneState from './state';
 import { wrapIndex } from './util';
+
+const missionLogger = winston.createLogger({
+    transports: [
+        new winston.transports.File({
+            filename: path.join(__dirname, '..', 'missions-received.txt'),
+            timestamp: true
+        })
+    ]
+});
 
 // Parse CXN_STR (defined in Docker config)
 // Capture group 0: IP address (IPv4, IPv6, and hostname are all acceptable)
@@ -484,7 +495,7 @@ class MissionReceiver {
 
     start() {
         if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done_callback(this.missions, this._curMission));
+            process.nextTick(() => this._done());
         } else {
             this._startRequestMission(this.missionNumber);
         }
@@ -518,8 +529,9 @@ class MissionReceiver {
         );
     }
 
-    done(func) {
-        this._done_callback = func;
+    _done() {
+        missionLogger.log({ level: 'info', message: JSON.stringify(this.missions) });
+        this._done_callback(this.missions, this._curMission);
     }
 
     handleMessage(msg, fields) {
@@ -536,7 +548,7 @@ class MissionReceiver {
         this.missions.push(fields);
         this.missionNumber++;
         if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done_callback(this.missions));
+            process.nextTick(() => this._done());
         } else {
             this._startRequestMission(this.missionNumber);
         }
@@ -554,7 +566,7 @@ class MissionSender {
         this._resolve = resolve;
         this._reject = reject;
 
-        this._curWaypoint = null;
+        this._curWaypoint = 0;
     }
 
     handleMissionRequest(msg, fields) {

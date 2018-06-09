@@ -1,5 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import path from 'path';
 
 import { telemetry } from './messages';
 import { sendJsonOrProto } from './util';
@@ -10,8 +11,6 @@ export default class Telemetry {
         this.app = express();
         this.plane = null;
         this.server = null;
-
-        const plane = this.plane;
 
         // By default, the bodies are assumed to be protobufs.
         this.app.use(bodyParser.json({ type: 'application/json' }));
@@ -24,7 +23,7 @@ export default class Telemetry {
         
         this.app.get('/api/alive', (req, res) => {
             res.set('content-type', 'text/plain');
-            if (plane.state.isPopulated()) {
+            if (this.plane.state.isPopulated()) {
                 res.send('Yes, I\'m alive!\n');
             } else {
                 res.status(503).send('No plane data available yet\n');
@@ -32,27 +31,27 @@ export default class Telemetry {
         });
         
         this.app.get('/api/interop-telem', (req, res) => {
-            if (plane.state.isPopulated()) {
-                sendJsonOrProto(req, res, plane.state.getInteropTelemProto());
+            if (this.plane.state.isPopulated()) {
+                sendJsonOrProto(req, res, this.plane.state.getInteropTelemProto());
             } else {
                 res.send(503);
             }
         });
         
         this.app.get('/api/camera-telem', (req, res) => {
-            if (plane.state.isPopulated()) {
-                sendJsonOrProto(req, res, plane.state.getCameraTelemProto());
+            if (this.plane.state.isPopulated()) {
+                sendJsonOrProto(req, res, this.plane.state.getCameraTelemProto());
             } else {
                 res.send(204);
             }
         });
         
         this.app.get('/api/overview', (req, res) => {
-            if (!plane.state.isPopulated()) {
+            if (!this.plane.state.isPopulated()) {
                 res.send(503);
                 return;
             }
-            const state = plane.state;
+            const state = this.plane.state;
             let msg = new telemetry.Overview();
             msg.setPos(state.getPositionProto());
             msg.setRot(state.getRotationProto());
@@ -64,8 +63,8 @@ export default class Telemetry {
         });
         
         this.app.get('/api/raw-mission', (req, res) => {
-            plane.requestMissions().then(() => {
-                sendJsonOrProto(req, res, plane.getRawMissionProto());
+            this.plane.requestMissions().then(() => {
+                sendJsonOrProto(req, res, this.plane.getRawMissionProto());
             }).catch((err) => {
                 console.error(err);
                 res.send(504);
@@ -89,13 +88,13 @@ export default class Telemetry {
         
             let mission = rawMission.mission_items;
         
-            plane.sendMission(mission).then(() => {
+            this.plane.sendMission(mission).then(() => {
                 res.sendStatus(200);
             });
         });
         
         this.app.get('/api/current-waypoint', (req, res) => {
-            plane.getCurrentWaypoint().then((waypoint) => {
+            this.plane.getCurrentWaypoint().then((waypoint) => {
                 res.send({
                     seq: waypoint
                 });
@@ -109,9 +108,13 @@ export default class Telemetry {
                 return;
             }
         
-            plane.setCurrentWaypoint(req.body.seq).then((waypoint) => {
+            this.plane.setCurrentWaypoint(req.body.seq).then((waypoint) => {
                 res.sendStatus(200);
             });
+        });
+
+        this.app.get('/api/logs/missions-received', (req, res) => {
+            res.sendFile('missions-received.txt', { root: path.join(__dirname, '..') });
         });
     }
 
