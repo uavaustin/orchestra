@@ -27,13 +27,13 @@ All the Protobuf endpoints can also return JSON as well if the Accept header is 
 
   On successful response: `200` status code with an empty body.
 
-- `GET /api/pathfinder-telem`
+- `GET /api/pathfinder-parameter`
 
   Returns the current configuration parameter of the pathfinder
 
   On successful response: `200` status code with `pathfinding/PathfinderParameter` Protobuf message.
 
-- `POST /api/pathfinder-telem`
+- `POST /api/pathfinder-parameter
 
   Pushes new configuration parameter to the pathfinder
 
