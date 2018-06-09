@@ -39,16 +39,43 @@ const PROTOCOL: &str = "http://";
 const DEFAULT_TELEMETRY_URL: &str = "0.0.0.0:5000";
 const DEFAULT_INTEROP_PROXY_URL: &str = "0.0.0.0:8000";
 
-fn set_json_header(header: &mut Headers, message: &String) {
-    header.set(ContentType::json());
-    header.set(ContentLength(message.len() as u64));
-    header.set(Date(SystemTime::now().into()));
+trait HeaderPreset {
+    fn set_json_header(&mut self, &String);
+    fn set_protobuf_header(&mut self, &Vec<u8>);
 }
 
-fn set_protobuf_header(header: &mut Headers, message: &Vec<u8>) {
-    header.set(ContentType("application/x-protobuf".parse().unwrap()));
-    header.set(ContentLength(message.len() as u64));
-    header.set(Date(SystemTime::now().into()));
+impl HeaderPreset for Headers {
+    fn set_json_header(&mut self, message: &String) {
+        self.set(ContentType::json());
+        self.set(ContentLength(message.len() as u64));
+        self.set(Date(SystemTime::now().into()));
+    }
+
+    fn set_protobuf_header(&mut self, message: &Vec<u8>) {
+        self.set(ContentType("application/x-protobuf".parse().unwrap()));
+        self.set(ContentLength(message.len() as u64));
+        self.set(Date(SystemTime::now().into()));
+    }
+}
+
+impl HeaderPreset for Request {
+    fn set_json_header(&mut self, message: &String) {
+        self.headers_mut().set_json_header(message);
+    }
+
+    fn set_protobuf_header(&mut self, message: &Vec<u8>) {
+        self.headers_mut().set_protobuf_header(message);
+    }
+}
+
+impl HeaderPreset for Response {
+    fn set_json_header(&mut self, message: &String) {
+        self.headers_mut().set_json_header(message);
+    }
+
+    fn set_protobuf_header(&mut self, message: &Vec<u8>) {
+        self.headers_mut().set_protobuf_header(message);
+    }
 }
 
 #[derive(Clone)]
@@ -221,7 +248,7 @@ impl Autopilot {
         let body = json!({
             "seq": seq
         }).to_string();
-        set_json_header(request.headers_mut(), &body);
+        request.set_json_header(&body);
         request.set_body(body);
         self.post(request)
     }
@@ -230,7 +257,7 @@ impl Autopilot {
         let uri: Uri = format!("{}/api/raw-mission", self.telemetry_host).parse().unwrap();
         let mut request = Request::new(Method::Post, uri);
         let body = message.write_to_bytes().unwrap();
-        set_protobuf_header(request.headers_mut(), &body);
+        request.set_protobuf_header(&body);
         request.set_body(body);
         self.post(request)
     }
@@ -453,7 +480,7 @@ impl Service for Autopilot {
                         let json = json!({
                             "process_time": process_time
                         }).to_string();
-                        set_json_header(response.headers_mut(), &json);
+                        response.set_json_header(&json);
                         response.set_status(StatusCode::Ok);
                         response.set_body(json);
                     }
@@ -461,7 +488,7 @@ impl Service for Autopilot {
                     let mut param = PathfinderParameter::new();
                     param.set_process_time(process_time);
                     let body = param.write_to_bytes().unwrap();
-                    set_protobuf_header(response.headers_mut(), &body);
+                    response.set_protobuf_header(&body);
                     response.set_status(StatusCode::Ok);
                     response.set_body(body);
                 }
