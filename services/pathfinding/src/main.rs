@@ -1,5 +1,5 @@
 extern crate protobuf;
-extern crate Obstacle_Path_Finder;
+extern crate pathfinder;
 extern crate hyper;
 extern crate futures;
 extern crate tokio_core;
@@ -24,7 +24,7 @@ use protobuf::*;
 use messages::telemetry::*;
 use messages::interop::*;
 use messages::pathfinding::*;
-use Obstacle_Path_Finder::{Obstacle, PathFinder, Plane, Point, Waypoint};
+use pathfinder::{Obstacle, Pathfinder, Plane, Point, Waypoint};
 
 use futures::future;
 use futures::future::Future;
@@ -56,7 +56,7 @@ struct Autopilot {
     handle: Handle,
     telemetry_host: String,
     interop_proxy_host: String,
-    pathfinder: Rc<RefCell<PathFinder>>
+    pathfinder: Rc<RefCell<Pathfinder>>
 }
 
 impl Autopilot {
@@ -67,7 +67,7 @@ impl Autopilot {
                 unwrap_or(String::from(DEFAULT_TELEMETRY_URL)),
             interop_proxy_host: PROTOCOL.to_string() + &env::var("INTEROP_PROXY_URL").
                 unwrap_or(String::from(DEFAULT_INTEROP_PROXY_URL)),
-            pathfinder: Rc::new(RefCell::new(PathFinder::new()))
+            pathfinder: Rc::new(RefCell::new(Pathfinder::new()))
         };
 
         let object_requests = autopilot.get_mission().join(autopilot.get_obstacles());
@@ -426,6 +426,7 @@ impl Service for Autopilot {
             }
             (&Method::Post, "/api/update-path") => {
                 let autopilot = self.clone();
+                eprintln!("Retrieving objects...");
                 return Box::new(
                     self.get_raw_mission().join3(self.get_telemetry(), self.get_current())
                     .then(move |res| {
