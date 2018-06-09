@@ -1,13 +1,10 @@
 import { exec } from 'child_process';
-import { promisify } from 'util';
 
 import request from 'request-promise-native';
 
 import { imagery, telemetry } from '../messages';
 
 import { removeExif, wait } from '../util';
-
-const execAsync = promisify(exec);
 
 export default class CameraBackend {
     /** Create a new camera backend. */
@@ -109,15 +106,19 @@ export default class CameraBackend {
 
     /** Take a photo and return the data. */
     async _takePhoto() {
-        let { stdout, stderr } = await exec(
-             'gphoto2 --capture-image-and-download --no-keep --stdout',
-             {
-                encoding: 'buffer',
-                timeout: 5000
-             }
-        );
-
-        let photo = stdout;
+        let photo = await (new Promise((resolve, reject) => {
+            exec(
+                'gphoto2 --capture-image-and-download --no-keep --stdout',
+                {
+                    encoding: 'buffer',
+                    timeout: 5000
+                },
+                (err, stdout, stderr) => {
+                    if (err) reject(err);
+                    else resolve(stdout);
+                }
+            );
+        }));
 
         // Taking off EXIF data to prevent image preview applications
         // from rotating it.
