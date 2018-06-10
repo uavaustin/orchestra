@@ -157,13 +157,17 @@ export default class PlaneLink {
             this._taskQueue.push(async () => {
                 this._cxnState = ConnectionState.WRITING;
 
-                await sendMission(
-                    this._mav, mission, this._socket, destAddr, destPort
-                );
+                try {
+                    await sendMission(
+                        this._mav, mission, this._socket, destAddr, destPort
+                    );
 
-                this._cxnState = ConnectionState.IDLE;
-
-                resolve();
+                    this._cxnState = ConnectionState.IDLE;
+                    resolve();
+                } catch (err) {
+                    this._cxnState = ConnectionState.IDLE;
+                    reject(err);
+                }
             });
         });
     }
