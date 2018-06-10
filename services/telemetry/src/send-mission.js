@@ -4,6 +4,13 @@ const MAX_COUNT_ATTEMPTS = 10;
 const MISSION_TIMEOUT = 10000;
 
 export default async function sendMission(mav, mission, socket, host, port) {
+    // If this is an empty list, we're just going to clear the
+    // mission, otherwise, the the normal mission sending operation
+    // won't work.
+    if (!mission || mission.length === 0) {
+        return await _sendClearAll(mav, socket, host, port);
+    }
+
     let countAttempts = 0;
 
     // Keep trying to send the count message until it works, or if we
@@ -61,7 +68,7 @@ export default async function sendMission(mav, mission, socket, host, port) {
     });
 }
 
-async function _sendClearAll(mav, count, socket, host, post) {
+async function _sendClearAll(mav, socket, host, port) {
     await sendMavMessage(mav, 'MISSION_CLEAR_ALL', {
         target_system: 1,
         target_component: 1,
