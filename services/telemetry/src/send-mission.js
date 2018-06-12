@@ -1,70 +1,118 @@
-import { sendMavMessage, wait } from './util';
+import { sendMavMessage } from './util';
 
-const MAX_COUNT_ATTEMPTS = 10;
-const MISSION_TIMEOUT = 10000;
+const MISSION_TIMEOUT = 15000;
 
 export default async function sendMission(mav, mission, socket, host, port) {
     // If this is an empty list, we're just going to clear the
-    // mission, otherwise, the the normal mission sending operation
+    // mission, otherwise, then the normal mission sending operation
     // won't work.
     if (!mission || mission.length === 0) {
-        return await _sendClearAll(mav, socket, host, port);
+        return await _clearAll(mav, socket, host, port);
     }
 
-    let countAttempts = 0;
+    // Making a finish function that is overrided below to end this
+    // function. By default, we'll store if there was an error or not
+    // in the case that the function is called before it is overrided
+    // below.
+    let finish = function (err) {
+        this.called = true;
+        this.err = err
+    };
 
-    // Keep trying to send the count message until it works, or if we
-    // have to try too many times.
-    while (true) {
-        try {
-            await _sendCount(mav, mission.length, socket, host, port);
-            break;
-        } catch (err) {
-            countAttempts++;
+    // Send a count once, and then keep doing it on an interval if a
+    // mission request hasn't come in yet.
+    let sendCount = () => _sendCount(mav, mission.length, socket, host, port);
+    sendCount();
 
-            if (countAttempts === MAX_COUNT_ATTEMPTS) {
-                throw Error('Maximum number of MISSION_COUNT messages sent.');
-            }
+    let countInt = setInterval(sendCount, 1000);
 
-            await wait(1000);
-        }
-    }
-
+    // After the first request, we don't need to send the count
+    // anymore.
+    let onFirstRequest = (msg, fields) => clearInterval(countInt);
 
     // On each request, send back the mission item that is requested.
     let onRequest = async (msg, fields) => {
         await _sendMissionItem(mav, mission[fields.seq], socket, host, port);
     };
 
-    let finish;
-    let earlySuccess = false;
-
-    // We're done on the ACK message, so clean up.
+    // We're done on the ACK message. A type of 0 means the mission
+    // sending was successful.
     let onAck = (msg, fields) => {
-        mav.removeListener('MISSION_REQUEST', onRequest);
-
-        earlySuccess = true;
-        if (finish) finish();
+        if (fields.type === 0) finish();
+        else finish(Error('MISSION_ACK returned CMD ID ' + fields.type));
     };
 
+    mav.once('MISSION_REQUEST', onFirstRequest);
     mav.on('MISSION_REQUEST', onRequest);
     mav.once('MISSION_ACK', onAck);
 
-    // If we hit the max time, we'll kill the listeners and reject,
-    // otherwise, cleanup the timeout the resolve.
+    // If we hit the max time, we'll finish this
+    let waitTimeout = setTimeout(() => {
+        finish(Error('Mission sending took too long.'));
+    }, MISSION_TIMEOUT);
+
     return await new Promise((resolve, reject) => {
-        let waitTimeout = setTimeout(() => {
+        let earlyCall = finish.called;
+        let earlyErr = finish.err;
+
+        finish = (err) => {
+            clearInterval(countInt);
+            clearTimeout(waitTimeout);
+
+            mav.removeListener('MISSION_REQUEST', onFirstRequest);
             mav.removeListener('MISSION_REQUEST', onRequest);
             mav.removeListener('MISSION_ACK', onAck);
-            reject(Error('Mission sending took too long.'));
-        }, MISSION_TIMEOUT);
 
-        finish = () => {
-            clearTimeout(waitTimeout);
-            resolve();
+            if (err) reject(err);
+            else resolve();
         };
 
-        if (earlySuccess) finish();
+        if (earlyCall) {
+            finish(earlyErr);
+        }
+    });
+}
+
+async function _clearAll(mav, socket, host, port) {
+    // Using a similar method as sendMission(...) above.
+    let finish = function (err) {
+        this.called = true;
+        this.err = err
+    };
+
+    let clear = () => _sendClearAll(mav, socket, host, port);
+    clear();
+
+    let clearInt = setInterval(clear, 1000);
+
+    let onAck = (msg, fields) => {
+        if (fields.type === 0) finish();
+        else finish(Error('MISSION_ACK returned CMD ID ' + fields.type));
+    };
+
+    mav.once('MISSION_ACK', onAck);
+
+    let waitTimeout = setTimeout(() => {
+        finish(Error('Mission clearing took too long.'));
+    }, MISSION_TIMEOUT);
+
+    return await new Promise((resolve, reject) => {
+        let earlyCall = finish.called;
+        let earlyErr = finish.err;
+
+        finish = (err) => {
+            clearInterval(clearInt);
+            clearTimeout(waitTimeout);
+
+            mav.removeListener('MISSION_ACK', onAck);
+
+            if (err) reject(err);
+            else resolve();
+        };
+
+        if (earlyCall) {
+            finish(earlyErr);
+        }
     });
 }
 
