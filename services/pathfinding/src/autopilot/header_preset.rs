@@ -1,7 +1,7 @@
 use std::time::SystemTime;
 
-use hyper::{Request, Response};
 use hyper::header::{ContentLength, ContentType, Date, Headers};
+use hyper::{Request, Response};
 
 pub trait HeaderPreset {
     fn set_json_header(&mut self, &String);
