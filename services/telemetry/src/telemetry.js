@@ -52,13 +52,14 @@ export default class Telemetry {
                 return;
             }
             const state = this.plane.state;
-            let msg = new telemetry.Overview();
-            msg.setPos(state.getPositionProto());
-            msg.setRot(state.getRotationProto());
-            msg.setAlt(state.getAltitudeProto());
-            msg.setVel(state.getVelocityProto());
-            msg.setSpeed(state.getSpeedProto());
-            msg.setBattery(state.getBatteryProto());
+            let msg = telemetry.Overview.create({
+                pos: state.getPositionProto(),
+                rot: state.getRotationProto(),
+                alt: state.getAltitudeProto(),
+                vel: state.getVelocityProto(),
+                speed: state.getSpeedProto(),
+                battery: state.getBatteryProto()
+            });
             sendJsonOrProto(req, res, msg);
         });
         
