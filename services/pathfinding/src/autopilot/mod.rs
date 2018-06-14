@@ -308,10 +308,11 @@ impl Autopilot {
         let mut pathfinder = self.pathfinder.borrow_mut();
         let waypoints = self.parse_waypoint(&raw_mission, current_wp);
         let path = pathfinder.get_adjust_path(
-            Plane::from_degrees(pos.lat, pos.lon, pos.alt_msl as f32),
+            Plane::from_degrees(pos.lat, pos.lon, pos.alt_msl as f32)
+                .yaw(telemetry.get_yaw() as f32),
             waypoints,
         );
-        let current = self.update_mission(&path, &mut raw_mission);
+        let _current = self.update_mission(&path, &mut raw_mission);
 
         eprintln!("Processed mission:");
         for mission in raw_mission.get_mission_items() {
