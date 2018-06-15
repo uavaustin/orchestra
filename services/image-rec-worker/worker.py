@@ -83,7 +83,7 @@ def get_image(imagery_url, image_id):
     return image
 
 
-def get_earth_rad(lat):
+def get_earth_radii(lat):
     r_1 = (EARTH_RADIUS * (1 - EARTH_ECCEN ** 2) /
            (1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2) ** (3 / 2))
     r_2 = EARTH_RADIUS / sqrt(1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2)
