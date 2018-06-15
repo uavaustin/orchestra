@@ -4,49 +4,45 @@ import sys
 import PIL.Image
 import target_finder
 
-
 # Putting the service path in the python path so we can import the
 # worker.
 service_dir = os.path.abspath(os.path.join(__file__, '..', '..'))
 sys.path.append(service_dir)
 
-
 import worker
 
+import interop_pb2
 
-def test_encode_odlc():
-    odlc = (42.0, 'rectangle', 'red', 'B', 'blue', 12.34, -34.56, 'test-image')
+def test_parse_targets_1():
+    tf_targets = [
+        target_finder.Target(
+            10,
+            20,
+            100,
+            500,
+            target_finder.Shape.PENTAGON,
+            95.3,
+            target_finder.Color.RED,
+            'G',
+            target_finder.Color.BLUE,
+            None,
+            0.0
+        )
+    ]
 
-    qs_1 = worker.encode_odlc(odlc)
+    odlcs = worker.parse_targets(None, tf_targets)
 
-    assert qs_1 == 'orientation=42.0&shape=rectangle&background_color=red&' \
-            'alphanumeric=B&alphanumeric_color=blue&lat=12.34&lon=-34.56&' \
-            'image='
+    assert len(odlcs) == 1
 
-    qs_2 = worker.encode_odlc(odlc, include_image=True)
+    odlc = odlcs[0]
 
-    assert qs_2 == 'orientation=42.0&shape=rectangle&background_color=red&' \
-            'alphanumeric=B&alphanumeric_color=blue&lat=12.34&lon=-34.56&' \
-            'image=test-image'
-
-
-def test_decode_odlc():
-    qs_1 = 'orientation=43.0&shape=square&background_color=blue&' \
-            'alphanumeric=A&alphanumeric_color=white&lat=-12.34&lon=34.56&' \
-            'image='
-
-    qs_2 = 'orientation=43.0&shape=square&background_color=blue&' \
-            'alphanumeric=A&alphanumeric_color=white&lat=-12.34&lon=34.56&' \
-            'image=test-image-2'
-
-    odlc_1 = worker.decode_odlc(qs_1)
-
-    assert odlc_1 == (
-        43.0, 'square', 'blue', 'A', 'white', -12.34, 34.56, ''
-    )
-
-    odlc_2 = worker.decode_odlc(qs_2)
-
-    assert odlc_2 == (
-        43.0, 'square', 'blue', 'A', 'white', -12.34, 34.56, 'test-image-2'
-    )
+    assert odlc.type == interop_pb2.Odlc.STANDARD
+    assert odlc.pos.lat == 0.0
+    assert odlc.pos.lon == 0.0
+    assert odlc.shape == interop_pb2.Odlc.PENTAGON
+    assert odlc.orientation == interop_pb2.Odlc.EAST
+    assert odlc.background_color == interop_pb2.Odlc.RED
+    assert odlc.alphanumeric == 'G'
+    assert odlc.alphanumeric_color == interop_pb2.Odlc.BLUE
+    assert odlc.autonomous == True
+    assert odlc.image == b''

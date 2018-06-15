@@ -3,8 +3,10 @@
 """Identifies targets as new images come in."""
 
 import base64
+import json
 from io import BytesIO
 import os
+from math import pi, sin, cos, tan
 import sys
 import time
 import urllib.parse
@@ -22,7 +24,12 @@ messages_dir = os.path.abspath(os.path.join(__file__, '..', 'messages'))
 sys.path.append(messages_dir)
 
 
+import interop_pb2
 import imagery_pb2
+
+
+EARTH_RADIUS = 6378137
+EARTH_ECCEN  = 0.0818191
 
 
 def curr_time():
@@ -37,9 +44,9 @@ def get_next_id(redis_client):
     # Keep trying to get this from redis until we get an id.
     while image_id == None:
         try:
-            # We'll just pop this off the left side of the queue once
-            # an id is available.
-            image_id = int(redis_client.blpop('unprocessed-images')[1])
+            # We'll just pop this off the right side of the queue
+            # once an id is available.
+            image_id = int(redis_client.brpop('unprocessed-images')[1])
         except redis.exceptions.ConnectionError as e:
             print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
             time.sleep(1)
@@ -76,93 +83,140 @@ def get_image(imagery_url, image_id):
     return image
 
 
+def get_earth_rad(lat):
+    r_1 = (EARTH_RADIUS * (1 - EARTH_ECCEN ** 2) /
+           (1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2) ** (3 / 2))
+    r_2 = EARTH_RADIUS / sqrt(1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2)
+
+    return r_1, r_2
+
+
 def get_lat_lon(image, target):
     """Return the lat and lon of a target from the original image."""
-    # TODO - implement
-    return 0.0, 0.0
+    # If we don't have any telemetry, then just return 0, 0.
+    if not image.has_telem:
+        return 0.0, 0.0
+
+    lat = image.telem.lat
+    lon = image.telem.lon
+    alt = image.telem.alt
+    yaw = image.telem.yaw * pi / 180
+
+    # Getting the roll and pitch of where the target is in relation
+    # to the plane by using the x and y coordinates of the target
+    # (where 0, 0 is the top-left). A target at the top of the image
+    # adds a pitch of (h/w)fov/2, and a target at the right of the
+    # image adds a roll of fov/2. Note that fov is the horizontal fov
+    # of the image.
+
+    x = target.x
+    y = target.y
+    w = target.image.width
+    h = target.image.height
+
+    fov = 73.7 * pi / 180
+    pitch = -pi / 2 + (fov / w * (h / 2 - y))
+    roll = 0 + (fov * (2 * x - w) / w)
+
+    # If the target appears to be in the air, or too heavy of an
+    # angle, we'll just return our lat and lon just in case.
+    if pitch >= pi / 3 or abs(roll) >= pi / 3:
+        return lat, lon
+
+    # Getting the distance in meters east and north.
+    dist_x = alt * (tan(roll) / cos(pitch) * cos(yaw) + tan(pitch) * sin(yaw))
+    dist_y = alt * (tan(pitch) * cos(yaw) - tan(roll) / cos(pitch) * sin(yaw))
+
+    e_radii = get_earth_radii(lat)
+
+    new_lat = dist_y / e_radii[0] / pi * 180 + lat
+    new_lon = dist_x / e_radii[1] / cos(lat * pi / 180) + lon
+
+    return [new_lat, new_lon]
 
 
-def image_to_base64(image):
-    """Convert a Pillow image to base64."""
+def convert_orientation(orientation):
+    """Convert a numeric orientation to the protobuf orientation."""
+    if orientation >= 337.5 or orientation < 22.5:
+        return interop_pb2.Odlc.NORTH
+    elif orientation < 67.5:
+        return interop_pb2.Odlc.NORTHEAST
+    elif orientation < 112.5:
+        return interop_pb2.Odlc.EAST
+    elif orientation < 157.5:
+        return interop_pb2.Odlc.SOUTHEAST
+    elif orientation < 202.5:
+        return interop_pb2.Odlc.SOUTH
+    elif orientation < 247.5:
+        return interop_pb2.Odlc.SOUTHWEST
+    elif orientation < 292.5:
+        return interop_pb2.Odlc.WEST
+    else:
+        return interop_pb2.Odlc.NORTHWEST
+
+
+def convert_shape(shape):
+    """ Convert a target_finder shape to a protobuf one."""
+    if shape == target_finder.Shape.NAS:
+        return interop_pb2.Odlc.UNKNOWN_SHAPE
+
+    return getattr(interop_pb2.Odlc, shape.name.upper())
+
+
+def convert_color(color):
+    """ Convert a target_finder color to a protobuf one."""
+    if color == target_finder.Color.NONE:
+        return interop_pb2.Odlc.UNKNOWN_COLOR
+
+    return getattr(interop_pb2.Odlc, color.name.upper())
+
+
+def image_to_bytes(image):
+    """Convert a Pillow image to bytes."""
+    if image is None:
+        return b''
+
     buffer = BytesIO()
-    image.save(buffer, format='PNG')
+    image.save(buffer, format='JPEG')
 
-    return base64.b64encode(buffer.getvalue())
+    return buffer.getvalue()
 
 
 def parse_targets(image, targets):
-    """Convert the targets into odlc tuples which have lat, lon."""
+    """Convert the targets into odlc messages."""
     def convert(target):
-        lat, lon = get_lat_lon(image, target)
+        odlc = interop_pb2.Odlc()
 
-        return (
-            t.orientation, t.shape.name, t.background_color.name,
-            t.alphanumeric.name, t.alphanumeric_color.name, lat, lon,
-            image_to_base64(t.image) if t.image is not None else ''
-        )
+        odlc.type = interop_pb2.Odlc.STANDARD
+        odlc.pos.lat, odlc.pos.lon = get_lat_lon(image, target)
+        odlc.orientation = convert_orientation(target.orientation)
+        odlc.shape = convert_shape(target.shape)
+        odlc.background_color = convert_color(target.background_color)
+        odlc.alphanumeric = target.alphanumeric
+        odlc.alphanumeric_color = convert_color(target.alphanumeric_color)
+        odlc.autonomous = True
+        odlc.image = image_to_bytes(target.image)
+
+        return odlc
 
     return list(map(convert, targets))
 
 
-def encode_odlc(odlc, include_image=False):
-    """Encode a URL-encoded odlc."""
-    return urllib.parse.urlencode(list(zip((
-        'orientation', 'shape', 'background_color', 'alphanumeric',
-        'alphanumeric_color', 'lat', 'lon', 'image'
-    ), map(str, odlc[0:-1] + (odlc[-1] if include_image else '', )))))
-
-
-def decode_odlc(odlc_qs):
-    """Decode a URL-encoded odlc."""
-    dict = urllib.parse.parse_qs(odlc_qs)
-
-    # Making the query string into a 8-element tuplc.
-    return (
-        float(dict['orientation'][0]),
-        dict['shape'][0],
-        dict['background_color'][0],
-        dict['alphanumeric'][0],
-        dict['alphanumeric_color'][0],
-        float(dict['lat'][0]),
-        float(dict['lon'][0]),
-        dict['image'][0] if 'image' in dict else ''
-    )
+def encode_odlc(odlc):
+    """Encode a target into the protobuf wire format."""
+    return odlc.SerializeToString()
 
 
 def queue_odlcs(redis_client, odlcs):
     """Put the found odlcs in redis so they can be uploaded."""
-    # There's nothing to do if we don't have any odlcs.
-    if len(odlcs) == 0: return
-
-    # Get the current list of odlcs.
-    curr_odlcs = None
-
-    while curr_odlcs == None:
-        try:
-            # The odlcs are URL-encoded. We'll get the list of ones
-            # that have been found so far.
-            encoded_targets = redis_client.lrange('odlcs-found', 0, -1)
-
-            # Decode each and that'll give us our odlcs.
-            curr_odlcs = map(encoded_targets, decode_odlc)
-        except redis.exceptions.ConnectionError as e:
-            print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
-            time.sleep(1)
-
     for i in range(0, len(odlcs)):
         odlc = odlcs[i]
 
-        # TODO - check against curr_odlcs first
-
-        odlc_with_image = encode_odlc(odlc, include_image=True)
-        odlc = e
+        encoded = encode_odlc(odlc)
 
         while True:
             try:
-                redis_client.pipeline() \
-                    .rpush('odlcs-found', odlc) \
-                    .rpush('odlcs-to-submit', odlc_with_image) \
-                    .execute()
+                redis_client.lpush('found', encoded)
                 break
             except redis.exceptions.ConnectionError as e:
                 print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
@@ -218,7 +272,6 @@ def run_iter(imagery_url, redis_client):
     # Making these targets into "odlcs", where an odlc has a lat/lon
     # instead of just x, y position and width, height. Then we'll
     # submit the ones we have (or do nothing if we don't have any).
-    # The odlcs are just 8-element tuples.
     odlcs = parse_targets(image, targets)
     queue_odlcs(redis_client, odlcs)
 

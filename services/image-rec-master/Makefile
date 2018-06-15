@@ -9,7 +9,8 @@ current_dir := $(shell pwd)
 all: image
 
 .PHONY: message-src
-message-src: src/messages/telemetry.proto src/messages/imagery.proto
+message-src: src/messages/telemetry.proto src/messages/imagery.proto \
+		src/messages/interop.proto
 
 src/messages/%.proto: ../common/messages/%.proto
 	mkdir -p src/messages

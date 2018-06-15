@@ -36,7 +36,10 @@ COPY common/scripts/wait-for-it.sh .
 COPY --from=builder /builder/lib lib
 
 ENV IMAGERY_URL='0.0.0.0:8081' \
+    INTEROP_PROXY='0.0.0.0:8000' \
     REDIS_URL='0.0.0.0:6379'
+
+VOLUME /found
 
 EXPOSE 8082
 

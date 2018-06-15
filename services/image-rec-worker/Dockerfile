@@ -9,7 +9,7 @@ FROM ${BASE}
 WORKDIR /app
 
 RUN pip install \
-    tensorflow>=1.6.0 \
+    'tensorflow>=1.5.0' \
     opencv-python
 
 COPY image-rec-worker/requirements.txt .

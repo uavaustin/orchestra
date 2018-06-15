@@ -10,7 +10,8 @@ current_dir := $(shell pwd)
 all: proto image
 
 .PHONY: proto
-proto: messages/telemetry_pb2.py messages/imagery_pb2.py
+proto: messages/interop_pb2.py messages/telemetry_pb2.py \
+		messages/imagery_pb2.py
 
 messages/%_pb2.py: ../common/messages/%.proto
 	docker run -it \
