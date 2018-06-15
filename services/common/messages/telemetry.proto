@@ -23,6 +23,7 @@ message Overview {
     Velocity vel = 4;
     Speed speed = 5;
     Battery battery = 6;
+    string mode = 7;
 }
 
 // WGS84 in degrees

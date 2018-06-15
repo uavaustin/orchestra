@@ -58,7 +58,8 @@ export default class Telemetry {
                 alt: state.getAltitudeProto(),
                 vel: state.getVelocityProto(),
                 speed: state.getSpeedProto(),
-                battery: state.getBatteryProto()
+                battery: state.getBatteryProto(),
+                mode: state.mode
             });
             sendJsonOrProto(req, res, msg);
         });

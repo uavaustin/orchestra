@@ -22,6 +22,7 @@ export default class PlaneState {
             percentage: null,
             approxTime: null
         };
+        this.mode = null;
     }
 
     getPositionProto() {

@@ -278,7 +278,8 @@ export default class PlaneLink {
             this._connectSuccess(connectPromiseDecision);
         });
         mav.on('HEARTBEAT', (msg, fields) => {
-            // TODO: useful stuff like what the plane is trying to do right now
+            const s = this.state;
+            s.mode = String(s.custom_mode);
         });
         mav.on('ATTITUDE', (msg, fields) => {
             const s = this.state;
