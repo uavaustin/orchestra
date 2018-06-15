@@ -137,12 +137,12 @@ async function queueNextOdlc() {
     });
 })();
 
-// Continuously submit obstcales that are ready to be submitted.
-async.forever((next) => {
-    submitNextOdlc()
-        .then(() => next())
-        .catch((err) => console.error(err) || setTimeout(next, 500));
-});
+// // Continuously submit obstcales that are ready to be submitted.
+// async.forever((next) => {
+//     submitNextOdlc()
+//         .then(() => next())
+//         .catch((err) => console.error(err) || setTimeout(next, 500));
+// });
 
 // Queue the obstacles and check which are not duplicates (and back
 // them up in the `/found` volume).

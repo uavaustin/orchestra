@@ -207,7 +207,7 @@ def encode_odlc(odlc):
     return odlc.SerializeToString()
 
 
-def queue_odlcs(redis_client, odlcs):
+def queue_odlcs(interop_url, redis_client, odlcs):
     """Put the found odlcs in redis so they can be uploaded."""
     for i in range(0, len(odlcs)):
         odlc = odlcs[i]
@@ -222,11 +222,40 @@ def queue_odlcs(redis_client, odlcs):
                 print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
                 time.sleep(1)
 
+        while True:
+            try:
+                num = redis_client.get('submit-count')
+
+                if num is not None and int(num) > 12:
+                    print(' --> too many targets to submit :(')
+                    break
+
+                url = 'http://' + interop_url + '/api/odlcs'
+                resp = requests.post(url, data=encoded)
+
+                if resp.status_code != 200:
+                    continue
+
+                # Parsing the protobuf response.
+                returned = interop_pb2.Odlc()
+                returned.ParseFromString(resp.content)
+
+                print(' --> id is ' + str(returned.id))
+
+                redis_client.incr('submit-count')
+
+                break
+
+            except requests.exceptions.RequestException as e:
+                print(colored('requests error: ', 'red', attrs=['bold']) + str(e))
+                time.sleep(1)
+
         print(colored('queued: ', 'green', attrs=['bold']) +
             'target ' + str(i))
 
 
-def run_iter(imagery_url, redis_client):
+
+def run_iter(imagery_url, interop_url, redis_client):
     """An interation of all the steps, repeated in main()."""
     image_id = get_next_id(redis_client)
 
@@ -273,13 +302,15 @@ def run_iter(imagery_url, redis_client):
     # instead of just x, y position and width, height. Then we'll
     # submit the ones we have (or do nothing if we don't have any).
     odlcs = parse_targets(image, targets)
-    queue_odlcs(redis_client, odlcs)
+    queue_odlcs(interop_url, redis_client, odlcs)
 
 
 def main():
     # Parsing the imagery URL. If it doesn't exist exist, we'll
     # assume it's on localhost (to make it easier for testing).
     imagery_url = os.environ.get('IMAGERY_URL') or 'localhost:8081'
+
+    interop_url = os.environ.get('INTEROP_PROXY_URL') or 'localhost:8000'
 
     # Parsing the redis URL env var. If it doesn't exist we'll just
     # assume we're trying to access a redis server on localhost with
@@ -306,7 +337,7 @@ def main():
 
     # Our main loop.
     while True:
-        run_iter(imagery_url, redis_client)
+        run_iter(imagery_url, interop_url, redis_client)
 
 
 if __name__ == '__main__':

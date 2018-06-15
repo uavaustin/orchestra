@@ -123,13 +123,11 @@ services:
     image: uavaustin/image-rec-master
     environment:
       - IMAGERY_URL=172.16.238.50:8081
-      - INTEROP_PROXY_URL=172.16.238.13:8000
       - REDIS_URL=172.16.238.51:6379
     ports:
       - '8082:8082'
     depends_on:
       - imagery
-      - interop-proxy
       - imagery-redis
     networks:
       test_net:
@@ -139,9 +137,11 @@ services:
     image: uavaustin/image-rec-worker
     environment:
       - IMAGERY_URL=172.16.238.50:8081
+      - INTEROP_PROXY_URL=172.16.238.13:8000
       - REDIS_URL=172.16.238.51:6379
     depends_on:
       - imagery
+      - interop-proxy
       - image-rec-master
       - imagery-redis
     networks:
