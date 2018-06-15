@@ -368,7 +368,7 @@ export default class PlaneLink {
     }
 
     _handleMissionEntry(msg, fields) {
-        if (typeof(this._missionHandler) === 'undefined') {
+        if (!this._missionHandler) {
             // console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
             this._sendMissionListAck();
             return;
