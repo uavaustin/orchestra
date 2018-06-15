@@ -283,7 +283,7 @@ def run_iter(imagery_url, interop_url, redis_client):
     print(' --> retreived image in {:d} ms'.format(t_2 - t_1))
 
     # Getting the list of blobs.
-    blobs = target_finder.find_blobs(pillow_image, limit=20)
+    blobs = target_finder.find_blobs(pillow_image, limit=20, max_length=65)
 
     t_3 = curr_time()
 
