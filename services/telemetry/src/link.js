@@ -6,6 +6,7 @@ import winston from 'winston';
 import path from 'path';
 
 import { telemetry } from './messages';
+import sendMission from './send-mission';
 import PlaneState from './state';
 import { wrapIndex } from './util';
 
@@ -155,10 +156,18 @@ export default class PlaneLink {
         return await new Promise((resolve, reject) => {
             this._taskQueue.push(async () => {
                 this._cxnState = ConnectionState.WRITING;
-                this._missionSender = new MissionSender(this._mav, this._socket, mission, resolve, reject);
-                await this._missionSender.send();
-                delete this._missionSender;
-                this._cxnState = ConnectionState.IDLE;
+
+                try {
+                    await sendMission(
+                        this._mav, mission, this._socket, destAddr, destPort
+                    );
+
+                    this._cxnState = ConnectionState.IDLE;
+                    resolve();
+                } catch (err) {
+                    this._cxnState = ConnectionState.IDLE;
+                    reject(err);
+                }
             });
         });
     }
@@ -265,8 +274,6 @@ export default class PlaneLink {
         });
         mav.on('MISSION_COUNT', (msg, fields) => this._handleMissionList(msg, fields));
         mav.on('MISSION_ITEM', (msg, fields) => this._handleMissionEntry(msg, fields));
-        mav.on('MISSION_REQUEST', (msg, fields) => this._handleMissionRequest(msg, fields));
-        mav.on('MISSION_ACK', (msg, fields) => this._handleMissionAck(msg, fields));
         mav.on('MISSION_CURRENT', (msg, fields) => this._handleCurrentWaypoint(msg, fields));
         mav.on('GLOBAL_POSITION_INT', (msg, fields) => {
             const s = this.state;
@@ -367,22 +374,6 @@ export default class PlaneLink {
             return;
         }
         this._missionHandler.handleMessage(msg, fields);
-    }
-
-    _handleMissionRequest(msg, fields) {
-        if (typeof(this._missionSender) === 'undefined') {
-            console.warn(`Link: Request for wp ${fields.seq} was received without a mission sender. Ignoring.`);
-            return;
-        }
-        this._missionSender.handleMissionRequest(msg, fields);
-    }
-
-    _handleMissionAck(msg, fields) {
-        if (typeof(this._missionSender) === 'undefined') {
-            console.warn('Link: Mission ack was received without a mission sender. Ignoring.');
-            return;
-        }
-        this._missionSender.handleMissionAck(msg, fields);
     }
 
     _handleCurrentWaypoint(msg, fields) {
@@ -544,183 +535,5 @@ class MissionReceiver {
             this._curMission = this.missionNumber;
         }
         this.missions[fields.seq] = fields;
-    }
-}
-
-class MissionSender {
-    constructor(mav, socket, mission, resolve, reject) {
-        this._mav = mav;
-        this._socket = socket;
-        this._mission = mission;
-
-        this._reqPromiseDecision = null;
-
-        this._resolve = resolve;
-        this._reject = reject;
-
-        this._curWaypoint = 0;
-    }
-
-    handleMissionRequest(msg, fields) {
-        if (this._reqPromiseDecision && fields.seq == this._curWaypoint) {
-            this._reqPromiseDecision.resolve();
-            this._reqPromiseDecision = null;
-        } else {
-            console.warn(`MissionSender: Received mission request for waypoint ${fields.seq}, not ${this._curWaypoint}!`);
-        }
-    }
-
-    handleMissionAck(msg, fields) {
-        if (fields.type === 0) {
-            if (this._reqPromiseDecision) {
-                this._reqPromiseDecision.resolve();
-            }
-            this._resolve();
-        } else {
-            if (this._reqPromiseDecision) {
-                this._reqPromiseDecision.reject();
-            }
-            this._reject(`MissionSender: MISSION_ACK was returned with error code ${fields.type}`);
-        }
-    }
-
-    _sendClearAll() {
-        this._mav.createMessage(
-            'MISSION_CLEAR_ALL',
-            {
-                'target_system': 1,
-                'target_component': 1,
-                'mission_type': 255
-            },
-            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                if (err) {
-                    console.error(`MissionSender: Error sending mission clear request: ${err}`);
-                } else {
-                    console.log('MissionSender: Requesting to clear all missions');
-                }
-            })
-        );
-    }
-
-    _sendCount() {
-        this._mav.createMessage(
-            'MISSION_COUNT',
-            {
-                'target_system': 1,
-                'target_component': 1,
-                'count': this._mission.length,
-                'mission_type': 0
-            },
-            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                if (err) {
-                    console.error(`MissionSender: Error writing ${this._mission.length} waypoints: ${err}`);
-                } else {
-                    console.log(`MissionSender: Requesting to write ${this._mission.length} waypoints`);
-                }
-            })
-        );
-    }
-
-    _sendWaypoint(waypoint) {
-        console.log(`MissionSender: Assembling waypoint ${waypoint.seq}`);
-
-        // node-mavlink wants param1 instead of param_1 and so on.
-        waypoint.param1 = waypoint.param_1;
-        waypoint.param2 = waypoint.param_2;
-        waypoint.param3 = waypoint.param_3;
-        waypoint.param4 = waypoint.param_4;
-
-        this._mav.createMessage(
-            'MISSION_ITEM',
-            waypoint,
-            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                if (err) {
-                    console.error(`MissionSender: Error sending waypoint ${waypoint.seq}: ${err}`);
-                } else {
-                    console.log(`MissionSender: Sending waypoint ${waypoint.seq}`);
-                }
-            })
-        );
-    }
-
-    async send() {
-        let repeatTimer = null;
-        let repeatCount = 0;
-        const maxRepeats = 4;
-        try {
-            await new Promise((resolve, reject) => {
-                this._reqPromiseDecision = {
-                    'resolve': resolve,
-                    'reject': reject
-                };
-                this._sendClearAll();
-                repeatTimer = setInterval(() => {
-                    this._sendClearAll();
-
-                    repeatCount++;
-                    if (repeatCount == maxRepeats) {
-                        reject('timeout clearing waypoints');
-                    }
-                }, 1000);
-            }).catch((err) => {
-                throw err;
-            });
-
-            repeatCount = 0;
-            clearInterval(repeatTimer);
-
-            if (this._mission.length == 0) {
-                return;
-            }
-
-            await new Promise((resolve, reject) => {
-                this._reqPromiseDecision = {
-                    'resolve': resolve,
-                    'reject': reject
-                };
-                this._sendCount();
-                repeatTimer = setInterval(() => {
-                    this._sendCount();
-
-                    repeatCount++;
-                    if (repeatCount == maxRepeats) {
-                        reject('timeout sending mission count');
-                    }
-                }, 1000);
-            }).catch((err) => {
-                throw err;
-            });
-
-            repeatCount = 0;
-            clearInterval(repeatTimer);
-
-            while (this._curWaypoint < this._mission.length) {
-                let waypoint = this._mission[this._curWaypoint];
-                this._curWaypoint++;
-                await new Promise((resolve, reject) => {
-                    this._reqPromiseDecision = {
-                        'resolve': resolve,
-                        'reject': reject
-                    };
-                    this._sendWaypoint(waypoint);
-                    repeatTimer = setInterval(() => {
-                        this._sendWaypoint(waypoint);
-
-                        repeatCount++;
-                        if (repeatCount == maxRepeats) {
-                            reject(`timeout sending waypoint ${this._curWaypoint}`);
-                        }
-                    }, 1000);
-                }).catch((err) => {
-                    throw err;
-                });
-                repeatCount = 0;
-                clearInterval(repeatTimer);
-            }
-        } catch (e) {
-            console.error(`Unable to send mission data: ${e}`);
-            clearInterval(repeatTimer);
-            this._reject(e);
-        }
     }
 }

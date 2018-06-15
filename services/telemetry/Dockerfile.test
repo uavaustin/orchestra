@@ -1,0 +1,25 @@
+ARG BASE=node:8-slim
+
+FROM ${BASE}
+
+WORKDIR /test
+
+COPY telemetry/package.json .
+
+RUN npm install
+
+COPY telemetry/src/messages src/messages
+
+RUN npm run build-msg
+
+COPY telemetry/src src
+
+RUN npm run build
+
+COPY telemetry/test test
+
+ENV CXN_STR=0.0.0.0:14550
+
+EXPOSE 5000
+
+CMD npm test

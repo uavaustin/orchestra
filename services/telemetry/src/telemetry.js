@@ -92,7 +92,10 @@ export default class Telemetry {
         
             this.plane.sendMission(mission).then(() => {
                 res.sendStatus(200);
-            });
+            }).catch((err) => {
+                console.error(err);
+                res.sendStatus(504);
+            });;
         });
         
         this.app.get('/api/current-waypoint', (req, res) => {
