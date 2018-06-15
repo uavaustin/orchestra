@@ -362,6 +362,7 @@ export default class PlaneLink {
     _handleMissionEntry(msg, fields) {
         if (typeof(this._missionHandler) === 'undefined') {
             // console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
+            this._sendMissionListAck();
             return;
         }
         this._missionHandler.handleMessage(msg, fields);
@@ -441,7 +442,7 @@ export default class PlaneLink {
                 if (err) {
                     console.error(err);
                 } else {
-                    console.log('Link: Sending ack after receiving mission list');
+                    //console.log('Link: Sending ack after receiving mission list');
                 }
             })
         );
@@ -475,12 +476,8 @@ class MissionReceiver {
         // The number of missions that need to be received.
         this.missionCount = count;
 
-        // The mission number we are waiting for.
-        // We have to receive each mission sequentially!
-        this.missionNumber = 0;
-
         // The mission list.
-        this.missions = [];
+        this.missions = Array(count);
 
         // Called when all missions have been received
         // (missions, cur) => {...}
@@ -494,20 +491,24 @@ class MissionReceiver {
     }
 
     start() {
-        if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done());
-        } else {
-            this._startRequestMission(this.missionNumber);
-        }
+        this._requestMissions();
+        this._sendTimer = setInterval(
+            () => this._requestMissions(), 1000
+        );
     }
 
-    _startRequestMission(id) {
-        if (this._sendTimer !== null) {
-            throw Error('Can\'t request a mission - already waiting on one');
+    _requestMissions() {
+        let allDone = true;
+        for (let i = 0; i < this.missions.length; i++) {
+            const waypoint = this.missions[i];
+            if (typeof waypoint === 'undefined') {
+                allDone = false;
+                this._requestMission(i);
+            }
         }
-        this._sendTimer = setInterval(
-            () => this._requestMission(id), 1500
-        );
+        if (allDone) {
+            process.nextTick(() => this._done());
+        }
     }
 
     _requestMission(id) {
@@ -530,28 +531,18 @@ class MissionReceiver {
     }
 
     _done() {
+        clearTimeout(this._sendTimer);
+        this._sendTimer = null;
         missionLogger.log({ level: 'info', message: JSON.stringify(this.missions) });
         this._done_callback(this.missions, this._curMission);
     }
 
     handleMessage(msg, fields) {
-        if (fields.seq !== this.missionNumber) {
-            console.warn(`MissionReceiver: Received mission ${fields.seq} but wanted mission ${this.missionNumber}`);
-            return;
-        }
         console.log(`MissionReceiver: Got mission ${fields.seq}`);
-        clearTimeout(this._sendTimer);
-        this._sendTimer = null;
         if (fields.cur == 1) {
             this._curMission = this.missionNumber;
         }
-        this.missions.push(fields);
-        this.missionNumber++;
-        if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done());
-        } else {
-            this._startRequestMission(this.missionNumber);
-        }
+        this.missions[fields.seq] = fields;
     }
 }
 
