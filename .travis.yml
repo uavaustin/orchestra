@@ -1,0 +1,21 @@
+language: generic
+sudo: required
+services:
+  - docker
+jobs:
+  include:
+    - stage: build
+      script: make mavproxy
+    - script: make telemetry
+    - script: make interop-proxy
+    - script: make pong
+    - script: make forward-interop
+    - script: make imagery
+    - script: make dashboard
+    - stage: test
+      script: make interop-proxy-test
+    - script: make pong-test
+notifications:
+  email: false
+  slack:
+    secure: Yde7gpsZJMb8vBYm5DSJU5wfCkLK1If4/x4QvsokFbINeANEvO2XjeVkFIOwUeJYyF1vxC/Pyv7FHgY+84QZ8fu02/QGBJ9+2IHJzbDTqRmXPU44It6qYDirLtjz+bn2fV8F3f/v6vUre6JFnEYwMDjyZij6T7ALn449kLmiBcQqS7vnlqaAdiHN83h8pin2zRkLxjuWHY5nkPPg15w3vf91bc2y8QIMq1mvI4iXmyqHxuE3An9uSskAkLZqLpjsObjN8NpC1lAi213KaXcjnU0bMt/auVTMjOwZzm1/b44YU9adcoFCA/vE6+8tnCmqaar7SJRAnj4Na02rXxjZynHhjvtdyML7DKQQUXUUcAIx7MC7dYxfH5cN17PASIWSYH4G6qmg/MJ2w/wVIhUnIgLw9kLsOD3wK3B+AeLLJzarUKhncM9hct/J2bIP8FyDebKjaUHLQ7FbOY6Ic/wkt85G+3eNmFV8BsgmFrNLrB3h385LmY4m9gxOaJE9bdPvFNI9lr/w4lKx1dbI7bL7WHl2uKuR3lj5VDcBxlCIsSrCCGSW1htKJ7Q63Rl7wF3JYF1GrPa/lPbFgUow9M4KcQGfKISdF14SIMnu3dXVlx8WmGrYFGMKo2osb141IiPxI17oggDgy7YNyqR95C8GYK/7yT8sijDQMDuIl54Lx5Q=
