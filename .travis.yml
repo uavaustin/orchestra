@@ -5,17 +5,26 @@ services:
 jobs:
   include:
     - stage: build
-      script: make mavproxy
-    - script: make telemetry
-    - script: make interop-proxy
-    - script: make pong
-    - script: make forward-interop
-    - script: make imagery
-    - script: make dashboard
+      env: SERVICE=mavproxy
+      script: make "$SERVICE"
+    - env: SERVICE=telemetry
+      script: make "$SERVICE"
+    - env: SERVICE=interop-proxy
+      script: make "$SERVICE"
+    - env: SERVICE=pong
+      script: make "$SERVICE"
+    - env: SERVICE=forward-interop
+      script: make "$SERVICE"
+    - env: SERVICE=imagery
+      script: make "$SERVICE"
+    - env: SERVICE=dashboard
+      script: make "$SERVICE"
     - stage: test
-      script: make interop-proxy-test
-    - script: make pong-test
+      env: SERVICE=interop-proxy
+      script: make "$SERVICE"-test
+    - env: SERVICE=pong
+      script: make "$SERVICE"-test
 notifications:
   email: false
   slack:
-    secure: Yde7gpsZJMb8vBYm5DSJU5wfCkLK1If4/x4QvsokFbINeANEvO2XjeVkFIOwUeJYyF1vxC/Pyv7FHgY+84QZ8fu02/QGBJ9+2IHJzbDTqRmXPU44It6qYDirLtjz+bn2fV8F3f/v6vUre6JFnEYwMDjyZij6T7ALn449kLmiBcQqS7vnlqaAdiHN83h8pin2zRkLxjuWHY5nkPPg15w3vf91bc2y8QIMq1mvI4iXmyqHxuE3An9uSskAkLZqLpjsObjN8NpC1lAi213KaXcjnU0bMt/auVTMjOwZzm1/b44YU9adcoFCA/vE6+8tnCmqaar7SJRAnj4Na02rXxjZynHhjvtdyML7DKQQUXUUcAIx7MC7dYxfH5cN17PASIWSYH4G6qmg/MJ2w/wVIhUnIgLw9kLsOD3wK3B+AeLLJzarUKhncM9hct/J2bIP8FyDebKjaUHLQ7FbOY6Ic/wkt85G+3eNmFV8BsgmFrNLrB3h385LmY4m9gxOaJE9bdPvFNI9lr/w4lKx1dbI7bL7WHl2uKuR3lj5VDcBxlCIsSrCCGSW1htKJ7Q63Rl7wF3JYF1GrPa/lPbFgUow9M4KcQGfKISdF14SIMnu3dXVlx8WmGrYFGMKo2osb141IiPxI17oggDgy7YNyqR95C8GYK/7yT8sijDQMDuIl54Lx5Q=
+    secure: dk3vHsVYb08fJLQCwfjRpctNtV4SJWAjNExn+JQsl7I7KEh4UPoHe0W7hmyNEq3ckD69Us4yltPQPA9Yeh2xJTOGVmds/zZmuzz2t/fsbjTmV8KO4ncTPJPDNddhEdl/uYroKdrQbjqmTN7QLMTcjqoKT5UDi8SHZfGDx7QaNb/k8WnoxaRoRpFtYiLv6KC8PL5F/kGzcwC8akLbEZW676JuM7418QcJEpnvlJbDOObBr/7EoPJPUrm653ZQRAA2vSoL6BhORckDgS6m6DWjEtVlwi8q/c9EggdEGwy7Q0im2mnEuqRGnoYABG2GEoNDq0jMGBZnM34KpZTvX728j0WuWxOp4EdejTJSrIpsITEM875QR2LqjljlRpk/Ax0vziXWG4tpabb/lyOetujzveBPhrhWEuTTwJ/S5X4EsSbCjmUJuE2kI9tz5ETuSTJ9RvT9y8JrlCLtgs/epEAlC+PHnoHhOtCDJAvjAg8Pdq6tcPrA6ucvSELwt77wrW5pkjJ/iFOtg3aGXgFK2UBRDExaGW4GN4Vbm0b0zmlZVH2A/RoVZhvPx9/XQg7Nj2TaL40YjZYVPwMP4CMpgy8CAKrhEqqSDPznnNacm0D1XYsDDRCBValEt8NPaPm3r07UgzDFC6iK0CHUxMXe9r2maSRieSPjktdG1+weclVvPX8=
