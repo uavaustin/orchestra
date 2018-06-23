@@ -28,7 +28,7 @@ jobs:
     - env: SERVICE=pong
       script: make "$SERVICE"-test
       after_script:
-        - npm install -g node-coveralls
+        - npm install -g coveralls
         - lcov=services/"$SERVICE"/coverage/lcov.info
         - sed "s,SF:/test/,SF:services/$SERVICE/," "$lcov" | coveralls
 notifications:
