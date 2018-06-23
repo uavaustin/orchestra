@@ -29,8 +29,8 @@ jobs:
       script: make "$SERVICE"-test
       after_script:
         - npm install -g node-coveralls
-        - lcov-path=services/"$SERVICE"/coverage/lcov.info
-        - sed "s,SF:/test/,SF:services/$SERVICE/," "$lcov-path" | coveralls
+        - lcov=services/"$SERVICE"/coverage/lcov.info
+        - sed "s,SF:/test/,SF:services/$SERVICE/," "$lcov" | coveralls
 notifications:
   email: false
   webhooks:
