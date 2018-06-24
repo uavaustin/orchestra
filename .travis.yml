@@ -5,32 +5,21 @@ env:
   - COVERALLS_PARALLEL=true
 services:
   - docker
+script: ./ci/script.sh
+after_script: ./ci/after-script.sh
 jobs:
   include:
     - stage: build
       env: SERVICE=mavproxy
-      script: make "$SERVICE"
     - env: SERVICE=telemetry
-      script: make "$SERVICE"
     - env: SERVICE=interop-proxy
-      script: make "$SERVICE"
     - env: SERVICE=pong
-      script: make "$SERVICE"
     - env: SERVICE=forward-interop
-      script: make "$SERVICE"
     - env: SERVICE=imagery
-      script: make "$SERVICE"
     - env: SERVICE=dashboard
-      script: make "$SERVICE"
     - stage: test
-      env: SERVICE=interop-proxy
-      script: make "$SERVICE"-test
-    - env:
-        - SERVICE=pong
-        - LCOV=services/"$SERVICE"/coverage/lcov.info
-      script: make "$SERVICE"-test
-      after_script:
-        - sed "s,SF:/test/,SF:services/$SERVICE/," "$LCOV" | npx coveralls
+      env: SERVICE_TEST=interop-proxy
+    - env: SERVICE_TEST=pong
 notifications:
   email: false
   webhooks:
