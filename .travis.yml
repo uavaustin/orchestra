@@ -25,12 +25,12 @@ jobs:
     - stage: test
       env: SERVICE=interop-proxy
       script: make "$SERVICE"-test
-    - env: SERVICE=pong
+    - env:
+        - SERVICE=pong
+        - LCOV=services/"$SERVICE"/coverage/lcov.info
       script: make "$SERVICE"-test
       after_script:
-        - npm install -g coveralls
-        - lcov=services/"$SERVICE"/coverage/lcov.info
-        - sed "s,SF:/test/,SF:services/$SERVICE/," "$lcov" | coveralls
+        - sed "s,SF:/test/,SF:services/$SERVICE/," "$LCOV" | npx coveralls
 notifications:
   email: false
   webhooks:
