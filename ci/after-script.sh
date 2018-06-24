@@ -9,7 +9,7 @@ if [ -n "$SERVICE_TEST" ]; then
   NODEJS_LCOV=services/"$SERVICE_TEST"/coverage/lcov.info
 
   if [ -f "$NODEJS_LCOV" ]; then
-    sed "s,SF:/test/,SF:services/$SERVICE_TEST/," "$NODEJS_LCOV"
-      | npx coveralls
+    sed "s,SF:/test/,SF:services/$SERVICE_TEST/," "$NODEJS_LCOV" |
+      npx coveralls
   fi
 fi
