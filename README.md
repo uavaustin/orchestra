@@ -1,7 +1,10 @@
 # Orchestra
 
-Implementation-level repository for UAV Austin. Communications between
-different runtime services are managed here.
+> Implementation-level repository for UAV Austin. Communications between
+> different runtime services are managed here.
+
+[![Build Status](https://travis-ci.com/uavaustin/orchestra.svg?branch=master)](https://travis-ci.com/uavaustin/orchestra)
+[![Test Coverage](https://coveralls.io/repos/github/uavaustin/orchestra/badge.svg?branch=master)](https://coveralls.io/github/uavaustin/orchestra?branch=master)
 
 ## Services
 
