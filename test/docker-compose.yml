@@ -73,9 +73,6 @@ services:
 
   forward-interop:
     image: uavaustin/forward-interop
-    environment:
-      - INTEROP_PROXY_URL=172.16.238.13:8000
-      - TELEMETRY_URL=172.16.238.12:5000
     ports:
       - '4000:4000'
     depends_on:

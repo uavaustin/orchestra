@@ -30,10 +30,10 @@ $ docker run -it -p 4000:4000 \
 
 - `GET /api/upload-rate`
 
-  Lists the upload rate over the last 1 and 5 seconds, and also the some rates
+  Lists the upload rate over the last 1 and 5 seconds, and also the same rates
   but filtered by if the telemetry is unique each time.
 
-  On successful response: `200` status code with `stats:InteropUploadRate`
+  On successful response: `200` status code with `stats::InteropUploadRate`
   Protobuf message.
 
   In order to get a JSON response instead, set the Accept header to
