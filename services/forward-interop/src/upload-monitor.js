@@ -106,13 +106,13 @@ export default class UploadMonitor {
     let threshold5 = curr - TIME_LIMIT_5;
 
     // Removing old times until there are none for 1 sec.
-    while (this._times1[0] < threshold1) {
+    while (this._times1[0] <= threshold1) {
       this._times1.shift();
       this._fresh1.shift();
     }
 
     // Removing old times until there are none for 5 sec.
-    while (this._times5[0] < threshold5) {
+    while (this._times5[0] <= threshold5) {
       this._times5.shift();
       this._fresh5.shift();
     }
