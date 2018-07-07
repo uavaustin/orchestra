@@ -37,7 +37,7 @@ pong-test: protoc
 	$(MAKE) -C services/pong test
 
 .PHONY: forward-interop
-forward-interop: protoc
+forward-interop:
 	$(MAKE) -C services/forward-interop
 
 .PHONY: imagery
