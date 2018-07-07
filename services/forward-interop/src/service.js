@@ -97,7 +97,7 @@ export default class Service {
             this._loopTimeout = setTimeout(() => {
               delete this._loopTimeout;
               next();
-            }, 250);
+            }, 200);
           }
         });
     });
