@@ -1,17 +1,19 @@
 {
   "name": "forward-interop",
+  "version": "0.1.0",
   "main": "lib/service.js",
   "private": true,
   "license": "MIT",
   "scripts": {
     "start": "node ./bin/start-service",
     "build": "babel src --out-dir lib",
-    "build-msg": "mkdir -p lib && pbjs -t static-module -w commonjs --keep-case -o lib/messages.js src/messages/*.proto"
+    "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
+    "test": "jest"
   },
   "dependencies": {
     "async": "^2.6.0",
-    "common-nodejs": "file:src/common",
     "express": "^4.16.2",
+    "common-nodejs": "file:src/common",
     "koa": "^2.5.1",
     "koa-protobuf": "^0.1.0",
     "koa-router": "^7.4.0",
@@ -24,23 +26,8 @@
     "babel-cli": "^6.26.0",
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-plugin-source-map-support": "^2.0.1",
-    "babel-preset-env": "^1.6.1"
-  },
-  "babel": {
-    "sourceMaps": "inline",
-    "plugins": [
-      "add-module-exports",
-      "source-map-support"
-    ],
-    "presets": [
-      [
-        "env",
-        {
-          "targets": {
-            "node": "current"
-          }
-        }
-      ]
-    ]
+    "babel-preset-env": "^1.6.1",
+    "jest": "^23.3.0",
+    "lolex": "^2.7.1"
   }
 }
