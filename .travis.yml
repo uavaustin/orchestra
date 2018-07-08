@@ -19,9 +19,9 @@ jobs:
     - env: SERVICE=dashboard
     - stage: test
       env: SERVICE_TEST=interop-proxy
-    - env:
-        - SERVICE_TEST=pong
-        - TRAVIS_ALLOW_FAILURE=true
+    - env: SERVICE_TEST=pong
+  allow_failures:
+    - env: SERVICE_TEST=pong
 notifications:
   email: false
   webhooks:
