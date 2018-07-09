@@ -5,6 +5,5 @@ module.exports = {
     'src/**/*.js',
     '!src/common/**',
     '!src/messages.js'
-  ],
-  verbose: true
+  ]
 }
