@@ -1,6 +1,7 @@
 import async from 'async';
 import Koa from 'koa';
-import request from 'request-promise-native';
+import request from 'superagent';
+import addProtobuf from 'superagent-protobuf';
 
 import koaLogger from './common/koa-logger';
 import logger from './common/logger';
@@ -8,6 +9,8 @@ import { interop } from './messages';
 
 import router from './router';
 import UploadMonitor from './upload-monitor';
+
+addProtobuf(request);
 
 export default class Service {
   constructor(options) {
@@ -107,30 +110,18 @@ export default class Service {
   async _forwardTelem() {
     logger.debug('Fetching telemetry.');
 
-    // Getting the telemetry buffer from the telemetry service.
-    let buffer = await request.get({
-      uri: this._telemetryUrl + '/api/interop-telem',
-      headers: {
-        'accept': 'application/x-protobuf'
-      },
-      encoding: null,
-      timeout: 1000
-    });
+    // Getting the telemetry from the telemetry service.
+    let { body: telem } =
+      await request.get(this._telemetryUrl + '/api/interop-telem')
+        .proto(interop.InteropTelem)
+        .timeout(1000);
 
-    // Forward the Protobuf buffer to interop proxy.
-    await request.post({
-      uri: this._interopProxyUrl + '/api/telemetry',
-      body: buffer,
-      headers: {
-        'content-type': 'application/x-protobuf'
-      },
-      timeout: 1000
-    });
+    // Forward the telemetry to interop proxy.
+    await request.post(this._interopProxyUrl + '/api/telemetry')
+      .sendProto(telem)
+      .timeout(1000);
 
     logger.debug('Uploaded telemetry.');
-
-    // Decode the buffer and update the monitor.
-    let telem = interop.InteropTelem.decode(buffer);
 
     this._monitor.addTelem({
       lat: telem.pos.lat,

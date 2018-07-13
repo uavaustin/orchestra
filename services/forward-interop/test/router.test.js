@@ -1,10 +1,12 @@
-import getRawBody from 'raw-body';
 import Koa from 'koa';
+import addProtobuf from 'superagent-protobuf';
 import request from 'supertest';
 
 import { stats } from '../src/messages';
 
 import router from '../src/router';
+
+addProtobuf(request);
 
 test('get text from GET /api/alive', async () => {
   let app = new Koa();
@@ -42,15 +44,9 @@ test('get the upload rate from GET /api/upload-rate', async () => {
   let server = app.listen();
 
   try {
-    let res = await request(server)
-      .get('/api/upload-rate')
-      .buffer(true)
-      .parse((res, cb) => {
-        getRawBody(res, (err, body) => {
-          if (err) cb(err);
-          else cb(null, stats.InteropUploadRate.decode(body));
-        });
-      });
+    let res = await
+      request(server).get('/api/upload-rate')
+        .proto(stats.InteropUploadRate);
 
     expect(res.status).toEqual(200);
     expect(res.type).toEqual('application/x-protobuf');
