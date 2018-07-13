@@ -44,9 +44,9 @@ test('get the upload rate from GET /api/upload-rate', async () => {
   let server = app.listen();
 
   try {
-    let res = await
-      request(server).get('/api/upload-rate')
-        .proto(stats.InteropUploadRate);
+    let res = await request(server)
+      .get('/api/upload-rate')
+      .proto(stats.InteropUploadRate);
 
     expect(res.status).toEqual(200);
     expect(res.type).toEqual('application/x-protobuf');
