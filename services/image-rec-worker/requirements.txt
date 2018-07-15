@@ -1,5 +1,5 @@
 protobuf==3.4.0
 redis>=2.10
 requests>=2.18
-https://github.com/uavaustin/target-finder/releases/download/0.1.0-dev.3/target-finder.tar.gz
+https://github.com/uavaustin/target-finder/releases/download/v0.1.0/target-finder-0.1.0.tar.gz
 termcolor==1.1.0
