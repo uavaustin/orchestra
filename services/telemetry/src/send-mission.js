@@ -1,17 +1,17 @@
-import { cleanupAfter, sendMavMessage } from './util';
+import { cleanupAfter } from './util';
 
 const MISSION_TIMEOUT = 15000;
 
-export default async function sendMission(mav, mission, socket, host, port) {
+export default async function sendMission(mav, mission) {
     // If this is an empty list, clear the mission instead.
     if (!mission || mission.length === 0) {
-        await _clearAll(mav, socket, host, port);
+        await _clearAll(mav);
     } else {
-        await _sendMission(mav, mission, socket, host, port);
+        await _sendMission(mav, mission);
     }
 }
 
-async function _clearAll(mav, socket, host, port) {
+async function _clearAll(mav) {
     let clearInt;
     let onAck;
 
@@ -20,11 +20,9 @@ async function _clearAll(mav, socket, host, port) {
         mav.removeListener('MISSION_ACK', onAck);
     }, MISSION_TIMEOUT, 'mission clearing took too long');
 
-    let clear = () => _sendClearAll(mav, socket, host, port);
-
     // Send a clear message repetitively.
-    clear();
-    clearInt = setInterval(clear, 1000);
+    _sendClearAll(mav);
+    clearInt = setInterval(() => _sendClearAll(mav), 1000);
 
     // When the ACK comes, finish this exchange.
     onAck = _getAckHandler(cleanupObj);
@@ -34,7 +32,7 @@ async function _clearAll(mav, socket, host, port) {
     await cleanupObj.wait();
 }
 
-async function _sendMission(mav, mission, socket, host, port) {
+async function _sendMission(mav, mission) {
     let countInt;
     let onFirstRequest;
     let onRequest;
@@ -47,20 +45,16 @@ async function _sendMission(mav, mission, socket, host, port) {
         mav.removeListener('MISSION_ACK', onAck);
     }, MISSION_TIMEOUT, 'mission sending took too long');
 
-    let sendCount = () => _sendCount(mav, mission.length, socket, host, port);
-
     // Send a count once, and then keep doing it on an interval if a
     // mission request hasn't come in yet.
-    sendCount();
-    countInt = setInterval(sendCount, 1000);
+    _sendCount(mav, mission.length)
+    countInt = setInterval(() => _sendCount(mav, mission.length), 1000);
 
     // After the first request, stop the count interval.
-    onFirstRequest = (msg, fields) => clearInterval(countInt);
+    onFirstRequest = () => clearInterval(countInt);
 
     // On each request, send back the mission item that is requested.
-    onRequest = (msg, fields) => {
-        _sendMissionItem(mav, mission[fields.seq], socket, host, port);
-    };
+    onRequest = fields => _sendMissionItem(mav, mission[fields.seq]);
 
     // When the ACK comes, finish this exchange.
     onAck = _getAckHandler(cleanupObj);
@@ -72,24 +66,24 @@ async function _sendMission(mav, mission, socket, host, port) {
     await cleanupObj.wait();
 }
 
-async function _sendClearAll(mav, socket, host, port) {
-    await sendMavMessage(mav, 'MISSION_CLEAR_ALL', {
+async function _sendClearAll(mav) {
+    await mav.send('MISSION_CLEAR_ALL', {
         target_system: 1,
         target_component: 1,
         mission_type: 255
-    }, socket, host, port);
+    });
 }
 
-async function _sendCount(mav, count, socket, host, port) {
-    await sendMavMessage(mav, 'MISSION_COUNT', {
+async function _sendCount(mav, count) {
+    await mav.send('MISSION_COUNT', {
         target_system: 1,
         target_component: 1,
         count: count,
         mission_type: 0
-    }, socket, host, port);
+    });
 }
 
-async function _sendMissionItem(mav, item, socket, host, port) {
+async function _sendMissionItem(mav, item) {
     let itemCopy = JSON.parse(JSON.stringify(item));
 
     itemCopy.param1 = itemCopy.param_1;
@@ -97,12 +91,12 @@ async function _sendMissionItem(mav, item, socket, host, port) {
     itemCopy.param3 = itemCopy.param_3;
     itemCopy.param4 = itemCopy.param_4;
 
-    await sendMavMessage(mav, 'MISSION_ITEM', itemCopy, socket, host, port);
+    await mav.send('MISSION_ITEM', itemCopy);
 }
 
 // Return a handler that finishes with an error on a bad ACK message.
 function _getAckHandler(cleanupObj) {
-    return (msg, fields) => {
+    return (fields) => {
         if (fields.type === 0) {
             cleanupObj.finish();
         } else {

@@ -1,11 +1,11 @@
-import mavlink from 'mavlink';
-import dgram from 'dgram';
 import queue from 'async/queue';
 import series from 'async/series';
 import winston from 'winston';
 import path from 'path';
 
 import { telemetry } from './messages';
+
+import MavlinkSocket from './mavlink-socket';
 import sendMission from './send-mission';
 import PlaneState from './state';
 import { wrapIndex } from './util';
@@ -38,7 +38,7 @@ const ConnectionState = Object.freeze({
 
 export default class PlaneLink {
     constructor() {
-        this._mav = new mavlink(1, 1);
+        this._mav = new MavlinkSocket(destAddr, destPort);
         this.state = new PlaneState();
         this._cxnState = ConnectionState.NOT_CONNECTED;
         this._taskQueue = queue((task, cb) => {task(); cb();});
@@ -55,18 +55,9 @@ export default class PlaneLink {
         await new Promise((resolve, reject) => {
             const unboundTasks = [
                 function(cb) {
-                    console.log('Establishing mavlink...');
-                    this._mav.on('ready', () => cb());
-                },
-                function(cb) {
-                    console.log('Creating socket...');
-                    const socket = dgram.createSocket('udp4');
-                    this._socket = socket;
-                    socket.on('error', (err) => {
-                        console.error('Socket connection error! ', err);
-                    });
-                    socket.on('listening', () => cb());
-                    socket.bind(25565);
+                    this._mav.connect()
+                        .then(() => cb())
+                        .catch(err => cb(err));
                 },
                 function(cb) {
                     this._bindMessages({
@@ -121,8 +112,8 @@ export default class PlaneLink {
         });
     }
 
-    _cleanup() {
-        this._socket.close();
+    async _cleanup() {
+        await this._mav.close();
     }
 
     /**
@@ -158,9 +149,7 @@ export default class PlaneLink {
                 this._cxnState = ConnectionState.WRITING;
 
                 try {
-                    await sendMission(
-                        this._mav, mission, this._socket, destAddr, destPort
-                    );
+                    await sendMission(this._mav, mission);
 
                     this._cxnState = ConnectionState.IDLE;
                     resolve();
@@ -266,16 +255,12 @@ export default class PlaneLink {
     }
 
     _bindMessages(connectPromiseDecision) {
-        console.log('Link: Created socket, binding messages now');
         const mav = this._mav;
-        this._socket.on('message', (data) => {
-            this._mav.parse(data);
-            //console.log(data);
-        });
-        mav.on('MISSION_COUNT', (msg, fields) => this._handleMissionList(msg, fields));
-        mav.on('MISSION_ITEM', (msg, fields) => this._handleMissionEntry(msg, fields));
-        mav.on('MISSION_CURRENT', (msg, fields) => this._handleCurrentWaypoint(msg, fields));
-        mav.on('GLOBAL_POSITION_INT', (msg, fields) => {
+
+        mav.on('MISSION_COUNT', (fields) => this._handleMissionList(fields));
+        mav.on('MISSION_ITEM', (fields) => this._handleMissionEntry(fields));
+        mav.on('MISSION_CURRENT', (fields) => this._handleCurrentWaypoint(fields));
+        mav.on('GLOBAL_POSITION_INT', (fields) => {
             const s = this.state;
             s.lat = fields.lat / 1e7;
             s.lon = fields.lon / 1e7;
@@ -284,22 +269,22 @@ export default class PlaneLink {
             s.yaw = fields.hdg / 100;
             this._connectSuccess(connectPromiseDecision);
         });
-        mav.on('HEARTBEAT', (msg, fields) => {
+        mav.on('HEARTBEAT', (fields) => {
             // TODO: useful stuff like what the plane is trying to do right now
         });
-        mav.on('ATTITUDE', (msg, fields) => {
+        mav.on('ATTITUDE', (fields) => {
             const s = this.state;
             s.roll = fields.roll * 180 / Math.PI;
             s.pitch = fields.pitch * 180 / Math.PI;
             s.yaw = wrapIndex(fields.yaw * 180 / Math.PI, 360);
         });
-        mav.on('VFR_HUD', (msg, fields) => {
+        mav.on('VFR_HUD', (fields) => {
             const s = this.state;
             s.airspeed = fields.airspeed;
             s.groundSpeed = fields.groundspeed;
             s.altMSL = fields.alt;
         });
-        mav.on('BATTERY_INFO', (msg, fields) => {
+        mav.on('BATTERY_INFO', (fields) => {
             const s = this.state;
             Object.assign(s.battery, {
                 temp: fields.temperature,
@@ -312,27 +297,14 @@ export default class PlaneLink {
         })
     }
 
-    _start_telemetry() {
-        // Send a request to send telemetry at a constant rate.
-        // createMessage doesn't even merit a callback,
-        // and the source doesn't even tick the event loop,
-        // but we still have to use it because the argument exists!
-        this._mav.createMessage('REQUEST_DATA_STREAM',
-            {
-                'target_system': 1,
-                'target_component': 1,
-                'req_stream_id': 0,
-                'req_message_rate': 5,
-                'start_stop': 1
-            }, (msg) => {
-                this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                    if (err) {
-                        console.error(err);
-                    } else {
-                        console.log('Link: Requesting data stream...');
-                    }
-                });
-            });
+    async _start_telemetry() {
+        await this._mav.send('REQUEST_DATA_STREAM', {
+            target_system: 1,
+            target_component: 1,
+            req_stream_id: 0,
+            req_message_rate: 5,
+            start_stop: 1
+        });
     }
 
     _fulfillMissionRequests(mission, err) {
@@ -351,10 +323,10 @@ export default class PlaneLink {
         }
     }
 
-    _handleMissionList(msg, fields) {
+    _handleMissionList(fields) {
         const missionCount = fields.count;
         console.log(`Link: Got mission list with ${missionCount} missions`);
-        const handler = new MissionReceiver(this._mav, this._socket,
+        const handler = new MissionReceiver(this._mav,
             missionCount, (mission, cur) => {
                 this._curWaypoint = cur;
                 this._fulfillMissionRequests(mission);
@@ -366,15 +338,15 @@ export default class PlaneLink {
         handler.start();
     }
 
-    _handleMissionEntry(msg, fields) {
+    _handleMissionEntry(fields) {
         if (typeof(this._missionHandler) === 'undefined') {
             // console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
             return;
         }
-        this._missionHandler.handleMessage(msg, fields);
+        this._missionHandler.handleMessage(fields);
     }
 
-    _handleCurrentWaypoint(msg, fields) {
+    _handleCurrentWaypoint(fields) {
         if (this._curWaypoint !== fields.seq) {
             console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
         }
@@ -405,63 +377,36 @@ export default class PlaneLink {
         }
     }
 
-    _sendMissionListRequest() {
-        this._mav.createMessage(
-            'MISSION_REQUEST_LIST',
-            {'target_system': 1, 'target_component': 1, 'mission_type': 0},
-            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log('Link: Requesting mission list');
-                }
-            })
-        );
+    async _sendMissionListRequest() {
+        await this._mav.send('MISSION_REQUEST_LIST', {
+            target_system: 1,
+            target_component: 1,
+            mission_type: 0
+        });
     }
 
-    _sendMissionListAck() {
-        this._mav.createMessage(
-            'MISSION_ACK',
-            {
-                'target_system': 1,
-                'target_component': 1,
-                'type': 0,
-                'mission_type': 0
-            },
-            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log('Link: Sending ack after receiving mission list');
-                }
-            })
-        );
+    async _sendMissionListAck() {
+        await this._mav.send('MISSION_ACK', {
+            target_system: 1,
+            target_component: 1,
+            type: 0,
+            mission_type: 0
+        });
     }
 
-    _sendSetCurrentWaypoint(seq) {
-        this._mav.createMessage(
-            'MISSION_SET_CURRENT',
-            {
-                'target_system': 1,
-                'target_component': 1,
-                'seq': seq
-            },
-            (msg) => this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log(`Link: Sending MISSION_SET_CURRENT (seq ${seq})`);
-                }
-            })
-        );
+    async _sendSetCurrentWaypoint(seq) {
+        await this._mav.send('MISSION_SET_CURRENT', {
+            target_system: 1,
+            target_component: 1,
+            seq: seq
+        });
     }
 
 }
 
 class MissionReceiver {
-    constructor(mav, socket, count, callback) {
+    constructor(mav, count, callback) {
         this._mav = mav;
-        this._socket = socket;
 
         // The number of missions that need to be received.
         this.missionCount = count;
@@ -501,23 +446,13 @@ class MissionReceiver {
         );
     }
 
-    _requestMission(id) {
-        this._mav.createMessage('MISSION_REQUEST',
-            {
-                'target_system': 1,
-                'target_component': 1,
-                'seq': id,
-                'mission_type': 0
-            }, (msg) => {
-                this._socket.send(msg.buffer, destPort, destAddr, (err) => {
-                    if (err) {
-                        console.error(`MissionReceiver: Error requesting mission ${id}: ${err}`);
-                    } else {
-                        console.log(`MissionReceiver: Requesting mission number ${id}`);
-                    }
-                });
-            }
-        );
+    async _requestMission(id) {
+        await this._mav.send('MISSION_REQUEST', {
+            target_system: 1,
+            target_component: 1,
+            seq: id,
+            mission_type: 0
+        });
     }
 
     _done() {
@@ -525,7 +460,7 @@ class MissionReceiver {
         this._done_callback(this.missions, this._curMission);
     }
 
-    handleMessage(msg, fields) {
+    handleMessage(fields) {
         if (fields.seq !== this.missionNumber) {
             console.warn(`MissionReceiver: Received mission ${fields.seq} but wanted mission ${this.missionNumber}`);
             return;

@@ -22,17 +22,6 @@ export function wrapIndex(i, i_max) {
     return ((i % i_max) + i_max) % i_max;
 }
 
-export async function sendMavMessage(mav, msg, fields, socket, host, port) {
-    return await new Promise((resolve, reject) => {
-        mav.createMessage(msg, fields, (msg) => {
-            socket.send(msg.buffer, port, host, (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
-    });
-}
-
 /** Wait for an amount of time. */
 export async function wait(milliseconds) {
     return await (new Promise(resolve => setTimeout(resolve, milliseconds)));
