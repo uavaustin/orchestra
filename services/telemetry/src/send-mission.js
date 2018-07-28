@@ -4,7 +4,7 @@ const MISSION_TIMEOUT = 15000;
 
 export default async function sendMission(mav, mission) {
     // If this is an empty list, clear the mission instead.
-    if (!mission || mission.length === 0) {
+    if (!mission || mission.mission_items.length === 0) {
         await _clearAll(mav);
     } else {
         await _sendMission(mav, mission);
@@ -33,6 +33,8 @@ async function _clearAll(mav) {
 }
 
 async function _sendMission(mav, mission) {
+    let items = mission.mission_items;
+
     let countInt;
     let onFirstRequest;
     let onRequest;
@@ -47,14 +49,14 @@ async function _sendMission(mav, mission) {
 
     // Send a count once, and then keep doing it on an interval if a
     // mission request hasn't come in yet.
-    _sendCount(mav, mission.length)
-    countInt = setInterval(() => _sendCount(mav, mission.length), 1000);
+    _sendCount(mav, items.length)
+    countInt = setInterval(() => _sendCount(mav, items.length), 1000);
 
     // After the first request, stop the count interval.
     onFirstRequest = () => clearInterval(countInt);
 
     // On each request, send back the mission item that is requested.
-    onRequest = fields => _sendMissionItem(mav, mission[fields.seq]);
+    onRequest = fields => _sendMissionItem(mav, items[fields.seq]);
 
     // When the ACK comes, finish this exchange.
     onAck = _getAckHandler(cleanupObj);

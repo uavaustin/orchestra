@@ -86,9 +86,7 @@ export default class Telemetry {
                 rawMission = telemetry.RawMission.decode(req.body);
             }
         
-            let mission = rawMission.mission_items;
-        
-            this.plane.sendMission(mission).then(() => {
+            this.plane.sendMission(rawMission).then(() => {
                 res.sendStatus(200);
             }).catch((err) => {
                 console.error(err);

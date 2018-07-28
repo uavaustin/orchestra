@@ -141,7 +141,7 @@ export default class PlaneLink {
 
     /**
      * Sends mission data to the plane.
-     * @param {Array} mission an array of waypoints to send
+     * @param {telemetry.RawMission} mission
      */
     async sendMission(mission) {
         return await new Promise((resolve, reject) => {
