@@ -86,14 +86,7 @@ async function _sendCount(mav, count) {
 }
 
 async function _sendMissionItem(mav, item) {
-    let itemCopy = JSON.parse(JSON.stringify(item));
-
-    itemCopy.param1 = itemCopy.param_1;
-    itemCopy.param2 = itemCopy.param_2;
-    itemCopy.param3 = itemCopy.param_3;
-    itemCopy.param4 = itemCopy.param_4;
-
-    await mav.send('MISSION_ITEM', itemCopy);
+    await mav.send('MISSION_ITEM', _convertProtoMission(item));
 }
 
 // Return a handler that finishes with an error on a bad ACK message.
@@ -106,4 +99,15 @@ function _getAckHandler(cleanupObj) {
             cleanupObj.finish(err);
         }
     }
+}
+
+function _convertProtoMission(mission) {
+    let itemCopy = JSON.parse(JSON.stringify(mission));
+
+    itemCopy.param1 = itemCopy.param_1;
+    itemCopy.param2 = itemCopy.param_2;
+    itemCopy.param3 = itemCopy.param_3;
+    itemCopy.param4 = itemCopy.param_4;
+
+    return itemCopy;
 }
