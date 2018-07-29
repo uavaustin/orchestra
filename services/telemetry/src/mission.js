@@ -48,6 +48,7 @@ export async function receiveMission(mav) {
   // item until a mission is being received again and return the
   // mission.
   let complete = () => {
+    mission.time = Date.now() / 1000;
     cleanupObj.finish(undefined, mission);
 
     let onItemAfter = () => _sendMissionAck(mav);
