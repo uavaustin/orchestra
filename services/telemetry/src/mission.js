@@ -1,3 +1,5 @@
+/* Contains functions for receiving and sending missions. */
+
 import _ from 'lodash';
 
 import { telemetry } from './messages';
@@ -6,6 +8,26 @@ import { cleanupAfter } from './util';
 
 const MISSION_TIMEOUT = 15000;
 
+/**
+ * Download a mission via MAVLink.
+ *
+ * To receive the mission, first, a MISSION_REQUEST_LIST message is
+ * sent until the MISSION_COUNT message is received. Afterwards, each
+ * second, a MISSION_REQUEST message is sent for each mission item
+ * that has not been received yet. When a MISSION_ITEM message is
+ * received, the mission item is registered. Once there are no more
+ * remaining items to be fetched, the mission is returned in the
+ * promise. After the promise is returned, a MISSION_ACK message is
+ * sent to the aircraft, and is also sent again each time another
+ * MISSION_ITEM is received until the next another mission receiving
+ * transaction is started.
+ *
+ * Note that this function assumes no other transations are taking
+ * place.
+ *
+ * @param {MavlinkSocket} mav
+ * @returns {Promise<telemetry.RawMission>}
+ */
 export async function receiveMission(mav) {
     let mission = telemetry.RawMission.create();
     let itemsRemaining = [];
@@ -90,6 +112,25 @@ export async function receiveMission(mav) {
     return await cleanupObj.wait();
 }
 
+/**
+ * Upload a mission via MAVLink.
+ *
+ * If the mission contains an empty list of mission items, a mission
+ * clear message is sent.
+ *
+ * To send the mission, first, a MISSION_COUNT message is sent until
+ * requests for mission items are received. Afterwards, a mission
+ * item is simply returned each time one is requested. Note that no
+ * items are sent if they are not requested. The transaction ends
+ * when a MISSION_ACK is received.
+ *
+ * Note that this function assumes no other transations are taking
+ * place.
+ *
+ * @param {MavlinkSocket}        mav
+ * @param {telemetry.RawMission} mission
+ * @returns {Promise}
+ */
 export async function sendMission(mav, mission) {
     // If this is an empty list, clear the mission instead.
     if (!mission || mission.mission_items.length === 0) {
