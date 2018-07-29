@@ -74,8 +74,6 @@ export default class Telemetry {
         this.app.post('/api/raw-mission', (req, res) => {
             let rawMission;
         
-            console.log(`Received raw mission (${req.body.length} bytes)`);
-        
             if (req.get('content-type') === 'application/json') {
                 let err = telemetry.RawMission.verify(req.body);
                 if (err) {
