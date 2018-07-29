@@ -63,8 +63,8 @@ export default class Telemetry {
         });
         
         this.app.get('/api/raw-mission', (req, res) => {
-            this.plane.requestMissions().then(() => {
-                sendJsonOrProto(req, res, this.plane.getRawMissionProto());
+            this.plane.requestMission().then((mission) => {
+                sendJsonOrProto(req, res, mission);
             }).catch((err) => {
                 console.error(err);
                 res.send(504);

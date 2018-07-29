@@ -6,6 +6,7 @@ import path from 'path';
 import { telemetry } from './messages';
 
 import MavlinkSocket from './mavlink-socket';
+import receiveMission from './receive-mission';
 import sendMission from './send-mission';
 import PlaneState from './state';
 import { wrapIndex } from './util';
@@ -118,25 +119,18 @@ export default class PlaneLink {
 
     /**
      * Performs a mission list request if one is not already underway.
-     * @returns {Array} an array of waypoints that were received
+     * @returns {telemetry.RawMission}
      */
-    async requestMissions() {
-        if (typeof(this._missionPromise) === 'undefined') {
-            this._missionPromise = new Promise((resolve, reject) => {
-                this._missionPromiseDecision = {
-                    'resolve': resolve,
-                    'reject': reject
-                };
-            });
-            this._taskQueue.push(async () => {
-                this._cxnState = ConnectionState.READING;
-                this._setupMissionRequest();
-                await this._missionPromise;
-                this._sendMissionListAck();
+    async requestMission() {
+        return await this._execTransaction(async () => {
+            this._cxnState = ConnectionState.READING;
+
+            try {
+                return await receiveMission(this._mav);
+            } finally {
                 this._cxnState = ConnectionState.IDLE;
-            });
-        }
-        return await this._missionPromise;
+            }
+        });
     }
 
     /**
@@ -144,19 +138,22 @@ export default class PlaneLink {
      * @param {telemetry.RawMission} mission
      */
     async sendMission(mission) {
+        return await this._execTransaction(async () => {
+            this._cxnState = ConnectionState.WRITING;
+
+            try {
+                await sendMission(this._mav, mission);
+            } finally {
+                this._cxnState = ConnectionState.IDLE;
+            }
+        });
+    }
+
+    // Add an async task to the queue.
+    async _execTransaction(asyncTask) {
         return await new Promise((resolve, reject) => {
-            this._taskQueue.push(async () => {
-                this._cxnState = ConnectionState.WRITING;
-
-                try {
-                    await sendMission(this._mav, mission);
-
-                    this._cxnState = ConnectionState.IDLE;
-                    resolve();
-                } catch (err) {
-                    this._cxnState = ConnectionState.IDLE;
-                    reject(err);
-                }
+            this._taskQueue.push(() => {
+                asyncTask().then(resolve).catch(reject);
             });
         });
     }
@@ -203,45 +200,6 @@ export default class PlaneLink {
         });
     }
 
-    /**
-     * Converts mission data to a RawMission protobuf.
-     * @returns {RawMission} a RawMission protobuf
-     */
-    getRawMissionProto() {
-        const mission = this._mission;
-        let raw = new telemetry.RawMission();
-        raw.time = Date.now() / 1000;
-
-        let i = 0;
-        let waypoints = [];
-        while (i < mission.length) {
-            let waypointData = mission[i];
-
-            waypoints.push(telemetry.RawMission.RawMissionItem.create({
-                target_system: waypointData.target_system,
-                target_component: waypointData.target_component,
-                seq: waypointData.seq,
-                frame: waypointData.frame,
-                command: waypointData.command,
-                current: waypointData.current,
-                autocontinue: waypointData.autocontinue,
-                param_1: waypointData.param1,
-                param_2: waypointData.param2,
-                param_3: waypointData.param3,
-                param_4: waypointData.param4,
-                x: waypointData.x,
-                y: waypointData.y,
-                z: waypointData.z,
-                mission_type: waypointData.mission_type
-            }));
-
-            i++;
-        }
-
-        raw.mission_items = waypoints;
-        return raw;
-    }
-
     _connectSuccess(connectPromiseDecision) {
         if (this._cxnState === ConnectionState.NOT_CONNECTED) {
             console.log('Link: Connection established to plane');
@@ -257,8 +215,6 @@ export default class PlaneLink {
     _bindMessages(connectPromiseDecision) {
         const mav = this._mav;
 
-        mav.on('MISSION_COUNT', (fields) => this._handleMissionList(fields));
-        mav.on('MISSION_ITEM', (fields) => this._handleMissionEntry(fields));
         mav.on('MISSION_CURRENT', (fields) => this._handleCurrentWaypoint(fields));
         mav.on('GLOBAL_POSITION_INT', (fields) => {
             const s = this.state;
@@ -307,45 +263,6 @@ export default class PlaneLink {
         });
     }
 
-    _fulfillMissionRequests(mission, err) {
-        clearTimeout(this._missionFailTimeout);
-        this._mission = mission;
-        // Check if a mission promise exists - it may not if we did not
-        // initiate the request...
-        if (typeof(this._missionPromise) !== 'undefined') {
-            if (err) {
-                this._missionPromiseDecision.reject(err);
-            } else {
-                this._missionPromiseDecision.resolve(mission);
-            }
-            delete this._missionPromise;
-            delete this._missionPromiseDecision;
-        }
-    }
-
-    _handleMissionList(fields) {
-        const missionCount = fields.count;
-        console.log(`Link: Got mission list with ${missionCount} missions`);
-        const handler = new MissionReceiver(this._mav,
-            missionCount, (mission, cur) => {
-                this._curWaypoint = cur;
-                this._fulfillMissionRequests(mission);
-                delete this._missionHandler;
-            });
-        this._missionHandler = handler;
-        this._cxnState = ConnectionState.READING;
-        clearInterval(this._missionInitialTimer);
-        handler.start();
-    }
-
-    _handleMissionEntry(fields) {
-        if (typeof(this._missionHandler) === 'undefined') {
-            // console.warn(`Waypoint ${fields.seq} was received without a mission receiver. Ignoring.`);
-            return;
-        }
-        this._missionHandler.handleMessage(fields);
-    }
-
     _handleCurrentWaypoint(fields) {
         if (this._curWaypoint !== fields.seq) {
             console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
@@ -356,44 +273,6 @@ export default class PlaneLink {
         }
     }
 
-    _setupMissionRequest() {
-        // Do a mission list request if there's no mission receiver
-        if (typeof(this._missionHandler) === 'undefined') {
-            // HACK: missionHandler will be created once the first packet
-            // is received. But we don't want to do a request twice
-            // accidentally, so we'll set it to null.
-            this._missionHandler = null;
-            this._sendMissionListRequest();
-            // Retry initial request every 1500 ms. After 10000 ms, fail.
-            this._missionInitialTimer = setInterval(
-                () => this._sendMissionListRequest(), 1500
-            );
-            this._missionFailTimeout = setTimeout(
-                () => {
-                    clearInterval(this._missionInitialTimer);
-                    this._fulfillMissionRequests(null, 'timeout receiving all missions');
-                }, 10000
-            );
-        }
-    }
-
-    async _sendMissionListRequest() {
-        await this._mav.send('MISSION_REQUEST_LIST', {
-            target_system: 1,
-            target_component: 1,
-            mission_type: 0
-        });
-    }
-
-    async _sendMissionListAck() {
-        await this._mav.send('MISSION_ACK', {
-            target_system: 1,
-            target_component: 1,
-            type: 0,
-            mission_type: 0
-        });
-    }
-
     async _sendSetCurrentWaypoint(seq) {
         await this._mav.send('MISSION_SET_CURRENT', {
             target_system: 1,
@@ -402,81 +281,4 @@ export default class PlaneLink {
         });
     }
 
-}
-
-class MissionReceiver {
-    constructor(mav, count, callback) {
-        this._mav = mav;
-
-        // The number of missions that need to be received.
-        this.missionCount = count;
-
-        // The mission number we are waiting for.
-        // We have to receive each mission sequentially!
-        this.missionNumber = 0;
-
-        // The mission list.
-        this.missions = [];
-
-        // Called when all missions have been received
-        // (missions, cur) => {...}
-        this._done_callback = callback;
-
-        // Timer for resending mission request
-        this._sendTimer = null;
-
-        // The mission currently being executed by the autopilot
-        this._curMission = 0;
-    }
-
-    start() {
-        if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done());
-        } else {
-            this._startRequestMission(this.missionNumber);
-        }
-    }
-
-    _startRequestMission(id) {
-        if (this._sendTimer !== null) {
-            throw Error('Can\'t request a mission - already waiting on one');
-        }
-        this._sendTimer = setInterval(
-            () => this._requestMission(id), 1500
-        );
-    }
-
-    async _requestMission(id) {
-        await this._mav.send('MISSION_REQUEST', {
-            target_system: 1,
-            target_component: 1,
-            seq: id,
-            mission_type: 0
-        });
-    }
-
-    _done() {
-        missionLogger.log({ level: 'info', message: JSON.stringify(this.missions) });
-        this._done_callback(this.missions, this._curMission);
-    }
-
-    handleMessage(fields) {
-        if (fields.seq !== this.missionNumber) {
-            console.warn(`MissionReceiver: Received mission ${fields.seq} but wanted mission ${this.missionNumber}`);
-            return;
-        }
-        console.log(`MissionReceiver: Got mission ${fields.seq}`);
-        clearTimeout(this._sendTimer);
-        this._sendTimer = null;
-        if (fields.cur == 1) {
-            this._curMission = this.missionNumber;
-        }
-        this.missions.push(fields);
-        this.missionNumber++;
-        if (this.missionNumber === this.missionCount) {
-            process.nextTick(() => this._done());
-        } else {
-            this._startRequestMission(this.missionNumber);
-        }
-    }
 }
