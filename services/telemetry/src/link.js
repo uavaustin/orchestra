@@ -6,8 +6,7 @@ import path from 'path';
 import { telemetry } from './messages';
 
 import MavlinkSocket from './mavlink-socket';
-import receiveMission from './receive-mission';
-import sendMission from './send-mission';
+import { receiveMission, sendMission } from './mission';
 import PlaneState from './state';
 import { wrapIndex } from './util';
 
