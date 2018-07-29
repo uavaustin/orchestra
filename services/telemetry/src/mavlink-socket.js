@@ -56,7 +56,7 @@ export default class MavlinkSocket extends EventEmitter {
         // Picking a port to bind that isn't the one given.
         let port = this._port !== 25565 ? 25565 : 25566;
 
-        await socket.bindAsync(25565);
+        await socket.bindAsync(port);
 
         return socket;
     }
