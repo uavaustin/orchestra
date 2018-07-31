@@ -76,7 +76,7 @@ export default class Service {
     app.use(router.allowedMethods());
 
     // Start and wait until the server is up and then return it.
-    await new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       let server = app.listen(this._port, (err) => {
         if (err) reject(err);
         else resolve(server);
