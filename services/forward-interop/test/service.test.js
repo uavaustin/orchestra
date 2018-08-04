@@ -6,7 +6,7 @@ import { interop } from '../src/messages';
 import Service from '../src/service';
 
 let t1 = interop.InteropTelem.encode({
-    time: 1, pos: { lat: 2, lon: 3, alt_msl: 4 }, yaw: 5
+  time: 1, pos: { lat: 2, lon: 3, alt_msl: 4 }, yaw: 5
 }).finish();
 let t2 = interop.InteropTelem.encode({
   time: 2, pos: { lat: 3, lon: 4, alt_msl: 5 }, yaw: 6
