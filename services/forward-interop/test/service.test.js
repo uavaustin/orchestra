@@ -37,9 +37,9 @@ test('telemetry data is forwarded to interop-proxy', async () => {
 
   let interopProxyApi = nock('http://interop-proxy-test:8000')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
-    .post('/api/telemetry', t1.toString('hex'))
+    .post('/api/telemetry', t1)
     .reply(200, m1)
-    .post('/api/telemetry', t2.toString('utf8'))
+    .post('/api/telemetry', t2)
     .reply(200, m2);
 
   try {
@@ -73,7 +73,7 @@ test('forward failures are recovered from', async () => {
 
   let interopProxyApi = nock('http://interop-proxy-test:8000')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
-    .post('/api/telemetry', t2.toString('utf8'))
+    .post('/api/telemetry', t2)
     .reply(200, m2);
 
   try {
@@ -110,7 +110,7 @@ test('last telemetry is uploaded when service is stopped', async () => {
 
   let interopProxyApi = nock('http://interop-proxy-test:8000')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
-    .post('/api/telemetry', t1.toString('hex'))
+    .post('/api/telemetry', t1)
     .reply(200, m1);
 
   let didStop = false;
