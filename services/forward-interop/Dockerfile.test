@@ -20,4 +20,4 @@ RUN npm run build-msg
 COPY common/nodejs src/common
 COPY forward-interop .
 
-CMD npm test
+CMD npm run lint && npm test

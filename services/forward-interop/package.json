@@ -8,7 +8,8 @@
     "start": "node ./bin/start-service",
     "build": "babel src --out-dir lib",
     "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint src test --ignore-pattern src/messages.js"
   },
   "dependencies": {
     "async": "^2.6.0",
@@ -27,6 +28,8 @@
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-plugin-source-map-support": "^2.0.1",
     "babel-preset-env": "^1.6.1",
+    "eslint": "^5.3.0",
+    "eslint-plugin-jest": "^21.20.2",
     "jest": "^23.3.0",
     "lolex": "^2.7.1",
     "nock": "^9.5.0",
