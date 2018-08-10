@@ -1,39 +1,38 @@
 {
-    "name": "forward-interop",
-    "main": "lib/forward.js",
-    "private": true,
-    "license": "MIT",
-    "scripts": {
-        "start": "node .",
-        "build": "babel src --out-dir lib"
-    },
-    "dependencies": {
-        "async": "^2.6.0",
-        "express": "^4.16.2",
-        "google-protobuf": "3.4.0",
-        "request": "^2.83.0",
-        "request-promise-native": "^1.0.5",
-        "source-map-support": "^0.5.6"
-    },
-    "devDependencies": {
-        "babel-cli": "^6.26.0",
-        "babel-plugin-source-map-support": "^2.0.1",
-        "babel-preset-env": "^1.6.1"
-    },
-    "babel": {
-        "sourceMaps": "inline",
-        "plugins": [
-            "source-map-support"
-        ],
-        "presets": [
-            [
-                "env",
-                {
-                    "targets": {
-                        "node": "current"
-                    }
-                }
-            ]
-        ]
-    }
+  "name": "forward-interop",
+  "version": "0.1.0",
+  "main": "lib/service.js",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./bin/start-service",
+    "build": "babel src --out-dir lib",
+    "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
+    "test": "jest",
+    "lint": "eslint src test --ignore-pattern src/messages.js"
+  },
+  "dependencies": {
+    "async": "^2.6.0",
+    "common-nodejs": "file:src/common",
+    "express": "^4.16.2",
+    "koa": "^2.5.1",
+    "koa-protobuf": "^0.1.0",
+    "koa-router": "^7.4.0",
+    "protobufjs": "~6.8.6",
+    "source-map-support": "^0.5.6",
+    "superagent": "^3.8.3",
+    "superagent-protobuf": "^0.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-source-map-support": "^2.0.1",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^5.3.0",
+    "eslint-plugin-jest": "^21.20.2",
+    "jest": "^23.3.0",
+    "lolex": "^2.7.1",
+    "nock": "^9.5.0",
+    "supertest": "^3.1.0"
+  }
 }

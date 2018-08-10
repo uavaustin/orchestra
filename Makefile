@@ -6,7 +6,7 @@
 all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard
 
 .PHONY: test
-test: interop-proxy-test pong-test
+test: interop-proxy-test pong-test forward-interop-test
 
 .PHONY: protoc
 protoc:
@@ -37,8 +37,12 @@ pong-test: protoc
 	$(MAKE) -C services/pong test
 
 .PHONY: forward-interop
-forward-interop: protoc
+forward-interop:
 	$(MAKE) -C services/forward-interop
+
+.PHONY: forward-interop-test
+forward-interop-test:
+	$(MAKE) -C services/forward-interop test
 
 .PHONY: imagery
 imagery:
