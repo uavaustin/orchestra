@@ -12,7 +12,26 @@ import UploadMonitor from './upload-monitor';
 
 addProtobuf(request);
 
+/**
+ * Service-level implementation for forward-interop.
+ *
+ * When run, this service forward telemetry from the telemetry
+ * service to the interop-proxy service on an interval.
+ *
+ * An API is also hosted which serves the rate at which raw and
+ * unique telemetry over the last 1 or 5 seconds.
+ */
 export default class Service {
+  /**
+   * Create a new forward-interop service.
+   *
+   * @param {Object} options
+   * @param {number} options.port
+   * @param {string} options.telemetryHost
+   * @param {number} options.telemetryPort
+   * @param {string} options.interopProxyHost
+   * @param {string} options.interopProxyPort
+   */
   constructor(options) {
     this._port = options.port;
 
@@ -22,6 +41,7 @@ export default class Service {
       `http://${options.interopProxyHost}:${options.interopProxyPort}`;
   }
 
+  /** Start the sevice. */
   async start() {
     logger.debug('Starting service.');
 
@@ -32,6 +52,7 @@ export default class Service {
     logger.debug('Service started.');
   }
 
+  /** Stop the service. */
   async stop() {
     logger.debug('Stopping service.');
 
