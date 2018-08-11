@@ -15,11 +15,11 @@ addProtobuf(request);
 /**
  * Service-level implementation for forward-interop.
  *
- * When run, this service forward telemetry from the telemetry
- * service to the interop-proxy service on an interval.
+ * When run, this service forwards telemetry from the telemetry
+ * service to the interop-proxy service with a timeout.
  *
  * An API is also hosted which serves the rate at which raw and
- * unique telemetry over the last 1 or 5 seconds.
+ * unique telemetry is uploaded over the last 1 or 5 seconds.
  */
 export default class Service {
   /**
@@ -30,7 +30,7 @@ export default class Service {
    * @param {string} options.telemetryHost
    * @param {number} options.telemetryPort
    * @param {string} options.interopProxyHost
-   * @param {string} options.interopProxyPort
+   * @param {number} options.interopProxyPort
    */
   constructor(options) {
     this._port = options.port;
@@ -41,7 +41,7 @@ export default class Service {
       `http://${options.interopProxyHost}:${options.interopProxyPort}`;
   }
 
-  /** Start the sevice. */
+  /** Start the service. */
   async start() {
     logger.debug('Starting service.');
 
@@ -103,7 +103,7 @@ export default class Service {
   async _forwardTelem() {
     logger.debug('Fetching telemetry.');
 
-    // Getting the telemetry from the telemetry service.
+    // Get the telemetry from the telemetry service.
     let { body: telem } =
       await request.get(this._telemetryUrl + '/api/interop-telem')
         .proto(interop.InteropTelem)
