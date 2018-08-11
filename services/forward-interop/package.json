@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "common-nodejs": "file:src/common",
-    "express": "^4.16.2",
     "koa": "^2.5.1",
     "koa-protobuf": "^0.1.0",
     "koa-router": "^7.4.0",
