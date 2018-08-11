@@ -1,10 +1,10 @@
-import async from 'async';
 import Koa from 'koa';
 import request from 'superagent';
 import addProtobuf from 'superagent-protobuf';
 
 import koaLogger from './common/koa-logger';
 import logger from './common/logger';
+import { createTimeoutTask } from './common/task';
 import { interop } from './messages';
 
 import router from './router';
@@ -47,7 +47,7 @@ export default class Service {
 
     this._monitor = new UploadMonitor();
     this._server = await this._createApi(this._monitor);
-    this._startLoop();
+    this._startTask();
 
     logger.debug('Service started.');
   }
@@ -56,29 +56,10 @@ export default class Service {
   async stop() {
     logger.debug('Stopping service.');
 
-    let closeServer = new Promise((resolve) => {
-      this._server.close(() => resolve());
-    });
-
-    let closeLoop = new Promise((resolve) => {
-      this._loopActive = false;
-
-      // If there's a timeout going, kill it and then the loop is no
-      // longer executing. Otherwise, make a function to finish the
-      // closing process, and wait until the loop sees that the
-      // active flag is set to the false and calls it.
-      if (this._loopTimeout) {
-        clearTimeout(this._loopTimeout);
-        resolve();
-      } else {
-        this._finishLoop = () => {
-          delete this._finishLoop;
-          resolve();
-        };
-      }
-    });
-
-    await Promise.all([closeServer, closeLoop]);
+    await Promise.all([
+      this._server.closeAsync(),
+      this._forwardTask.stop()
+    ]);
 
     logger.debug('Service stopped.');
   }
@@ -102,29 +83,20 @@ export default class Service {
         if (err) reject(err);
         else resolve(server);
       });
+
+      // Add a promisified close method to the server.
+      server.closeAsync = () => new Promise((resolve) => {
+        server.close(() => resolve());
+      });
     });
   }
 
-  // Start the loop for forwarding telemetry and kill it when the
-  // server is being stopped.
-  _startLoop() {
-    this._loopActive = true;
-
-    async.forever((next) => {
-      this._forwardTelem()
-        .catch(err => logger.error(err.message))
-        .then(() => {
-          // Only continue if the loop isn't being stopped.
-          if (this._loopActive === false) {
-            this._finishLoop();
-          } else {
-            this._loopTimeout = setTimeout(() => {
-              delete this._loopTimeout;
-              next();
-            }, 200);
-          }
-        });
-    });
+  // Start the loop for forwarding telemetry.
+  _startTask() {
+    this._forwardTask =
+      createTimeoutTask(this._forwardTelem.bind(this), 200)
+        .on('error', logger.error)
+        .start();
   }
 
   // Get the latest telemetry and send it to the interop server.
