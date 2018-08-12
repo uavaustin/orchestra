@@ -167,7 +167,7 @@ export default class PlaneLink {
      */
     async getCurrentWaypoint() {
         if (this._curWaypoint === null) {
-            await this.requestMissions();
+            await this.requestMission();
         }
         return this._curWaypoint;
     }
