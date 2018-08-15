@@ -1,143 +1,55 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
+import Koa from 'koa';
 
-import { telemetry } from './messages';
-import { sendJsonOrProto } from './util';
 import PlaneLink from './link';
+import router from './router';
 
 export default class Telemetry {
     constructor() {
-        this.app = express();
-        this.plane = null;
-        this.server = null;
+        this._plane = null;
+        this._server = null;
 
-        // By default, the bodies are assumed to be protobufs.
-        this.app.use(bodyParser.json({ type: 'application/json' }));
-        this.app.use(bodyParser.raw({ type: '*/*' }));
-        
-        this.app.get('/', (req, res) => {
-            res.set('content-type', 'text/plain');
-            res.send('Telemetry endpoint');
-        });
-        
-        this.app.get('/api/alive', (req, res) => {
-            res.set('content-type', 'text/plain');
-            if (this.plane.state.isPopulated()) {
-                res.send('Yes, I\'m alive!\n');
-            } else {
-                res.status(503).send('No plane data available yet\n');
-            }
-        });
-        
-        this.app.get('/api/interop-telem', (req, res) => {
-            if (this.plane.state.isPopulated()) {
-                sendJsonOrProto(req, res, this.plane.state.getInteropTelemProto());
-            } else {
-                res.send(503);
-            }
-        });
-        
-        this.app.get('/api/camera-telem', (req, res) => {
-            if (this.plane.state.isPopulated()) {
-                sendJsonOrProto(req, res, this.plane.state.getCameraTelemProto());
-            } else {
-                res.send(204);
-            }
-        });
-        
-        this.app.get('/api/overview', (req, res) => {
-            if (!this.plane.state.isPopulated()) {
-                res.send(503);
-                return;
-            }
-            const state = this.plane.state;
-            let msg = new telemetry.Overview();
-            msg.setPos(state.getPositionProto());
-            msg.setRot(state.getRotationProto());
-            msg.setAlt(state.getAltitudeProto());
-            msg.setVel(state.getVelocityProto());
-            msg.setSpeed(state.getSpeedProto());
-            msg.setBattery(state.getBatteryProto());
-            sendJsonOrProto(req, res, msg);
-        });
-        
-        this.app.get('/api/raw-mission', (req, res) => {
-            this.plane.requestMission().then((mission) => {
-                sendJsonOrProto(req, res, mission);
-            }).catch((err) => {
-                console.error(err);
-                res.send(504);
-            });
-        });
-        
-        this.app.post('/api/raw-mission', (req, res) => {
-            let rawMission;
-        
-            if (req.get('content-type') === 'application/json') {
-                let err = telemetry.RawMission.verify(req.body);
-                if (err) {
-                    throw err;
-                }
-                rawMission = telemetry.RawMission.fromObject(req.body);
-            } else {
-                rawMission = telemetry.RawMission.decode(req.body);
-            }
-        
-            this.plane.sendMission(rawMission).then(() => {
-                res.sendStatus(200);
-            }).catch((err) => {
-                console.error(err);
-                res.sendStatus(504);
-            });;
-        });
-        
-        this.app.get('/api/current-waypoint', (req, res) => {
-            this.plane.getCurrentWaypoint().then((waypoint) => {
-                res.send({
-                    seq: waypoint
-                });
-            });
-        });
-        
-        this.app.post('/api/current-waypoint', (req, res) => {
-            if (typeof req.body.seq === 'undefined') {
-                res.status(400);
-                res.send({err: 'Must contain seq'});
-                return;
-            }
-        
-            this.plane.setCurrentWaypoint(req.body.seq).then((waypoint) => {
-                res.sendStatus(200);
-            });
-        });
-
-        this.app.get('/api/logs/missions-received', (req, res) => {
-            res.sendFile('missions-received.txt', { root: path.join(__dirname, '..') });
-        });
+        this._port = 5000;
     }
 
     async start() {
-        if (this.server) {
+        if (this._server) {
             throw Error('Telemetry server is already running');
         }
 
-        const PORT = 5000;
+        this._plane = new PlaneLink();
+        await this._plane.connect();
 
-        this.plane = new PlaneLink();
-        await this.plane.connect();
-        this.server = this.app.listen(PORT);
-        console.log(`Running server with Express at http://0.0.0.0:${PORT}`);
+        this._server = await this._createApi(this._plane);
     }
 
     async stop() {
-        await new Promise((resolve, reject) => {
-            this.plane.disconnect().then(() => {
-                this.server.close(() => {
-                    console.log('Closed server.')
-                    this.server = null;
-                    resolve();
-                });
+        await this._plane.disconnect();
+        await this._server.closeAsync();
+
+        this._server = null;
+    }
+
+    // Create the koa api and return the http server.
+    async _createApi(plane) {
+        let app = new Koa();
+
+        // Make the plane available to the routes.
+        app.context.plane = plane;
+
+        // Set up the router middleware.
+        app.use(router.routes());
+        app.use(router.allowedMethods());
+
+        // Start and wait until the server is up and then return it.
+        return await new Promise((resolve, reject) => {
+            let server = app.listen(this._port, (err) => {
+                if (err) reject(err);
+                else resolve(server);
+            });
+
+            // Add a promisified close method to the server.
+            server.closeAsync = () => new Promise((resolve) => {
+                server.close(() => resolve());
             });
         });
     }
