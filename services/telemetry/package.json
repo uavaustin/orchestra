@@ -4,13 +4,16 @@
     "private": true,
     "license": "MIT",
     "scripts": {
-        "start": "./bin/start-server",
+        "start": "node ./bin/start-service.js",
         "build": "babel src --out-dir lib",
         "build-msg": "mkdir -p lib && pbjs -t static-module -w commonjs --keep-case -o lib/messages.js src/messages/*.proto",
         "test": "mocha"
     },
     "dependencies": {
-        "express": "^4.16.2",
+        "koa": "^2.5.1",
+        "koa-protobuf": "^0.1.0",
+        "koa-router": "^7.4.0",
+        "lodash": "^4.17.10",
         "protobufjs": "~6.8.6",
         "mavlink": "^1.0.1",
         "async": "^2.6.0",
