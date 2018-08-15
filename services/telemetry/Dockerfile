@@ -24,6 +24,8 @@ WORKDIR /app
 
 COPY telemetry/package.json .
 
+COPY telemetry/bin bin
+
 RUN export NODE_ENV=production && npm install
 
 # Adding in the output from the js builder above
