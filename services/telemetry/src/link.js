@@ -1,6 +1,5 @@
 import queue from 'async/queue';
 import series from 'async/series';
-import winston from 'winston';
 import path from 'path';
 
 import { telemetry } from './messages';
@@ -9,15 +8,6 @@ import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission } from './mission';
 import PlaneState from './state';
 import { wrapIndex } from './util';
-
-const missionLogger = winston.createLogger({
-    transports: [
-        new winston.transports.File({
-            filename: path.join(__dirname, '..', 'missions-received.txt'),
-            timestamp: true
-        })
-    ]
-});
 
 // Parse CXN_STR (defined in Docker config)
 // Capture group 0: IP address (IPv4, IPv6, and hostname are all acceptable)

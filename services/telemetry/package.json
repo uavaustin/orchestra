@@ -16,8 +16,7 @@
         "lodash": "^4.17.10",
         "protobufjs": "~6.8.6",
         "mavlink": "^1.0.1",
-        "async": "^2.6.0",
-        "winston": "^3.0.0-rc6"
+        "async": "^2.6.0"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
