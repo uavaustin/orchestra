@@ -22,7 +22,7 @@ before(function (done) {
     }
 
     (function checkOnline() {
-        if (retries > 10) {
+        if (retries > 20) {
             done(Error('server did not come online'));
             return;
         }
