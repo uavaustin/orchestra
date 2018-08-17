@@ -1,6 +1,6 @@
-import queue from 'async/queue';
-import series from 'async/series';
 import path from 'path';
+
+import queue from 'async/queue';
 
 import { telemetry } from './messages';
 
@@ -52,34 +52,9 @@ export default class PlaneLink {
         this._cxnState = ConnectionState.IDLE;
     }
 
-    /**
-     * Waits for event queue to stop, and closes the UDP socket.
-     */
+    /** Execute remaining tasks and close the connection. */
     async disconnect() {
-        await new Promise((resolve, reject) => {
-            if (this._taskQueue.idle()) {
-                // Cleanup immediately if idle
-                this._cleanup();
-                resolve();
-            } else {
-                // Wait 10 seconds for the queue to clear up.
-                // Force cleanup after time has elapsed.
-                const timeout = setTimeout(() => {
-                    console.warn('Timed out waiting on task queue. Killing queue.');
-                    this._taskQueue.kill();
-                    this._cleanup();
-                    resolve();
-                }, 10000);
-                this._taskQueue.drain = () => {
-                    clearTimeout(timeout);
-                    this._cleanup();
-                    resolve();
-                };
-            }
-        });
-    }
-
-    async _cleanup() {
+        await this._waitForTasks();
         await this._mav.close();
     }
 
@@ -242,5 +217,15 @@ export default class PlaneLink {
             req_message_rate: 5,
             start_stop: 1
         });
+    }
+
+    // Wait until all tasks in the queue have been completed. Since
+    // this is primarily used in tests, it's best to let all tasks
+    // complete. At runtime in the container docker sends SIGKILL so
+    // a graceful shutdown wouldn't happen anyways.
+    async _waitForTasks() {
+        if (!this._taskQueue.idle()) {
+            await new Promise(resolve => this._taskQueue.drain = resolve);
+        }
     }
 }
