@@ -40,44 +40,16 @@ export default class PlaneLink {
 
         // Will be assigned once missions are received.
         this._currentMissionItem = null;
+
+        this._bindMessages();
     }
-    
-    /**
-     * Sets up a UDP socket and establishes a connection to
-     * the plane.
-     */
+
+    /** Establish a connection to the plane. */
     async connect() {
-        await new Promise((resolve, reject) => {
-            const unboundTasks = [
-                function(cb) {
-                    this._mav.connect()
-                        .then(() => cb())
-                        .catch(err => cb(err));
-                },
-                function(cb) {
-                    this._bindMessages({
-                        'resolve': resolve,
-                        'reject': reject
-                    });
-                    cb();
-                },
-                function(cb) {
-                    this._connect_timeout = setInterval(
-                        () => this._start_telemetry(), 1500
-                    );
-                    cb();
-                    // Then we wait for the promise to be resolved
-                    // on receiving the first message...
-                }
-            ];
-            let boundTasks = [];
-            unboundTasks.forEach(func => boundTasks.push(func.bind(this)), this);
-            series(boundTasks, (err) => {
-                if (err) {
-                    reject(err);
-                }
-            });
-        });
+        await this._mav.connect();
+        await this._startTelemetry();
+
+        this._cxnState = ConnectionState.IDLE;
     }
 
     /**
@@ -195,19 +167,7 @@ export default class PlaneLink {
         });
     }
 
-    _connectSuccess(connectPromiseDecision) {
-        if (this._cxnState === ConnectionState.NOT_CONNECTED) {
-            console.log('Link: Connection established to plane');
-
-            connectPromiseDecision.resolve();
-            this._cxnState = ConnectionState.IDLE;
-
-            clearInterval(this._connect_timeout);
-            delete this._connect_timeout;
-        }
-    }
-
-    _bindMessages(connectPromiseDecision) {
+    _bindMessages() {
         const mav = this._mav;
 
         mav.on('MISSION_CURRENT', (fields) => {
@@ -225,7 +185,6 @@ export default class PlaneLink {
             s.altMSL = fields.alt / 1000;
             s.altAGL = fields.relative_alt / 1000;
             s.yaw = fields.hdg / 100;
-            this._connectSuccess(connectPromiseDecision);
         });
         mav.on('HEARTBEAT', (msg, fields) => {
             const s = this.state;
@@ -256,7 +215,26 @@ export default class PlaneLink {
         })
     }
 
-    async _start_telemetry() {
+    // Send REQUEST_DATA_STREAM messages until a position arrives.
+    async _startTelemetry() {
+        let streamInt;
+
+        this._requestDataStream();
+        streamInt = setInterval(() => this._requestDataStream(), 500);
+
+        return await new Promise((resolve) => {
+            // GLOBAL_POSITION_INT is required for interop telemetry
+            // and so wait for at least one before considering the
+            // service up. This ensures interop telemetry is always
+            // valid.
+            this._mav.on('GLOBAL_POSITION_INT', () => {
+                clearInterval(streamInt);
+                resolve();
+            });
+        });
+    }
+
+    async _requestDataStream() {
         await this._mav.send('REQUEST_DATA_STREAM', {
             target_system: 1,
             target_component: 1,
