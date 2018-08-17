@@ -76,7 +76,7 @@ export default class MavlinkSocket extends EventEmitter {
       // Wait for specific message event to get the all the fields.
       this._mav.once(type, (_, fields) => {
         // Emit both events.
-        this.emit('receive', fields);
+        this.emit('receive', type, fields);
         let listened = this.emit(type, fields);
 
         // Emit another event if the message was not listened for.
