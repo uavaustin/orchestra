@@ -161,10 +161,6 @@ export default class PlaneLink {
             s.altAGL = fields.relative_alt / 1000;
             s.yaw = fields.hdg / 100;
         });
-        mav.on('HEARTBEAT', (msg, fields) => {
-            const s = this.state;
-            s.mode = String(s.custom_mode);
-        });
         mav.on('ATTITUDE', (fields) => {
             const s = this.state;
             s.roll = fields.roll * 180 / Math.PI;

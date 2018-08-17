@@ -27,8 +27,7 @@ router.get('/api/overview', (ctx) => {
     alt: ctx.plane.state.getAltitudeProto(),
     vel: ctx.plane.state.getVelocityProto(),
     speed: ctx.plane.state.getSpeedProto(),
-    battery: ctx.plane.state.getBatteryProto(),
-    mode: ctx.plane.state.mode
+    battery: ctx.plane.state.getBatteryProto()
   });
 });
 

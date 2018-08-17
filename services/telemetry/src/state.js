@@ -17,7 +17,6 @@ export default class PlaneState {
         this.batteryVoltage = null;
         this.batteryCurrent = null;
         this.batteryPercentage = null;
-        this.mode = null;
     }
 
     getPositionProto() {
