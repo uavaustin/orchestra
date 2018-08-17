@@ -7,7 +7,7 @@ defmodule InteropProxy.Request do
   """
 
   @json       {"Content-Type", "application/json"}
-  @png        {"Content-Type", "image/png"}
+  @jpeg       {"Content-Type", "image/jpeg"}
   @urlencoded {"Content-Type", "application/x-www-form-urlencoded"}
 
   @doc """
@@ -123,7 +123,7 @@ defmodule InteropProxy.Request do
   def post_odlc_image(url, cookie, id, image)
   when is_integer(id) and is_binary(image) do
     "http://#{url}/api/odlcs/#{id}/image"
-    |> cookie_post(cookie, image, [@png])
+    |> cookie_post(cookie, image, [@jpeg])
     |> handle_resp(:text, text: "Image uploaded.")
   end
 
@@ -160,13 +160,13 @@ defmodule InteropProxy.Request do
     {:ok, resp.body, cookie}
   end
 
-  # Making sure we're getting a png back.
+  # Making sure we're getting a jpeg back.
   defp handle_resp({:ok, %{status_code: 200, body: body} = resp},
       :get_image, _opts) when is_binary(body) do
     headers = Enum.into resp.headers, %{}
 
-    # We'll have a match error if it's not a png.
-    @png = {"Content-Type", headers["Content-Type"]}
+    # We'll have a match error if it's not a jpeg.
+    @jpeg = {"Content-Type", headers["Content-Type"]}
 
     {:ok, body}
   end

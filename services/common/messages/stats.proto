@@ -33,3 +33,10 @@ message InteropUploadRate {
     double fresh_1 = 4;
     double fresh_5 = 5;
 }
+
+// Rate at which images are being captured / synced.
+message ImageCaptureRate {
+    double time = 1;
+    // Rate over 5 seconds.
+    double rate_5 = 2;
+}

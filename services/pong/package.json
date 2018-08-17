@@ -6,23 +6,61 @@
     "scripts": {
         "start": "node .",
         "build": "babel src --out-dir lib",
-        "test": "mocha"
+        "build-test": "cross-env NODE_ENV=test npm run build",
+        "test": "cross-env NODE_ENV=test nyc mocha"
     },
     "dependencies": {
         "async": "^2.6.0",
         "express": "^4.16.2",
         "google-protobuf": "3.4.0",
-        "request": "^2.83.0"
+        "request": "^2.83.0",
+        "source-map-support": "^0.5.6"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
+        "babel-plugin-istanbul": "^4.1.6",
+        "babel-plugin-source-map-support": "^2.0.1",
         "babel-preset-env": "^1.6.1",
         "chai": "^4.1.2",
-        "mocha": "^4.1.0"
+        "cross-env": "^5.2.0",
+        "mocha": "^4.1.0",
+        "nyc": "^12.0.2"
     },
     "babel": {
+        "sourceMaps": "inline",
+        "plugins": [
+            "source-map-support"
+        ],
         "presets": [
-            "env"
+            [
+                "env",
+                {
+                    "targets": {
+                        "node": "current"
+                    }
+                }
+            ]
+        ],
+        "env": {
+            "test": {
+                "plugins": [
+                    "istanbul"
+                ]
+            }
+        }
+    },
+    "nyc": {
+        "require": [
+            "babel-register"
+        ],
+        "reporter": [
+            "lcov",
+            "text"
+        ],
+        "sourceMap": false,
+        "instrument": false,
+        "include": [
+            "src"
         ]
     }
 }

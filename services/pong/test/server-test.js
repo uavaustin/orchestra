@@ -6,9 +6,9 @@ const { PingTimes } = require('../lib/messages/stats_pb');
 
 before(function (done) {
     // Creating several test servers.
-    aliveEndpointApp = express();
-    customEndpointApp = express();
-    noEndpointApp = express();
+    let aliveEndpointApp = express();
+    let customEndpointApp = express();
+    let noEndpointApp = express();
 
     aliveEndpointApp.get('/api/alive', (req, res) => res.send('test1'));
     customEndpointApp.get('/custom', (req, res) => res.send('test2'));

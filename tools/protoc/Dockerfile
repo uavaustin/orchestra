@@ -1,10 +1,6 @@
-ARG BASE=debian:stretch-slim
+ARG BASE=alpine
 
 FROM ${BASE}
 
-WORKDIR /builder
-
-COPY protobuf-version.sh .
-COPY install-protoc.sh .
-
-RUN ./install-protoc.sh
+RUN apk --no-cache add \
+    protobuf

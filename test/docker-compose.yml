@@ -7,6 +7,18 @@ services:
       - PLANE_HOME=30,60,1000,0
     networks:
       test_net:
+        ipv4_address: 172.16.238.9
+
+  mavproxy:
+    image: uavaustin/mavproxy
+    command: --master udpout:172.16.238.9:14550
+             --out udpin:0.0.0.0:14550
+             --nowait
+             --daemon
+    depends_on:
+      - plane-sitl
+    networks:
+      test_net:
         ipv4_address: 172.16.238.10
 
   interop-server:
@@ -26,7 +38,7 @@ services:
     ports:
       - '5000:5000'
     depends_on:
-      - plane-sitl
+      - mavproxy
     networks:
       test_net:
         ipv4_address: 172.16.238.12
@@ -61,9 +73,6 @@ services:
 
   forward-interop:
     image: uavaustin/forward-interop
-    environment:
-      - INTEROP_PROXY_URL=172.16.238.13:8000
-      - TELEMETRY_URL=172.16.238.12:5000
     ports:
       - '4000:4000'
     depends_on:

@@ -5,3 +5,7 @@ package-lock.json
 
 # Ignore message and babel output
 lib/
+
+# Ignore coverage output
+.nyc_output
+coverage

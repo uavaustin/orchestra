@@ -27,9 +27,9 @@ image:
 	docker build -t $(PONG_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: test
-test:
+test: proto
 	docker build -t $(PONG_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -it $(PONG_TEST_IMAGE)
+	docker run -it -v $(current_dir)/coverage:/test/coverage $(PONG_TEST_IMAGE)
 
 .PHONY: clean
 clean:

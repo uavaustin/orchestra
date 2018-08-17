@@ -88,7 +88,7 @@ defmodule InteropProxy.RequestTest do
     assert uploaded === retrieved
 
     # Adding the image to it.
-    image_1 = TestHelper.get_image "image-1.png"
+    image_1 = TestHelper.get_image "image-1.jpg"
 
     {:ok, _} = Request.post_odlc_image url(), cookie, id, image_1
 
@@ -157,7 +157,7 @@ defmodule InteropProxy.RequestTest do
       type: "off_axis", latitude: 12.345, longitude: 34.567
     }
 
-    image_2 = TestHelper.get_image "image-2.png"
+    image_2 = TestHelper.get_image "image-2.jpg"
 
     {:ok, _} = Request.post_odlc_image url(), cookie, id_1, image_2
 
@@ -166,7 +166,7 @@ defmodule InteropProxy.RequestTest do
       description: "Fireman"
     }
 
-    image_3 = TestHelper.get_image "image-3.png"
+    image_3 = TestHelper.get_image "image-3.jpg"
 
     {:ok, _} = Request.post_odlc_image url(), cookie, id_2, image_3
 
@@ -211,8 +211,8 @@ defmodule InteropProxy.RequestTest do
     }
 
     # Adding the image to it, then changing it.
-    image_1 = TestHelper.get_image "image-1.png"
-    image_2 = TestHelper.get_image "image-2.png"
+    image_1 = TestHelper.get_image "image-1.jpg"
+    image_2 = TestHelper.get_image "image-2.jpg"
 
     {:ok, _} = Request.post_odlc_image url(), cookie, id, image_1
     {:ok, _} = Request.put_odlc_image url(), cookie, id, image_2

@@ -8,7 +8,9 @@ let options = {
     port: 8081,
     backend: process.env.BACKEND,
     imagerySyncUrl: process.env.IMAGERY_SYNC_URL,
-    printNew: process.env.PRINT_NEW in ['1', 'true', 'TRUE']
+    telemUrl: process.env.TELEMETRY_URL,
+    printNew: process.env.PRINT_NEW in ['1', 'true', 'TRUE'],
+    captureInterval: parseFloat(process.env.CAPTURE_INTERVAL) || 2.0
 };
 
 (new Service(options)).start()

@@ -11,7 +11,10 @@ The service has three backends which can be used:
   device is the camera. The gphoto2 dependency will autodetect the camera. If
   no camera, or two or more cameras are found, an error will be thrown.
 
-  *** Note that this backend may be currently unstable. ***
+  By default, the capture rate is set to take a photo every two seconds. To set
+  a different interval, set the `CAPTURE_INTERVAL` environment variable.
+
+  To add telemetry to images, set the `TELEMETRY_URL` environment variable.
 
 - `file`
 
@@ -33,6 +36,12 @@ Note that no telemetry data is gathered for images at the current time.
 The `BACKEND` environment variable should be set to one of `camera`, `file`, or
 `sync`.
 
+If using `camera`, the `CAPTURE_INTERVAL` environment variable can be set to
+set the rate at which images are taken in seconds. This defaults to every two
+seconds. To add telemetry to images, set the `TELEMETRY_URL` environment
+variable. Without this, the image metadata will not contain any camera
+telemetry.
+
 If using `sync`, the `IMAGERY_SYNC_URL` should be set to the imagery service to
 be synced from.
 
@@ -49,6 +58,8 @@ mounting the imagery directory on the host computer:
 $ docker run -it -p 8081:8081 \
     --privileged
     -e BACKEND=camera
+    -e CAPTURE_INTERVAL=2.5
+    -e TELEMETRY_URL=192.168.0.4:5000
     -v '$HOME/Desktop/imagery:/opt/imagery'
     uavaustin/forward-interop
 ```
@@ -70,6 +81,14 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
   On successful response: `200` status code with `imagery::ImageCount` Protobuf
   message.
+
+- `GET /api/capture-rate`
+
+  Gives the rate at which images are being captured.
+
+  On successful response: `200` status code with `stats::ImageCaptureRate`
+  Protobuf message.
+
 
 - `GET /api/image/latest`
 
