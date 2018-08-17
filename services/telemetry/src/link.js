@@ -202,7 +202,7 @@ export default class PlaneLink {
             // and so wait for at least one before considering the
             // service up. This ensures interop telemetry is always
             // valid.
-            this._mav.on('GLOBAL_POSITION_INT', () => {
+            this._mav.once('GLOBAL_POSITION_INT', () => {
                 clearInterval(streamInt);
                 resolve();
             });
