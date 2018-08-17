@@ -101,12 +101,4 @@ export default class PlaneState {
             approx_time: battery.approxTime
         });
     }
-
-    /*
-     * Returns whether or not enough telemetry data has been received.
-     */
-    isPopulated() {
-        return !([this.lat, this.lon, this.yaw,
-            this.roll, this.pitch, this.altAGL].includes(null));
-    }
 }

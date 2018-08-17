@@ -8,16 +8,6 @@ let router = new Router();
 // Encode outbound protobuf messages.
 router.use(koaProtobuf.protobufSender());
 
-// Check if enough telemetry has been received for the service to be
-// available.
-router.use(async (ctx, next) => {
-  if (ctx.plane.state.isPopulated()) {
-    await next();
-  } else {
-    ctx.status = 503;
-  }
-});
-
 router.get('/api/alive', (ctx) => {
   ctx.body = 'Yes, I\'m alive!\n';
 });
