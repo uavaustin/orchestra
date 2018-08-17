@@ -13,23 +13,15 @@ router.get('/api/alive', (ctx) => {
 });
 
 router.get('/api/interop-telem', (ctx) => {
-  ctx.proto = ctx.plane.state.getInteropTelemProto();
+  ctx.proto = ctx.plane.getInteropTelem();
 });
 
 router.get('/api/camera-telem', (ctx) => {
-  ctx.proto = ctx.plane.state.getCameraTelemProto();
+  ctx.proto = ctx.plane.getCameraTelem();
 });
 
 router.get('/api/overview', (ctx) => {
-  ctx.proto = telemetry.Overview.create({
-    time: Date.now() / 1000,
-    pos: ctx.plane.state.getPositionProto(),
-    rot: ctx.plane.state.getRotationProto(),
-    alt: ctx.plane.state.getAltitudeProto(),
-    vel: ctx.plane.state.getVelocityProto(),
-    speed: ctx.plane.state.getSpeedProto(),
-    battery: ctx.plane.state.getBatteryProto()
-  });
+  ctx.proto = ctx.plane.getOverview();
 });
 
 router.get('/api/raw-mission', async (ctx) => {

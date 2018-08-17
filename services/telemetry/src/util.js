@@ -1,9 +1,16 @@
-/**
- * Returns a Python-like remainder.
- * https://stackoverflow.com/a/3417242
- */
-export function wrapIndex(i, i_max) {
-  return ((i % i_max) + i_max) % i_max;
+/** Convert radians to degrees. */
+export function degrees(radians) {
+  return radians * 180 / Math.PI;
+}
+
+/** Put degrees in range [0, 360). */
+export function modDegrees(degrees) {
+  return (degrees % 360 + 360) % 360;
+}
+
+/** Put degrees in range (-180, 180]. */
+export function modDegrees2(degrees) {
+  return -modDegrees(-degrees - 180) + 180;
 }
 
 /** Wait for an amount of time. */

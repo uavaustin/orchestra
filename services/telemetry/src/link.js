@@ -2,12 +2,11 @@ import path from 'path';
 
 import queue from 'async/queue';
 
-import { telemetry } from './messages';
+import { interop, telemetry } from './messages';
 
 import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission, sendMissionCurrent } from './mission';
-import PlaneState from './state';
-import { wrapIndex } from './util';
+import { degrees, modDegrees, modDegrees2 } from './util';
 
 // Parse CXN_STR (defined in Docker config)
 // Capture group 0: IP address (IPv4, IPv6, and hostname are all acceptable)
@@ -26,10 +25,10 @@ const ConnectionState = Object.freeze({
     WRITING:       Symbol('writing')
 });
 
+/** Holds the state of a plane over a MAVLink connection. */
 export default class PlaneLink {
     constructor() {
         this._mav = new MavlinkSocket(destAddr, destPort);
-        this.state = new PlaneState();
         this._cxnState = ConnectionState.NOT_CONNECTED;
 
         // Async transaction queue. This only allows one transaction
@@ -38,8 +37,21 @@ export default class PlaneLink {
             return await asyncTask();
         }, 1);
 
-        // Will be assigned once missions are received.
-        this._currentMissionItem = null;
+        this._overview = telemetry.Overview.create({
+            time: 0,
+            pos: {},
+            rot: {},
+            alt: {},
+            vel: {},
+            speed: {},
+            battery: {}
+        });
+        // Will be assigned on each GLOBAL_POSITION_INT message.
+        this._interopTelem = null;
+        this._cameraTelem = telemetry.CameraTelem.create({});
+        // Will be assigned after mission current or first mission
+        // is received.
+        this._missionCurrent = null;
 
         this._bindMessages();
     }
@@ -56,6 +68,21 @@ export default class PlaneLink {
     async disconnect() {
         await this._waitForTasks();
         await this._mav.close();
+    }
+
+    /** Get the overview telemetry. */
+    getOverview() {
+        return this._overview;
+    }
+
+    /** Get the camera telemetry. */
+    getCameraTelem() {
+        return this._cameraTelem;
+    }
+
+    /** Get the interop telemetry. */
+    getInteropTelem() {
+        return this._interopTelem;
     }
 
     /**
@@ -103,15 +130,22 @@ export default class PlaneLink {
      */
     async getMissionCurrent() {
         // If the current mission item hasn't been set, then get the
-        // mission. The mission item will be set as a side effect.
-        if (this._currentMissionItem === null) {
+        // mission. The mission item may be set as a side effect.
+        if (this._missionCurrent === null) {
             await this.getMission();
+
+            // If mission current wasn't set since there was no
+            // mission item marked as current. The mission current is
+            // assumed to be 0.
+            if (this._missionCurrent === null) {
+                this._missionCurrent = telemetry.MissionCurrent.create({
+                    time: Date.now() / 1000,
+                    item_number: 0
+                });
+            }
         }
 
-        return telemetry.MissionCurrent.create({
-            time: Date.now() / 1000,
-            item_number: this._currentMissionItem || 0
-        });
+        return this._missionCurrent;
     }
 
     /**
@@ -140,45 +174,6 @@ export default class PlaneLink {
                 else resolve(result);
             });
         });
-    }
-
-    _bindMessages() {
-        const mav = this._mav;
-
-        mav.on('MISSION_CURRENT', (fields) => {
-            this._currentMissionItem = fields.seq;
-        });
-        mav.on('MISSION_ITEM', (fields) => {
-            if (fields.current) {
-                this._currentMissionItem = fields.seq;
-            }
-        });
-        mav.on('GLOBAL_POSITION_INT', (fields) => {
-            const s = this.state;
-            s.lat = fields.lat / 1e7;
-            s.lon = fields.lon / 1e7;
-            s.altMSL = fields.alt / 1000;
-            s.altAGL = fields.relative_alt / 1000;
-            s.yaw = fields.hdg / 100;
-        });
-        mav.on('ATTITUDE', (fields) => {
-            const s = this.state;
-            s.roll = fields.roll * 180 / Math.PI;
-            s.pitch = fields.pitch * 180 / Math.PI;
-            s.yaw = wrapIndex(fields.yaw * 180 / Math.PI, 360);
-        });
-        mav.on('VFR_HUD', (fields) => {
-            const s = this.state;
-            s.airspeed = fields.airspeed;
-            s.groundSpeed = fields.groundspeed;
-            s.altMSL = fields.alt;
-        });
-        mav.on('SYS_STATUS', (fields) => {
-            const s = this.state;
-            s.batteryVoltage = fields.voltage_battery / 1000;
-            s.batteryCurrent = fields.current_battery / 100;
-            s.batteryPercentage = fields.battery_remaining;
-        })
     }
 
     // Send REQUEST_DATA_STREAM messages until a position arrives.
@@ -218,5 +213,96 @@ export default class PlaneLink {
         if (!this._taskQueue.idle()) {
             await new Promise(resolve => this._taskQueue.drain = resolve);
         }
+    }
+
+    // Attach listeners below to update the state on incomming
+    // messages.
+    _bindMessages() {
+        this._mav
+            .on('ATTITUDE', this._onAttitude.bind(this))
+            .on('GLOBAL_POSITION_INT', this._onGlobalPositionInt.bind(this))
+            .on('MISSION_CURRENT', this._onMissionCurrent.bind(this))
+            .on('MISSION_ITEM', this._onMissionItem.bind(this))
+            .on('VFR_HUD', this._onVfrHud.bind(this))
+            .on('SYS_STATUS', this._onSysStatus.bind(this));
+    }
+
+    async _onAttitude(fields) {
+        let ov = this._overview;
+        let ca = this._cameraTelem;
+
+        ov.time = Date.now() / 1000;
+        ov.rot.yaw = modDegrees(degrees(fields.yaw));
+        ov.rot.pitch = modDegrees2(degrees(fields.pitch));
+        ov.rot.roll = modDegrees2(degrees(fields.roll));
+
+        // Assuming camera is pointed straight down. The roll
+        // direction is opposite of the plane, and the pitch is
+        // offset by 90 degrees.
+        ca.time = ov.time;
+        ca.yaw = ov.rot.yaw;
+        ca.pitch = modDegrees2(degrees(fields.pitch) - 90);
+        ca.roll = modDegrees2(-degrees(fields.roll));
+    }
+
+    async _onGlobalPositionInt(fields) {
+        let ov = this._overview;
+        let ca = this._cameraTelem;
+
+        ov.time = Date.now() / 1000;
+        ov.pos.lat = modDegrees2(fields.lat / 1e7);
+        ov.pos.lon = modDegrees2(fields.lon / 1e7);
+        ov.alt.msl = fields.alt / 1000;
+        ov.alt.agl = fields.relative_alt / 1000;
+        ov.rot.yaw = modDegrees(fields.hdg / 100);
+        ov.vel.x = fields.vx / 100;
+        ov.vel.y = fields.vy / 100;
+        ov.vel.z = fields.vz / 100;
+
+        ca.time = ov.time;
+        ca.lat = ov.pos.lat;
+        ca.lon = ov.pos.lon;
+        ca.alt = ov.alt.agl;
+        ca.yaw = ov.rot.yaw;
+
+        this._interopTelem = interop.InteropTelem.create({
+            time: ov.time,
+            pos: { lat: ov.pos.lat, lon: ov.pos.lon, alt_msl: ov.pos.msl },
+            yaw: ov.rot.yaw
+        });
+    }
+
+    async _onMissionCurrent(fields) {
+        this._missionCurrent = telemetry.MissionCurrent.create({
+            time: Date.now() / 1000,
+            item_number: fields.seq
+        });
+    }
+
+    async _onMissionItem(fields) {
+        if (fields.current) {
+            this._missionCurrent = telemetry.MissionCurrent.create({
+                time: Date.now() / 1000,
+                item_number: fields.seq
+            });
+        }
+    }
+
+    async _onVfrHud(fields) {
+        let ov = this._overview;
+
+        ov.time = Date.now() / 1000;
+        ov.speed.airspeed = fields.airspeed;
+        ov.speed.ground_speed = fields.groundspeed;
+        ov.alt.msl = fields.alt;
+    }
+
+    async _onSysStatus(fields) {
+        let ov = this._overview;
+
+        ov.time = Date.now() / 1000;
+        ov.battery.voltage = fields.voltage_battery / 1000;
+        ov.battery.current = fields.current_battery / 100;
+        ov.battery.percentage = fields.battery_remaining;
     }
 }
