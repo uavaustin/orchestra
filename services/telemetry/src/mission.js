@@ -7,6 +7,7 @@ import { telemetry } from './messages';
 import { cleanupAfter } from './util';
 
 const MISSION_TIMEOUT = 15000;
+const MISSION_CURRENT_TIMEOUT = 5000;
 
 /**
  * Download a mission via MAVLink.
@@ -141,6 +142,54 @@ export async function sendMission(mav, mission) {
   }
 }
 
+/**
+ * Set the current mission item number via MAVLink.
+ *
+ * This sends a MISSION_SET_CURRENT message on an interval until a
+ * MISSION_CURRENT message is received.
+ *
+ * Note that this function assumes no other transactions are taking
+ * place.
+ *
+ * @param {MavlinkSocket}            mav
+ * @param {telemetry.MissionCurrent} missionCurrent
+ * @returns {Promise}
+ */
+export async function sendMissionCurrent(mav, missionCurrent) {
+  let itemNumber = missionCurrent.item_number;
+
+  let setCurrentInt;
+  let onCurrent;
+
+  let cleanupObj = cleanupAfter(() => {
+    clearInterval(setCurrentInt);
+    mav.removeListener('MISSION_CURRENT', onCurrent);
+  }, MISSION_CURRENT_TIMEOUT, 'setting mission current took too long');
+
+  // Send a mission set current message repetitively.
+  _sendMissionSetCurrent(mav, itemNumber);
+  setCurrentInt = setInterval(() => {
+    return _sendMissionSetCurrent(mav, itemNumber);
+  }, 1000);
+
+  // When the current mission item comes, finish this exchange.
+  onCurrent = (fields) => {
+    // Make sure the number is expected. Don't fail otherwise because
+    // it is possible that the plane hasn't received the message yet
+    // and has reached a waypoint instead. If the itemNumber is 0 the
+    // expected sequence number could be 0 if there is no mission
+    // loaded, or 1 if there is.
+    if ((itemNumber === 0 && fields.seq === 1) ||
+        (fields.seq === itemNumber)) {
+      cleanupObj.finish();
+    }
+  };
+
+  mav.once('MISSION_CURRENT', onCurrent);
+
+  await cleanupObj.wait();
+}
+
 async function _clearAll(mav) {
   let clearInt;
   let onAck;
@@ -243,6 +292,14 @@ async function _sendCount(mav, count) {
 
 async function _sendMissionItem(mav, item) {
   await mav.send('MISSION_ITEM', _convertProtoMission(item));
+}
+
+async function _sendMissionSetCurrent(mav, itemNumber) {
+  await mav.send('MISSION_SET_CURRENT', {
+    target_system: 1,
+    target_component: 1,
+    seq: itemNumber
+  });
 }
 
 // Return a handler that finishes with an error on a bad ACK message.

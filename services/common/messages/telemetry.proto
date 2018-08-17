@@ -113,3 +113,9 @@ message RawMission {
     double time = 1;
     repeated RawMissionItem mission_items = 2;
 }
+
+// The current mission item on the plane.
+message MissionCurrent {
+    double time = 1;
+    uint32 item_number = 2;
+}

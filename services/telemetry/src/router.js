@@ -44,18 +44,19 @@ router.get('/api/overview', (ctx) => {
 
 router.get('/api/raw-mission', async (ctx) => {
   try {
-    ctx.proto = await ctx.plane.requestMission();
+    ctx.proto = await ctx.plane.getRawMission();
   } catch (err) {
     console.error(err);
     ctx.status = 504;
   }
 });
 
-let missionParser = koaProtobuf.protobufParser(telemetry.RawMission);
+let missionParser =
+  koaProtobuf.protobufParser(telemetry.RawMission);
 
 router.post('/api/raw-mission', missionParser, async (ctx) => {
   try {
-    await ctx.plane.sendMission(ctx.request.proto);
+    await ctx.plane.setRawMission(ctx.request.proto);
     ctx.status = 200;
   } catch (err) {
     console.error(err);
@@ -63,26 +64,21 @@ router.post('/api/raw-mission', missionParser, async (ctx) => {
   }
 });
 
-router.get('/api/current-waypoint', async (ctx) => {
+router.get('/api/mission-current', async (ctx) => {
   try {
-    let seq = await ctx.plane.getCurrentWaypoint();
-
-    // FIXME: Use a protobuf message instead.
-    ctx.type = 'application/json';
-    ctx.body = JSON.stringify({ seq: seq });
+    ctx.proto = await ctx.plane.getMissionCurrent();
   } catch (err) {
     console.error(err);
     ctx.status = 504;
   }
 });
 
-router.post('/api/currrent-waypoint', async (ctx) => {
-  // FIXME: Use a protobuf message instead. Currently blindly
-  //        trusting that a JSON body was sent with a seq key.
-  let seq = JSON.parse(ctx.request.body).seq;
+let missionCurrentParser =
+  koaProtobuf.protobufParser(telemetry.MissionCurrent);
 
+router.post('/api/mission-current', missionCurrentParser, async (ctx) => {
   try {
-    await ctx.plane.setCurrentWaypoint(seq);
+    await ctx.plane.setMissionCurrent(ctx.request.proto);
     ctx.status = 200;
   } catch (err) {
     console.error(err);

@@ -5,7 +5,7 @@ import path from 'path';
 import { telemetry } from './messages';
 
 import MavlinkSocket from './mavlink-socket';
-import { receiveMission, sendMission } from './mission';
+import { receiveMission, sendMission, sendMissionCurrent } from './mission';
 import PlaneState from './state';
 import { wrapIndex } from './util';
 
@@ -31,10 +31,15 @@ export default class PlaneLink {
         this._mav = new MavlinkSocket(destAddr, destPort);
         this.state = new PlaneState();
         this._cxnState = ConnectionState.NOT_CONNECTED;
-        this._taskQueue = queue((task, cb) => {task(); cb();});
 
-        // Will be assigned once missions are received
-        this._curWaypoint = null;
+        // Async transaction queue. This only allows one transaction
+        // to be active at a time.
+        this._taskQueue = queue(async (asyncTask) => {
+            return await asyncTask();
+        }, 1);
+
+        // Will be assigned once missions are received.
+        this._currentMissionItem = null;
     }
     
     /**
@@ -107,10 +112,11 @@ export default class PlaneLink {
     }
 
     /**
-     * Performs a mission list request if one is not already underway.
-     * @returns {telemetry.RawMission}
+     * Get the raw mission from the plane.
+     *
+     * @returns {Promise<telemetry.RawMission>}
      */
-    async requestMission() {
+    async getRawMission() {
         return await this._execTransaction(async () => {
             this._cxnState = ConnectionState.READING;
 
@@ -123,11 +129,13 @@ export default class PlaneLink {
     }
 
     /**
-     * Sends mission data to the plane.
+     * Send a raw mission to the plane.
+     *
      * @param {telemetry.RawMission} mission
+     * @returns {Promise}
      */
-    async sendMission(mission) {
-        return await this._execTransaction(async () => {
+    async setRawMission(mission) {
+        await this._execTransaction(async () => {
             this._cxnState = ConnectionState.WRITING;
 
             try {
@@ -138,53 +146,51 @@ export default class PlaneLink {
         });
     }
 
-    // Add an async task to the queue.
-    async _execTransaction(asyncTask) {
-        return await new Promise((resolve, reject) => {
-            this._taskQueue.push(() => {
-                asyncTask().then(resolve).catch(reject);
-            });
+    /**
+     * Get the current mission item.
+     *
+     * If the mission item has already be received. It is loaded from
+     * a cached value.
+     *
+     * @returns {Promise<telemetry.MissionCurrent>}
+     */
+    async getMissionCurrent() {
+        // If the current mission item hasn't been set, then get the
+        // mission. The mission item will be set as a side effect.
+        if (this._currentMissionItem === null) {
+            await this.getMission();
+        }
+
+        return telemetry.MissionCurrent.create({
+            time: Date.now() / 1000,
+            item_number: this._currentMissionItem || 0
         });
     }
 
     /**
-     * Gets the current waypoint.
-     * If the current waypoint is not known, get the plane's missions.
-     * Returns null if no missions.
-     * 
-     * @returns index of the current waypoint, or null if plane has no
-     * missions
+     * Set the current mission item.
+     *
+     * @param {telemetry.MissionCurrent} missionCurrent
+     * @returns {Promise}
      */
-    async getCurrentWaypoint() {
-        if (this._curWaypoint === null) {
-            await this.requestMission();
-        }
-        return this._curWaypoint;
+    async setMissionCurrent(missionCurrent) {
+        await this._execTransaction(async () => {
+            this._cxnState = ConnectionState.WRITING;
+
+            try {
+                await sendMissionCurrent(this._mav, missionCurrent);
+            } finally {
+                this._cxnState = ConnectionState.IDLE;
+            }
+        });
     }
 
-    /**
-     * Sets the current waypoint.
-     * This method blocks until we have received a MISSION_CURRENT
-     * packet back.
-     */
-    async setCurrentWaypoint(seq) {
+    // Add an async task to the queue.
+    async _execTransaction(asyncTask) {
         return await new Promise((resolve, reject) => {
-            this._taskQueue.push(async () => {
-                this._curWaypointPromise = {
-                    'resolve': resolve,
-                    'reject': reject
-                };
-                this._cxnState = ConnectionState.WRITING;
-                this._sendSetCurrentWaypoint(seq);
-
-                const timeout = setTimeout(() => {
-                    reject('timeout waiting for MISSION_CURRENT');
-                }, 2000);
-                await this._curWaypointPromise;
-                clearTimeout(timeout);
-
-                delete this._curWaypointPromise;
-                this._cxnState = ConnectionState.IDLE;
+            this._taskQueue.push(asyncTask, (err, result) => {
+                if (err) reject(err);
+                else resolve(result);
             });
         });
     }
@@ -204,7 +210,14 @@ export default class PlaneLink {
     _bindMessages(connectPromiseDecision) {
         const mav = this._mav;
 
-        mav.on('MISSION_CURRENT', (fields) => this._handleCurrentWaypoint(fields));
+        mav.on('MISSION_CURRENT', (fields) => {
+            this._currentMissionItem = fields.seq;
+        });
+        mav.on('MISSION_ITEM', (fields) => {
+            if (fields.current) {
+                this._currentMissionItem = fields.seq;
+            }
+        });
         mav.on('GLOBAL_POSITION_INT', (fields) => {
             const s = this.state;
             s.lat = fields.lat / 1e7;
@@ -250,24 +263,6 @@ export default class PlaneLink {
             req_stream_id: 0,
             req_message_rate: 5,
             start_stop: 1
-        });
-    }
-
-    _handleCurrentWaypoint(fields) {
-        if (this._curWaypoint !== fields.seq) {
-            console.log(`Link: Plane reports that it is now on waypoint ${fields.seq}`);
-        }
-        this._curWaypoint = fields.seq;
-        if (typeof this._curWaypointPromise !== 'undefined') {
-            this._curWaypointPromise.resolve(fields.seq);
-        }
-    }
-
-    async _sendSetCurrentWaypoint(seq) {
-        await this._mav.send('MISSION_SET_CURRENT', {
-            target_system: 1,
-            target_component: 1,
-            seq: seq
         });
     }
 }
