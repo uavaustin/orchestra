@@ -177,16 +177,11 @@ export default class PlaneLink {
             s.groundSpeed = fields.groundspeed;
             s.altMSL = fields.alt;
         });
-        mav.on('BATTERY_INFO', (fields) => {
+        mav.on('SYS_STATUS', (fields) => {
             const s = this.state;
-            Object.assign(s.battery, {
-                temp: fields.temperature,
-                voltages: fields.voltages,
-                current: fields.current_battery,
-                currentSpent: fields.current_consumed,
-                percentage: fields.battery_remaining,
-                approxTime: fields.time_remaining
-            });
+            s.batteryVoltage = fields.voltage_battery / 1000;
+            s.batteryCurrent = fields.current_battery / 100;
+            s.batteryPercentage = fields.battery_remaining;
         })
     }
 

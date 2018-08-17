@@ -59,16 +59,12 @@ message Speed {
     double ground_speed = 2;
 }
 
-// Voltage in millivolts; current in centiamperes;
-// temperature in centi-degrees Celsius.
-// Time in seconds.
 message Battery {
-    int32 temperature = 1;
-    repeated uint32 voltages = 2;
-    int32 current = 3;
-    int32 current_spent = 4;
-    int32 percentage = 5;
-    int32 approx_time = 6;
+    // Voltage in Volts.
+    double voltage = 1;
+    // Current in Amps.
+    double current = 2;
+    int32 percentage = 3;
 }
 
 // Camera telemtry
