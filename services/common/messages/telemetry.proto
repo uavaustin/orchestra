@@ -17,12 +17,13 @@ package telemetry;
 // Represents an overview of the plane's current state.
 // Useful for dashboards and flight views.
 message Overview {
-    Position pos = 1;
-    Rotation rot = 2;
-    Altitude alt = 3;
-    Velocity vel = 4;
-    Speed speed = 5;
-    Battery battery = 6;
+    double time = 1;
+    Position pos = 2;
+    Rotation rot = 3;
+    Altitude alt = 4;
+    Velocity vel = 5;
+    Speed speed = 6;
+    Battery battery = 7;
 }
 
 // WGS84 in degrees

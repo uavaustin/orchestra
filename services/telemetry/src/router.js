@@ -22,6 +22,7 @@ router.get('/api/camera-telem', (ctx) => {
 
 router.get('/api/overview', (ctx) => {
   ctx.proto = telemetry.Overview.create({
+    time: Date.now() / 1000,
     pos: ctx.plane.state.getPositionProto(),
     rot: ctx.plane.state.getRotationProto(),
     alt: ctx.plane.state.getAltitudeProto(),
