@@ -27,12 +27,12 @@ beforeAll(async () => {
   await planeSitl.start();
 
   planeIp = (await planeSitl.inspect()).NetworkSettings.IPAddress;
-});
+}, 10000);
 
 // Stop the plane-sitl container.
 afterAll(async () => {
   await planeSitl.remove({ force: true });
-});
+}, 10000);
 
 // Bring the service up before tests start.
 beforeAll(async () => {
@@ -43,7 +43,7 @@ beforeAll(async () => {
   });
 
   await service.start();
-}, 20000);
+}, 40000);
 
 // Take down the service once the service tests are done.
 afterAll(async () => {
