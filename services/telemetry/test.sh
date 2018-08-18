@@ -35,7 +35,9 @@ if [ "$?" -eq 0 ]; then
     printf "\n\033[34mStarting tests...\033[0m\n\n" 1>&2
 
     docker run -it --rm --net=telemetry-test-net \
-            -e CXN_STR=udpout:172.37.1.2:14550 $TELEMETRY_TEST_IMAGE
+            -v "$(pwd)"/coverage:/test/coverage \
+            -e PLANE_HOST=172.37.1.2 -e PLANE_PORT=14550 \
+            $TELEMETRY_TEST_IMAGE
 
     result=$?
 else

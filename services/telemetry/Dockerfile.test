@@ -1,25 +1,23 @@
-ARG BASE=node:8-slim
+ARG BASE=node:8-alpine
 
 FROM ${BASE}
 
+ENV NODE_ENV=test
+
 WORKDIR /test
 
+COPY common/nodejs/package.json src/common/
 COPY telemetry/package.json .
 
 RUN npm install
 
-COPY telemetry/src/messages src/messages
+COPY common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    src/messages/
 
 RUN npm run build-msg
 
-COPY telemetry/src src
+COPY common/nodejs src/common
+COPY telemetry .
 
-RUN npm run build
-
-COPY telemetry/test test
-
-ENV CXN_STR=0.0.0.0:14550
-
-EXPOSE 5000
-
-CMD npm test
+CMD npm run lint && npm test

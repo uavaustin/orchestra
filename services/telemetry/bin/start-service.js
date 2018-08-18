@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
-const Telemetry = require('..');
+let service = new Service({
+  port: process.env.PORT,
+  planeHost: process.env.PLANE_HOST,
+  planePort: parseInt(process.env.PLANE_PORT)
+});
 
-(new Telemetry()).start();
+service.start();

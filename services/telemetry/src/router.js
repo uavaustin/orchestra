@@ -1,6 +1,7 @@
 import koaProtobuf from 'koa-protobuf';
 import Router from 'koa-router';
 
+import logger from './common/logger';
 import { telemetry } from './messages';
 
 let router = new Router();
@@ -28,7 +29,7 @@ router.get('/api/raw-mission', async (ctx) => {
   try {
     ctx.proto = await ctx.plane.getRawMission();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     ctx.status = 504;
   }
 });
@@ -41,7 +42,7 @@ router.post('/api/raw-mission', missionParser, async (ctx) => {
     await ctx.plane.setRawMission(ctx.request.proto);
     ctx.status = 200;
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     ctx.status = 504;
   }
 });
@@ -50,7 +51,7 @@ router.get('/api/mission-current', async (ctx) => {
   try {
     ctx.proto = await ctx.plane.getMissionCurrent();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     ctx.status = 504;
   }
 });
@@ -63,7 +64,7 @@ router.post('/api/mission-current', missionCurrentParser, async (ctx) => {
     await ctx.plane.setMissionCurrent(ctx.request.proto);
     ctx.status = 200;
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     ctx.status = 504;
   }
 });

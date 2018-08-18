@@ -31,10 +31,6 @@ services:
 
   telemetry:
     image: uavaustin/telemetry
-    environment:
-      - CXN_STR=udpout:172.16.238.10:14550
-      - CXN_TIMEOUT=30
-      - RETRY_CXN=1
     ports:
       - '5000:5000'
     depends_on:

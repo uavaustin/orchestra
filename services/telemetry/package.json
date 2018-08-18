@@ -1,49 +1,35 @@
 {
-    "name": "telemetry",
-    "main": "lib/telemetry.js",
-    "private": true,
-    "license": "MIT",
-    "scripts": {
-        "start": "node ./bin/start-service.js",
-        "build": "babel src --out-dir lib",
-        "build-msg": "mkdir -p lib && pbjs -t static-module -w commonjs --keep-case -o lib/messages.js src/messages/*.proto",
-        "test": "mocha"
-    },
-    "dependencies": {
-        "koa": "^2.5.1",
-        "koa-protobuf": "^0.1.0",
-        "koa-router": "^7.4.0",
-        "lodash": "^4.17.10",
-        "protobufjs": "~6.8.6",
-        "mavlink": "^1.0.1",
-        "source-map-support": "^0.5.6"
-    },
-    "devDependencies": {
-        "babel-cli": "^6.26.0",
-        "babel-plugin-add-module-exports": "^0.2.1",
-        "babel-plugin-source-map-support": "^2.0.1",
-        "babel-preset-env": "^1.6.1",
-        "chai": "^4.1.2",
-        "mocha": "^5.2.0",
-        "request": "^2.87.0"
-    },
-    "babel": {
-        "sourceMaps": "inline",
-        "plugins": [
-            "source-map-support"
-        ],
-        "presets": [
-            [
-                "env",
-                {
-                    "targets": {
-                        "node": "current"
-                    }
-                }
-            ]
-        ],
-        "plugins": [
-            "add-module-exports"
-        ]
-    }
+  "name": "telemetry",
+  "version": "0.1.0",
+  "main": "lib/service.js",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./bin/start-service",
+    "build": "babel src --out-dir lib",
+    "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
+    "test": "jest",
+    "lint": "eslint src test --ignore-pattern src/messages.js"
+  },
+  "dependencies": {
+    "common-nodejs": "file:src/common",
+    "koa": "^2.5.1",
+    "koa-protobuf": "^0.1.0",
+    "koa-router": "^7.4.0",
+    "lodash": "^4.17.10",
+    "mavlink": "^1.0.1",
+    "protobufjs": "~6.8.6",
+    "source-map-support": "^0.5.6"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-source-map-support": "^2.0.1",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^5.3.0",
+    "eslint-plugin-jest": "^21.20.2",
+    "jest": "^23.3.0",
+    "superagent-protobuf": "^0.1.0",
+    "supertest": "^3.1.0"
+  }
 }
