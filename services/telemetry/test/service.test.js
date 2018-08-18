@@ -1,3 +1,4 @@
+import Docker from 'dockerode';
 import addProtobuf from 'superagent-protobuf';
 import request from 'supertest';
 
@@ -11,27 +12,37 @@ import rawMission3 from './fixtures/raw-mission-3.json';
 
 addProtobuf(request);
 
-let service = new Service({
-  port: 5000,
-  planeHost: process.env.PLANE_HOST,
-  planePort: process.env.PLANE_PORT
+// Docker client connecting to /var/run/docker.sock.
+let docker = new Docker();
+
+// Plane sitl container used for testing.
+let planeSitl;
+let planeIp;
+
+let service;
+
+// Start a plane-sitl container.
+beforeAll(async () => {
+  planeSitl = await docker.createContainer({ Image: 'uavaustin/plane-sitl' });
+  await planeSitl.start();
+
+  planeIp = (await planeSitl.inspect()).NetworkSettings.IPAddress;
+});
+
+// Stop the plane-sitl container.
+afterAll(async () => {
+  await planeSitl.remove({ force: true });
 });
 
 // Bring the service up before tests start.
 beforeAll(async () => {
+  service = new Service({
+    port: 5000,
+    planeHost: planeIp,
+    planePort: '14550'
+  });
+
   await service.start();
-
-  // Wait until the service gives a response.
-  let connected = false;
-
-  while (!connected) {
-    try {
-      await request('http://localhost:5000').get('/api/alive');
-      connected = true;
-    } catch (_err) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
 }, 20000);
 
 // Take down the service once the service tests are done.

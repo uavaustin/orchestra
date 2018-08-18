@@ -15,8 +15,10 @@ image:
 
 .PHONY: test
 test:
-	DOCKERFLAGS=$(DOCKERFLAGS) TELEMETRY_IMAGE=$(TELEMETRY_IMAGE) \
-		TELEMETRY_TEST_IMAGE=$(TELEMETRY_TEST_IMAGE) ./test.sh
+	docker build -t $(TELEMETRY_TEST_IMAGE) \
+		-f Dockerfile.test $(DOCKERFLAGS) ..
+	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+		-v /var/run/docker.sock:/var/run/docker.sock $(TELEMETRY_TEST_IMAGE)
 
 .PHONY: clean
 clean:
