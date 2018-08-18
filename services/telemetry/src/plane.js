@@ -61,6 +61,9 @@ export default class Plane {
 
   /** Execute remaining tasks and close the connection. */
   async disconnect() {
+    // Kill the telemetry data stream interval if it is still going.
+    clearInterval(this._streamInt);
+
     await this._waitForTasks();
     await this._mav.close();
   }
@@ -173,17 +176,15 @@ export default class Plane {
 
   // Send REQUEST_DATA_STREAM messages until a position arrives.
   async _startTelemetry() {
-    let streamInt;
-
     this._requestDataStream();
-    streamInt = setInterval(() => this._requestDataStream(), 500);
+    this._streamInt = setInterval(() => this._requestDataStream(), 500);
 
     return await new Promise((resolve) => {
       // GLOBAL_POSITION_INT is required for interop telemetry and so
       // wait for at least one before considering the service up.
       // This ensures interop telemetry is always valid.
       this._mav.once('GLOBAL_POSITION_INT', () => {
-        clearInterval(streamInt);
+        clearInterval(this._streamInt);
         resolve();
       });
     });
