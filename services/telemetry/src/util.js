@@ -13,11 +13,6 @@ export function modDegrees2(degrees) {
   return -modDegrees(-degrees - 180) + 180;
 }
 
-/** Wait for an amount of time. */
-export async function wait(milliseconds) {
-  return await (new Promise(resolve => setTimeout(resolve, milliseconds)));
-}
-
 /** Return a object that can be used for cleanup in timeouts. */
 export function cleanupAfter(cleanup, limit, message) {
   let timeoutMessage = message || 'operation timed out';
