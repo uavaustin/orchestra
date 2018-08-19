@@ -22,7 +22,7 @@ The plane telemetry source is expected to be UDP and mavlink v1.0 compliant.
 *Note that Protobuf endpoints can send and receive JSON when the Accept or
 Content-Type header is `application/json`, respectively.*
 
-If an error occurs, a `503` status code is returned if not enough data has been
+If an error occurs, a `504` status code is returned if not enough data has been
 received for the transaction to be completed.
 
 - `GET /api/alive`
