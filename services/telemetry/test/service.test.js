@@ -2,7 +2,7 @@ import Docker from 'dockerode';
 import addProtobuf from 'superagent-protobuf';
 import request from 'supertest';
 
-import { telemetry } from '../src/messages';
+import { interop, telemetry } from '../src/messages';
 
 import Service from '../src/service';
 
@@ -45,8 +45,23 @@ test('start a new service instance', async () => {
   await service.start();
 }, 40000);
 
-// Basic checks if raw mission lengths are the same after setting and
-// getting.
+test('service is alive', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/alive');
+
+  expect(res.status).toEqual(200);
+  expect(res.type).toEqual('text/plain');
+  expect(res.text).toBeTruthy();
+});
+
+test('mission item is zero when no mission is on the plane', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/mission-current')
+    .proto(telemetry.MissionCurrent);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.item_number).toEqual(0);
+});
 
 test('upload raw mission 1', async () => {
   let res = await request('http://localhost:5000')
@@ -64,6 +79,23 @@ test('download raw mission 1', async () => {
   expect(res.status).toEqual(200);
   expect(res.body.mission_items)
     .toHaveLength(rawMission1.mission_items.length);
+});
+
+test('set the current mission item to 4', async () => {
+  let res = await request('http://localhost:5000')
+    .post('/api/mission-current')
+    .sendProto(telemetry.MissionCurrent.create({ item_number: 4 }));
+
+  expect(res.status).toEqual(200);
+});
+
+test('fetch the uploaded mission item', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/mission-current')
+    .proto(telemetry.MissionCurrent);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.item_number).toEqual(4);
 });
 
 test('upload raw mission 2', async () => {
@@ -100,6 +132,33 @@ test('download raw mission 3', async () => {
   expect(res.status).toEqual(200);
   expect(res.body.mission_items)
     .toHaveLength(rawMission3.mission_items.length);
+});
+
+test('get interop telemetry', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/interop-telem')
+    .proto(interop.InteropTelem);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.pos.lat).toBeTruthy();
+});
+
+test('get camera telemetry', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/camera-telem')
+    .proto(telemetry.CameraTelem);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.lat).toBeTruthy();
+});
+
+test('get overview telemetry', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/overview')
+    .proto(telemetry.Overview);
+
+  expect(res.status).toEqual(200);
+  expect(res.body.pos.lat).toBeTruthy();
 });
 
 // Take down the service once the other service tests are done.
