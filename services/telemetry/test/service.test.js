@@ -34,8 +34,8 @@ afterAll(async () => {
   await planeSitl.remove({ force: true });
 }, 10000);
 
-// Bring the service up before tests start.
-beforeAll(async () => {
+// Bring the service up before other tests start.
+test('start a new service instance', async () => {
   service = new Service({
     port: 5000,
     planeHost: planeIp,
@@ -44,11 +44,6 @@ beforeAll(async () => {
 
   await service.start();
 }, 40000);
-
-// Take down the service once the service tests are done.
-afterAll(async () => {
-  await service.stop();
-});
 
 // Basic checks if raw mission lengths are the same after setting and
 // getting.
@@ -105,4 +100,9 @@ test('download raw mission 3', async () => {
   expect(res.status).toEqual(200);
   expect(res.body.mission_items)
     .toHaveLength(rawMission3.mission_items.length);
+});
+
+// Take down the service once the other service tests are done.
+test('stop the service', async () => {
+  await service.stop();
 });
