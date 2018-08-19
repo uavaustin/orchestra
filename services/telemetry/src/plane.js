@@ -262,7 +262,7 @@ export default class Plane {
 
     this._interopTelem = interop.InteropTelem.create({
       time: ov.time,
-      pos: { lat: ov.pos.lat, lon: ov.pos.lon, alt_msl: ov.pos.msl },
+      pos: { lat: ov.pos.lat, lon: ov.pos.lon, alt_msl: ov.alt.msl },
       yaw: ov.rot.yaw
     });
   }
