@@ -79,8 +79,18 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
   Lists the number of images currently registered.
 
+  ***In the future relying on the count to assume image ids may not be
+  reliable. Use `GET /api/availble` to fetch the list.***
+
   On successful response: `200` status code with `imagery::ImageCount` Protobuf
   message.
+
+- `GET /api/available`
+
+  Lists available image ids.
+
+  On successful response: `200` status code with `imagery::AvailableImages`
+  Protobuf message.
 
 - `GET /api/capture-rate`
 
