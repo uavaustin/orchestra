@@ -39,6 +39,20 @@ export function createApp(imageStore) {
         sendMessage(req, res, msg);
     });
 
+    app.get('/api/available', (req, res) => {
+        // For now, just return a list from 0 to count - 1 until
+        // there's a proper solution of storing images and so other
+        // services can stop expecting the behavior of just using the
+        // count to get images.
+        let msg = imagery.AvailableImages.create({
+            time: (new Date()).getTime() / 1000,
+            count: imageStore.getCount(),
+            id_list: Array.from(Array(imageStore.getCount()).keys())
+        });
+
+        sendMessage(req, res, msg);
+    });
+
     app.get('/api/capture-rate', (req, res) => {
         // Returning the rate that images are being captured.
         let msg = stats.ImageCaptureRate.create({
