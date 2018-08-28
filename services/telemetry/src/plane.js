@@ -4,7 +4,7 @@ import { interop, telemetry } from './messages';
 
 import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission, sendMissionCurrent } from './mission';
-import { degrees, modDegrees, modDegrees2 } from './util';
+import { degrees, modDegrees360, modDegrees180 } from './util';
 
 const ConnectionState = Object.freeze({
   NOT_CONNECTED: Symbol('not_connected'),
@@ -227,17 +227,17 @@ export default class Plane {
     let ca = this._cameraTelem;
 
     ov.time = Date.now() / 1000;
-    ov.rot.yaw = modDegrees(degrees(fields.yaw));
-    ov.rot.pitch = modDegrees2(degrees(fields.pitch));
-    ov.rot.roll = modDegrees2(degrees(fields.roll));
+    ov.rot.yaw = modDegrees360(degrees(fields.yaw));
+    ov.rot.pitch = modDegrees180(degrees(fields.pitch));
+    ov.rot.roll = modDegrees180(degrees(fields.roll));
 
     // Assuming camera is pointed straight down. The roll direction
     // is opposite of the plane, and the pitch is offset by 90
     // degrees.
     ca.time = ov.time;
     ca.yaw = ov.rot.yaw;
-    ca.pitch = modDegrees2(degrees(fields.pitch) - 90);
-    ca.roll = modDegrees2(-degrees(fields.roll));
+    ca.pitch = modDegrees180(degrees(fields.pitch) - 90);
+    ca.roll = modDegrees180(-degrees(fields.roll));
   }
 
   async _onGlobalPositionInt(fields) {
@@ -245,11 +245,11 @@ export default class Plane {
     let ca = this._cameraTelem;
 
     ov.time = Date.now() / 1000;
-    ov.pos.lat = modDegrees2(fields.lat / 1e7);
-    ov.pos.lon = modDegrees2(fields.lon / 1e7);
+    ov.pos.lat = modDegrees180(fields.lat / 1e7);
+    ov.pos.lon = modDegrees180(fields.lon / 1e7);
     ov.alt.msl = fields.alt / 1000;
     ov.alt.agl = fields.relative_alt / 1000;
-    ov.rot.yaw = modDegrees(fields.hdg / 100);
+    ov.rot.yaw = modDegrees360(fields.hdg / 100);
     ov.vel.x = fields.vx / 100;
     ov.vel.y = fields.vy / 100;
     ov.vel.z = fields.vz / 100;

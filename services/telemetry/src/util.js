@@ -4,13 +4,13 @@ export function degrees(radians) {
 }
 
 /** Put degrees in range [0, 360). */
-export function modDegrees(degrees) {
+export function modDegrees360(degrees) {
   return (degrees % 360 + 360) % 360;
 }
 
 /** Put degrees in range (-180, 180]. */
-export function modDegrees2(degrees) {
-  return -modDegrees(-degrees - 180) + 180;
+export function modDegrees180(degrees) {
+  return -modDegrees360(-degrees - 180) + 180;
 }
 
 /** Return a object that can be used for cleanup in timeouts. */
