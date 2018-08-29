@@ -2,29 +2,28 @@
 
 Service that serves plane telemetry and mission data over a REST API.
 
-## Known Problems
+## Notes
 
-It is not safe to transact with the plane concurrently with other applications.
-This should be the only application directly writing to the plane.
+Note that concurrent mission transfers are not supported. If a mission is being
+read or written to the plane when another request arrives, the next request is
+queued afterwards. The behavior of two seperate telemetry services reading or
+writing missions at the same time is undefined.
 
-## Running the Image
+The plane telemetry source is expected to be UDP and mavlink v1.0 compliant.
 
-The `CXN_STR` environment variable is used for connecting to the plane.
+## Environment Variables
 
-```
-$ docker run -it -p 5000:5000 \
-    -e CXN_STR=udpout:192.168.0.5:14550 \
-    uavaustin/telemetry
-```
+- `PORT` - defaults to `5000`.
+- `PLANE_HOST` - defaults to `mavproxy`.
+- `PLANE_PORT` - defaults to `14550`.
 
 ## Endpoints
 
-Note that all the Protobuf endpoints can also return JSON as well if the Accept
-header is set to `application/json`.
+*Note that Protobuf endpoints can send and receive JSON when the Accept or
+Content-Type header is `application/json`, respectively.*
 
-All requests long-poll until a connection to the plane has been established.
-If an error occurs, a `504` status code is returned, or `503` if not enough
-information has been captured from the plane at request time.
+If an error occurs, a `504` status code is returned if not enough data has been
+received for the transaction to be completed.
 
 - `GET /api/alive`
 
@@ -58,16 +57,6 @@ information has been captured from the plane at request time.
 
   If information currently unavailable: `503` status code with an empty body.
 
-- `GET /api/mission`
-
-  JSON mission data from the plane parsed by the MAVLink library.
-
-  Very similar to `/api/raw-mission`.
-
-  On successful response: `200` status code with JSON data.
-  On failure: `504` status code with a JSON field called `err` stating
-  an error reason.
-
 - `GET /api/raw-mission`
 
   Raw mission data from the plane.
@@ -82,5 +71,23 @@ information has been captured from the plane at request time.
   Pushes raw mission data to the plane, overwriting the previous mission.
 
   The request body must be a `telemetry::RawMission` Protobuf message.
+
+  On successful response: `200` status code with an empty body.
+
+- `GET /api/mission-current`
+
+  Get the current mission item from the plane.
+
+  If the current mission is not known, the mission is fetched as well.
+  Otherwise, a cached value is returned.
+
+  On successful response: `200` status code with `telemetry::MissionCurrent`
+  Protobuf message.
+
+- `POST /api/mission-current`
+
+  Set the current mission item on the plane.
+
+  The request body must be a `telemetry::MissionCurrent` Protobuf message.
 
   On successful response: `200` status code with an empty body.

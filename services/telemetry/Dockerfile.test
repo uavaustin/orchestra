@@ -1,0 +1,23 @@
+ARG BASE=node:8-alpine
+
+FROM ${BASE}
+
+ENV NODE_ENV=test
+
+WORKDIR /test
+
+COPY common/nodejs/package.json src/common/
+COPY telemetry/package.json .
+
+RUN npm install
+
+COPY common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
+COPY telemetry .
+
+CMD npm run lint && npm test
