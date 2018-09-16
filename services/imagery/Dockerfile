@@ -45,13 +45,13 @@ RUN export NODE_ENV=production && npm install
 # Adding in the output from the js builder above.
 COPY --from=builder /builder/lib lib
 
-# Must be one of "camera", "file", "sync".
-ENV BACKEND='camera' \
+# Must be one of "gphoto2", "file", "sync".
+ENV BACKEND='gphoto2' \
     # Must be set if using the sync backend.
     IMAGERY_SYNC_URL='' \
-    # Can be set when using the camera backend.
+    # Can be set when using the gphoto2 backend.
     TELEMETRY_URL='' \
-    # Interval to trigger camera images at in the camera backend.
+    # Interval to trigger gphoto2 images at in the gphoto2 backend.
     # Defaults to 2 seconds.
     CAPTURE_INTERVAL='2'
 
