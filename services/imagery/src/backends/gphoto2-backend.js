@@ -5,8 +5,8 @@ import { imagery, telemetry } from '../messages';
 
 import { removeExif, wait } from '../util';
 
-export default class CameraBackend {
-    /** Create a new camera backend. */
+export default class GPhoto2Backend {
+    /** Create a new gphoto2 backend. */
     constructor(imageStore, interval, telemUrl) {
         this._imageStore = imageStore;
         this._interval = interval;

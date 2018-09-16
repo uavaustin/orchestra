@@ -1,10 +1,10 @@
 import { createApp } from './app';
-import CameraBackend from './backends/camera-backend';
+import GPhoto2Backend from './backends/gphoto2-backend';
 import FileBackend from './backends/file-backend';
 import SyncBackend from './backends/sync-backend';
 import ImageStore from './image-store';
 
-const BACKENDS = ['camera', 'file', 'sync'];
+const BACKENDS = ['gphoto2', 'file', 'sync'];
 
 export default class Service {
     /**
@@ -14,7 +14,7 @@ export default class Service {
      *
      * @param {Object}  options
      * @param {number}  options.port
-     * @param {string}  options.backend           - one of 'camera',
+     * @param {string}  options.backend           - one of 'gphoto2',
      *                                              'file', 'sync'
      * @param {string}  [options.imagerySyncUrl]  - url to sync
      *                                              imagery against
@@ -23,7 +23,7 @@ export default class Service {
      * @param {boolean} [options.printNew=false]  - prints when a new
      *                                              image is added
      * @param {number}  [options.captureInterval] - capture interval
-     *                                              for the camera
+     *                                              for the gphoto2
      *                                              backend
      */
     constructor(options) {
@@ -60,8 +60,8 @@ export default class Service {
         let backend;
 
         switch (this._backend) {
-            case 'camera':
-                backend = new CameraBackend(
+            case 'gphoto2':
+                backend = new GPhoto2Backend(
                     imageStore, this._captureInterval, this._telemUrl
                 );
                 break;

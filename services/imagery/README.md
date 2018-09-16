@@ -4,7 +4,7 @@ Service that hosts either gathers images or repeats imagery data.
 
 The service has three backends which can be used:
 
-- `camera` (default)
+- `gphoto2` (default)
 
   This backend takes images directly from a camera device passed in to the
   container. Running as priviledged will do this if it's hard to find which
@@ -33,10 +33,10 @@ Note that no telemetry data is gathered for images at the current time.
 
 ## Running the Image
 
-The `BACKEND` environment variable should be set to one of `camera`, `file`, or
-`sync`.
+The `BACKEND` environment variable should be set to one of `gphoto2`, `file`,
+or `sync`.
 
-If using `camera`, the `CAPTURE_INTERVAL` environment variable can be set to
+If using `gphoto2`, the `CAPTURE_INTERVAL` environment variable can be set to
 set the rate at which images are taken in seconds. This defaults to every two
 seconds. To add telemetry to images, set the `TELEMETRY_URL` environment
 variable. Without this, the image metadata will not contain any camera
@@ -51,13 +51,13 @@ to go to (`/opt/new-images`).
 To see and access the images registered, you can mount the the imagery
 directory on the host (`/opt/imagery`).
 
-Here's an example of using the camera backend (camera required to use) and
+Here's an example of using the `gphoto2` backend (camera required to use) and
 mounting the imagery directory on the host computer:
 
 ```
 $ docker run -it -p 8081:8081 \
     --privileged
-    -e BACKEND=camera
+    -e BACKEND=gphoto2
     -e CAPTURE_INTERVAL=2.5
     -e TELEMETRY_URL=192.168.0.4:5000
     -v '$HOME/Desktop/imagery:/opt/imagery'
