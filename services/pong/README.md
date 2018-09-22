@@ -3,22 +3,16 @@
 Service that pings other services and records how long requests take to
 process, round-trip.
 
-## Running the Image
+## Environment Variables
 
-To ping the services, the service names, host, and port are simply passed as
-command-line arguments seperated by a comma. Optionally, the endpoint that is
-called can be set as well (defaults to `/api/alive`).
+- `SERVICE_TIMEOUT` - amount of time in ms until a request times out - defaults
+  to 5000 ms.
+- `PING_SERVICES` - list of services to ping in the form
+  `name,host:port,endpoint` and separated by spaces. Port and endpoint are
+  optional.
 
-By default, a ping times out after 5 seconds, to change this, the
-`REQUEST_TIMEOUT` environment variable can be set (for the amount of
-milliseconds).
-
-```
-$ docker run -it -p 7000:7000 -e REQUEST_TIMEOUT=4000 uavaustin/pong \
-    some-service,192.168.0.3 \
-    another-service,192.168.0.4 \
-    interop-server,10.10.130.10:8080,/
-```
+  For example:
+  `some-service,192.168.0.3 another-one,interop:1234,/endpoint`
 
 ## Endpoints
 

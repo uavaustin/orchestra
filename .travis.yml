@@ -22,8 +22,6 @@ jobs:
     - env: SERVICE_TEST=interop-proxy
     - env: SERVICE_TEST=pong
     - env: SERVICE_TEST=forward-interop
-  allow_failures:
-    - env: SERVICE_TEST=pong
 notifications:
   email: false
   webhooks:
