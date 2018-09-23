@@ -94,9 +94,10 @@ export default class Service {
 
   // Hit a service and record how long the request takes round-trip.
   async _pingService(service, url) {
-    try {
-      const start = Date.now();
+    const start = Date.now();
+    let online;
 
+    try {
       await request.get(url)
         .timeout(this._serviceTimeout)
         // Don't follow redirects and consider 3xx status codes as
@@ -104,15 +105,15 @@ export default class Service {
         .redirects(0)
         .ok(res => res.status < 400);
 
-      const time = Date.now() - start;
-
-      // Mark the service's ping time on success.
-      this._pingStore.updateServicePing(service, true, time);
-    } catch (err) {
-      // FIXME: Check for what kind of error this is.
-
-      // Mark the service as offline on ping failure.
-      this._pingStore.updateServicePing(service, false, 0.0);
+      online = true;
+    } catch (_err) {
+      online = false;
     }
+
+    // Get request time in milliseconds if successful, 0 otherwise.
+    const ms = online ? Date.now() - start : 0;
+
+    // Update the ping details.
+    this._pingStore.updateServicePing(service, online, ms);
   }
 }
