@@ -9,10 +9,11 @@ process, round-trip.
   to 5000 ms.
 - `PING_SERVICES` - list of services to ping in the form
   `name,host:port,endpoint` and separated by spaces. Port and endpoint are
-  optional.
+  optional. The port defaults to `80` and endpoint to `/api/alive` if not
+  specified.
 
   For example:
-  `some-service,192.168.0.3 another-one,interop:1234,/endpoint`
+  `interop-server,172.16.238.11,/ telemetry,172.16.238.12:5000`
 
 ## Endpoints
 
