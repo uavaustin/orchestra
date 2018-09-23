@@ -1,11 +1,16 @@
-# Ignoring things from npm
+# Ignore things from npm.
 node_modules/
 npm-debug.log*
 package-lock.json
 
-# Ignore message and babel output
-lib/
+# Ignore common directories.
+src/common
+src/messages
 
-# Ignore coverage output
+# Ignore babel and message output.
+lib/
+src/messages.js
+
+# Ignore coverage output.
 .nyc_output
 coverage

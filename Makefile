@@ -33,11 +33,11 @@ interop-proxy-test: protoc
 	$(MAKE) -C services/interop-proxy test
 
 .PHONY: pong
-pong: protoc
+pong:
 	$(MAKE) -C services/pong
 
 .PHONY: pong-test
-pong-test: protoc
+pong-test:
 	$(MAKE) -C services/pong test
 
 .PHONY: forward-interop
