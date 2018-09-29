@@ -13,7 +13,7 @@ import _ from 'lodash';
 import request from 'request';
 import { sprintf } from 'sprintf-js';
 
-import { PingTimes, InteropUploadRate } from './messages/stats_pb';
+import { stats } from './messages';
 
 import { parseMessage } from './util';
 
@@ -80,7 +80,7 @@ async.forever((next) => {
         timeout: 2000,
     }, (err, resp) => {
         // Parse the message as the PingTimes protobuf.
-        let message = parseMessage(err, resp, PingTimes);
+        let message = parseMessage(err, resp, stats.PingTimes);
         let data = [];
 
         // If we have a message (i.e. no error), then take each
@@ -89,15 +89,10 @@ async.forever((next) => {
         // is online or not. This is sorted first by increasing
         // hostname, and then by increasing port number.
         if (message !== null) {
-            data = message.getListList().sort((a, b) =>
-                a.getHost() !== b.getHost() ? a.getHost() > b.getHost() :
-                                              a.getPort() > b.getPort()
+            data = message.list.sort((a, b) =>
+                a.host !== b.host ? a.host > b.host : a.port > b.port
             ).map(time => [
-                time.getOnline(),
-                time.getName(),
-                time.getHost(),
-                time.getPort(),
-                time.getMs()
+                time.online, time.name, time.host, time.port, time.ms
             ]);
         }
 
@@ -225,7 +220,7 @@ async.forever((next) => {
         timeout: 2000,
     }, (err, resp) => {
         // Parse the message as the InteropUploadRate protobuf.
-        let message = parseMessage(err, resp, InteropUploadRate);
+        let message = parseMessage(err, resp, stats.InteropUploadRate);
         let data = [];
 
         // If we have a message (i.e. no error) then add the latest
@@ -234,10 +229,10 @@ async.forever((next) => {
         let available = message !== null;
 
         if (available) {
-            telemUploadData[0].push(message.getTotal1());
-            telemUploadData[1].push(message.getTotal5());
-            telemUploadData[2].push(message.getFresh1());
-            telemUploadData[3].push(message.getFresh5());
+            telemUploadData[0].push(message.total_1);
+            telemUploadData[1].push(message.total_5);
+            telemUploadData[2].push(message.fresh_1);
+            telemUploadData[3].push(message.fresh_5);
         } else {
             telemUploadData[0].push(0.0);
             telemUploadData[1].push(0.0);

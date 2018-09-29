@@ -9,6 +9,11 @@ COPY dashboard/package.json .
 
 RUN npm install
 
+COPY common/messages/stats.proto \
+    src/messages/
+
+RUN npm run build-msg
+
 COPY dashboard .
 
 RUN npm run build
