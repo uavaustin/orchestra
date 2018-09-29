@@ -69,4 +69,3 @@ directory as well.
 - `services/` - location of all the services, for descriptions of each service,
   see the README located inside each sub-folder.
 - `test/` - end-to-end test configuration with services on one large network.
-- `tools/` - contains prerequisites for building containers.
