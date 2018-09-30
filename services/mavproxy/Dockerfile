@@ -16,7 +16,7 @@ RUN apk --no-cache add \
 # https://github.com/gmyoungblood-parc/docker-alpine-ardupilot/blob/master/Dockerfile#L81
 RUN sed -i 's/, int,/, unsigned int,/' /usr/include/assert.h
 
-RUN pip install mavproxy
+RUN pip install 'pymavlink<=2.2.10' mavproxy
 
 # TODO: multi-stage
 
