@@ -13,22 +13,29 @@ RUN apk --no-cache add \
     python-dev \
     libgphoto2-dev
 
+COPY common/nodejs/package.json src/common/
 COPY imagery/package.json .
 
 RUN npm install
 
-COPY imagery/src/messages src/messages
+COPY common/messages/imagery.proto \
+    common/messages/stats.proto \
+    common/messages/telemetry.proto \
+    src/messages/
 
 RUN npm run build-msg
 
+COPY common/nodejs src/common
 COPY imagery .
 
 RUN npm run build
 
-# Making the actual image now.
+# Make the actual image now.
 FROM ${BASE}
 
 WORKDIR /app
+
+ENV NODE_ENV=production
 
 # We need both libgphoto2 and graphicsmagick at runtime.
 RUN apk --no-cache add \
@@ -38,23 +45,29 @@ RUN apk --no-cache add \
 # Copying over gphoto2 since we don't have to build it again.
 COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2
 
+COPY common/nodejs/package.json src/common/
 COPY imagery/package.json .
 
-RUN export NODE_ENV=production && npm install
+RUN npm install
 
-# Adding in the output from the js builder above.
+# Add in the output from the js builder above.
 COPY --from=builder /builder/lib lib
 
-# Must be one of "gphoto2", "file", "sync".
-ENV BACKEND='gphoto2' \
+COPY /imagery/bin bin
+
+ENV PORT=8081 \
+    # Must be one of "gphoto2", "file", "sync".
+    BACKEND='gphoto2' \
     # Must be set if using the sync backend.
-    IMAGERY_SYNC_URL='' \
+    IMAGERY_SYNC_HOST='' \
+    IMAGERY_SYNC_PORT='8081' \
     # Can be set when using the gphoto2 backend.
-    TELEMETRY_URL='' \
+    TELEMETRY_HOST='telemetry' \
+    TELEMETRY_HOST='5000' \
     # Interval to trigger gphoto2 images at in the gphoto2 backend.
     # Defaults to 2 seconds.
     CAPTURE_INTERVAL='2'
 
 EXPOSE 8081
 
-CMD npm start --silent
+CMD FORCE_COLOR=1 npm start --silent
