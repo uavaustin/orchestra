@@ -1,0 +1,31 @@
+ARG BASE=node:8-alpine
+
+FROM ${BASE}
+
+ENV NODE_ENV=test
+
+WORKDIR /test
+
+RUN apk --no-cache add \
+    make \
+    g++ \
+    git \
+    python-dev \
+    libgphoto2-dev
+
+COPY common/nodejs/package.json src/common/
+COPY imagery/package.json .
+
+RUN npm install
+
+COPY common/messages/imagery.proto \
+    common/messages/stats.proto \
+    common/messages/telemetry.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
+COPY imagery .
+
+CMD npm run lint && npm test
