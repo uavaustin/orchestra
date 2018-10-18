@@ -79,18 +79,18 @@ test('backend continues after errors', async () => {
   await backend.start();
 
   // There's an empty image being returned, so it should error out
-  // twice after 251 ms. There should be some lag to prevent errors
+  // twice after 250 ms. There should be some lag to prevent errors
   // from repeating quickly (this prevents a device from being
   // overloaded with requests).
   const spy = jest.spyOn(logger, 'error');
 
-  await wait(1);
+  await wait(5);
   expect(spy).toHaveBeenCalledTimes(1);
 
-  await wait(248);
+  await wait(240);
   expect(spy).toHaveBeenCalledTimes(1);
 
-  await wait(2);
+  await wait(10);
   expect(spy).toHaveBeenCalledTimes(2);
 
   await backend.stop();
