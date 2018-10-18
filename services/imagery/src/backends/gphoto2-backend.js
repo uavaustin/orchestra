@@ -139,14 +139,12 @@ export default class GPhoto2Backend {
 
   /** Get the camera gphoto2 object. */
   async _getCamera() {
-    return await new Promise((resolve) => {
+    return await new Promise((resolve, reject) => {
       this._gphoto2.list((list) => {
         if (list.length == 0) {
-          logger.error('No camera found.');
-          process.exit(1);
+          reject(Error('No camera found.'));
         } else if (list.length >= 2) {
-          logger.error('More than 1 camera found.');
-          process.exit(1);
+          reject(Error('More than 1 camera found.'));
         } else {
           resolve(list[0]);
         }

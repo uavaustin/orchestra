@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const logger = require('../lib/common/logger');
+
 const Service = require('..');
 
 let service = new Service({
@@ -13,4 +15,8 @@ let service = new Service({
   captureInterval: parseFloat(process.env.CAPTURE_INTERVAL) || 2.0
 });
 
-service.start();
+service.start()
+  .catch((err) => {
+    logger.error(`Could not start service: ${err.message}`);
+    process.exit(1);
+  });
