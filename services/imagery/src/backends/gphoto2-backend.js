@@ -36,7 +36,7 @@ export default class GPhoto2Backend {
     // FIXME: Since there's not a proper shutdown, this will just
     //        wait the duration of the capture interval for now.
     this._active = false;
-    await wait(this._interval * 1000);
+    await wait(this._interval);
   }
 
   /** Continuously take photos. */
