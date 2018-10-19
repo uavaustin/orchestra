@@ -27,6 +27,7 @@ export default class Service {
    *
    * @param {Object} options
    * @param {number} options.port
+   * @param {number} options.uploadInterval
    * @param {string} options.telemetryHost
    * @param {number} options.telemetryPort
    * @param {string} options.interopProxyHost
@@ -34,6 +35,7 @@ export default class Service {
    */
   constructor(options) {
     this._port = options.port;
+    this._uploadInterval = options.uploadInterval || 200;
 
     this._telemetryUrl =
       `http://${options.telemetryHost}:${options.telemetryPort}`;
@@ -94,7 +96,7 @@ export default class Service {
   // Start the loop for forwarding telemetry.
   _startTask() {
     this._forwardTask =
-      createTimeoutTask(this._forwardTelem.bind(this), 200)
+      createTimeoutTask(this._forwardTelem.bind(this), this._uploadInterval)
         .on('error', logger.error)
         .start();
   }

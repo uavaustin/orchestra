@@ -86,7 +86,7 @@ export default class UploadMonitor {
       total_1: total1,
       fresh_1: fresh1,
       total_5: total5,
-      fresh_5: fresh5
+      fresh_5: fresh5,
     });
   }
 
