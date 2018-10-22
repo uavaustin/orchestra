@@ -35,7 +35,7 @@ export default class Service {
    */
   constructor(options) {
     this._port = options.port;
-    this._uploadInterval = options.uploadInterval || 200;
+    this._uploadInterval = options.uploadInterval;
 
     this._telemetryUrl =
       `http://${options.telemetryHost}:${options.telemetryPort}`;

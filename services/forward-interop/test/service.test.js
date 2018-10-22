@@ -19,10 +19,10 @@ let m2 = interop.InteropMessage.encode({
   time: 2, text: 'test 2'
 }).finish();
 
+//uploadInterval test
 test('telemetry data is forwarded to interop-proxy', async () => {
   let service = new Service({
     port: 4000,
-    uploadInterval: 300,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -48,7 +48,7 @@ test('telemetry data is forwarded to interop-proxy', async () => {
 
     // Give enough time for two forward operations.
     await new Promise(resolve =>
-      setTimeout(resolve, 3*service._uploadInterval));
+      setTimeout(resolve, 2*service._uploadInterval));
 
     telemetryApi.done();
     interopProxyApi.done();
@@ -56,11 +56,10 @@ test('telemetry data is forwarded to interop-proxy', async () => {
     await service.stop();
   }
 });
-
+//uploadInterval test
 test('forward failures are recovered from', async () => {
   let service = new Service({
     port: 4000,
-    uploadInterval: 300,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -100,7 +99,6 @@ test('forward failures are recovered from', async () => {
 test('last telemetry is uploaded when service is stopped', async () => {
   let service = new Service({
     port: 4000,
-    uploadInterval: 300,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -143,3 +141,4 @@ test('last telemetry is uploaded when service is stopped', async () => {
     }
   }
 });
+
