@@ -19,7 +19,6 @@ let m2 = interop.InteropMessage.encode({
   time: 2, text: 'test 2'
 }).finish();
 
-//uploadInterval test
 test('telemetry data is forwarded to interop-proxy', async () => {
   let service = new Service({
     port: 4000,
@@ -48,7 +47,7 @@ test('telemetry data is forwarded to interop-proxy', async () => {
 
     // Give enough time for two forward operations.
     await new Promise(resolve =>
-      setTimeout(resolve, 2*service._uploadInterval));
+      setTimeout(resolve, 399));
 
     telemetryApi.done();
     interopProxyApi.done();
@@ -56,7 +55,45 @@ test('telemetry data is forwarded to interop-proxy', async () => {
     await service.stop();
   }
 });
-//uploadInterval test
+
+test('telemetry data is forwarded with upload interval', async () => {
+  let service = new Service({
+    port: 4000,
+    uploadInterval: 75, //this interval works consistently, can go a bit lower
+    telemetryHost: 'telemetry-test',
+    telemetryPort: 5000,
+    interopProxyHost: 'interop-proxy-test',
+    interopProxyPort: 8000
+  });
+
+  let telemetryApi = nock('http://telemetry-test:5000')
+    .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
+    .get('/api/interop-telem')
+    .reply(200, t1)
+    .get('/api/interop-telem')
+    .reply(200, t2);
+
+  let interopProxyApi = nock('http://interop-proxy-test:8000')
+    .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
+    .post('/api/telemetry', t1)
+    .reply(200, m1)
+    .post('/api/telemetry', t2)
+    .reply(200, m2);
+
+  try {
+    await service.start();
+
+    // Give enough time for two forward operations.
+    await new Promise(resolve =>
+      setTimeout(resolve, service._uploadInterval*2-1));
+
+    telemetryApi.done();
+    interopProxyApi.done();
+  } finally {
+    await service.stop();
+  }
+});
+
 test('forward failures are recovered from', async () => {
   let service = new Service({
     port: 4000,
@@ -85,7 +122,7 @@ test('forward failures are recovered from', async () => {
 
     // Give enough time for two forward operations.
     await new Promise(resolve =>
-      setTimeout(resolve, 3*service._uploadInterval));
+      setTimeout(resolve, 399));
 
     logger.transports[0].silent = false;
 
@@ -123,7 +160,7 @@ test('last telemetry is uploaded when service is stopped', async () => {
 
     // Give enough time for the forward operation to be happening.
     await new Promise(resolve =>
-      setTimeout(resolve, 3*service._uploadInterval));
+      setTimeout(resolve, 500));
 
     await service.stop();
 
@@ -131,7 +168,7 @@ test('last telemetry is uploaded when service is stopped', async () => {
 
     // Give enough time for the operation to finish.
     await new Promise(resolve =>
-      setTimeout(resolve, 3*service._uploadInterval));
+      setTimeout(resolve, 500));
 
     telemetryApi.done();
     interopProxyApi.done();
@@ -141,4 +178,3 @@ test('last telemetry is uploaded when service is stopped', async () => {
     }
   }
 });
-
