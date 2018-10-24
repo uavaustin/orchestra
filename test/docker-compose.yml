@@ -136,9 +136,7 @@ services:
   image-rec-worker:
     image: uavaustin/image-rec-worker
     environment:
-      - IMAGERY_URL=172.16.238.50:8081
-      - INTEROP_PROXY_URL=172.16.238.13:8000
-      - REDIS_URL=172.16.238.51:6379
+      - REDIS_HOST=imagery-redis
     depends_on:
       - imagery
       - interop-proxy

@@ -51,8 +51,10 @@ COPY --from=builder /builder/dist/messages .
 
 COPY image-rec-worker/worker.py .
 
-ENV IMAGERY_URL='0.0.0.0:8081' \
-    REDIS_URL='0.0.0.0:6379'
+ENV IMAGERY_HOST='imagery' \
+    IMAGERY_PORT='8081' \
+    REDIS_HOST='redis' \
+    REDIS_PORT='6379'
 
 ENV PYTHONUNBUFFERED=TRUE
 
