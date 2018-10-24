@@ -17,13 +17,6 @@ import redis
 import target_finder
 from termcolor import colored
 
-
-# Putting the messages folder in the python path since the proto
-# files depend on each other and this isn't done automatically.
-messages_dir = os.path.abspath(os.path.join(__file__, '..', 'messages'))
-sys.path.append(messages_dir)
-
-
 import interop_pb2
 import imagery_pb2
 

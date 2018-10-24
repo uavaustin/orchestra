@@ -1,6 +1,8 @@
+opencv-python-headless
 protobuf>=3.6.0
 redis>=2.10
 requests>=2.18
 https://github.com/uavaustin/target-finder/releases/download/v0.3.1/target-finder-0.3.1.tar.gz
 https://github.com/uavaustin/target-finder-model/releases/download/v0.2.0/target-finder-model-0.2.0.tar.gz
+tensorflow>=1.5.0
 termcolor==1.1.0
