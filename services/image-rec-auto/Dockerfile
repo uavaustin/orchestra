@@ -58,4 +58,4 @@ ENV IMAGERY_HOST='imagery' \
 
 ENV PYTHONUNBUFFERED=TRUE
 
-CMD PYTHONPATH="${PYTHONPATH}:/app/messages" python worker.py
+CMD python worker.py
