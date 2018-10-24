@@ -1,7 +1,7 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
 
-IMAGE_REC_WORKER_IMAGE := uavaustin/image-rec-worker
+IMAGE_REC_AUTO_IMAGE := uavaustin/image-rec-auto
 
 current_dir := $(shell pwd)
 
@@ -10,9 +10,9 @@ all: image
 
 .PHONY: image
 image:
-	docker build -t $(IMAGE_REC_WORKER_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
+	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile $(IMAGE_REC_AUTO_IMAGE) ..
 
 .PHONY: clean
 clean:
 	rm -rf __pycache__ *.pyc messages
-	docker rmi -f $(IMAGE_REC_WORKER_IMAGE)
+	docker rmi -f $(IMAGE_REC_AUTO_IMAGE)

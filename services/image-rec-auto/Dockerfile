@@ -23,7 +23,7 @@ RUN curl -OL "$PROTOC_URL" && \
     mv protoc/bin/* /usr/local/bin/ && \
     mv protoc/include/* /usr/local/include/
 
-COPY image-rec-worker/requirements.txt .
+COPY image-rec-auto/requirements.txt .
 
 RUN pip install -r requirements.txt
 
@@ -49,7 +49,7 @@ COPY --from=builder /usr/local/lib/python3.6/site-packages \
                     /usr/local/lib/python3.6/site-packages
 COPY --from=builder /builder/dist/messages .
 
-COPY image-rec-worker/worker.py .
+COPY image-rec-auto/worker.py .
 
 ENV IMAGERY_HOST='imagery' \
     IMAGERY_PORT='8081' \

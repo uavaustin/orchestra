@@ -133,8 +133,8 @@ services:
       test_net:
         ipv4_address: 172.16.238.52
 
-  image-rec-worker:
-    image: uavaustin/image-rec-worker
+  image-rec-auto:
+    image: uavaustin/image-rec-auto
     environment:
       - REDIS_HOST=imagery-redis
     depends_on:
