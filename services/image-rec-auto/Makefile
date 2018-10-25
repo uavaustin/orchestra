@@ -10,7 +10,7 @@ all: image
 
 .PHONY: image
 image:
-	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile $(IMAGE_REC_AUTO_IMAGE) ..
+	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: clean
 clean:
