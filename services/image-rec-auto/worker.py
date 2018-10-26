@@ -41,7 +41,7 @@ def get_next_id(redis_client):
             # once an id is available.
             image_id = int(redis_client.brpoplpush(
                 'unprocessed-auto', 'processing-auto'
-            )[1])
+            ))
         except redis.exceptions.ConnectionError as e:
             print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
             time.sleep(1)
@@ -204,14 +204,13 @@ def encode_odlc(odlc):
 
 def queue_odlcs(redis_client, image_id, odlcs):
     """Put the found odlcs in redis so they can be uploaded."""
-
-    encoded = map(encode_odlc, odlcs)
+    encoded = list(map(encode_odlc, odlcs))
 
     while True:
         try:
             pipeline = redis_client.pipeline()
 
-            pipeline.lrem(image_id)
+            pipeline.lrem('processing-auto', 0, image_id)
             pipeline.lpush('processed-auto', image_id)
 
             if len(encoded) > 0:
