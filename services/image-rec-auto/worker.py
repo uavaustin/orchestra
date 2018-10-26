@@ -39,7 +39,9 @@ def get_next_id(redis_client):
         try:
             # We'll just pop this off the right side of the queue
             # once an id is available.
-            image_id = int(redis_client.brpop('unprocessed-images')[1])
+            image_id = int(redis_client.brpoplpush(
+                'unprocessed-auto', 'processing-auto'
+            )[1])
         except redis.exceptions.ConnectionError as e:
             print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
             time.sleep(1)
@@ -200,24 +202,31 @@ def encode_odlc(odlc):
     return odlc.SerializeToString()
 
 
-def queue_odlcs(redis_client, odlcs):
+def queue_odlcs(redis_client, image_id, odlcs):
     """Put the found odlcs in redis so they can be uploaded."""
-    for i in range(0, len(odlcs)):
-        odlc = odlcs[i]
 
-        encoded = encode_odlc(odlc)
+    encoded = map(encode_odlc, odlcs)
 
-        while True:
-            try:
-                redis_client.lpush('found', encoded)
-                break
-            except redis.exceptions.ConnectionError as e:
-                print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
-                time.sleep(1)
+    while True:
+        try:
+            pipeline = redis_client.pipeline()
 
-        print(colored('queued: ', 'green', attrs=['bold']) +
-            'target ' + str(i))
+            pipeline.lrem(image_id)
+            pipeline.lpush('processed-auto', image_id)
 
+            if len(encoded) > 0:
+                pipeline.lpush('found-auto', *encoded)
+
+            pipeline.execute()
+
+            for i in range(0, len(odlcs)):
+                print(colored('queued: ', 'green', attrs=['bold']) +
+                    'target ' + str(i))
+
+            break
+        except redis.exceptions.ConnectionError as e:
+            print(colored('redis error: ', 'red', attrs=['bold']) + str(e))
+            time.sleep(1)
 
 
 def run_iter(imagery_url, redis_client):
@@ -267,7 +276,11 @@ def run_iter(imagery_url, redis_client):
     # instead of just x, y position and width, height. Then we'll
     # submit the ones we have (or do nothing if we don't have any).
     odlcs = parse_targets(image, targets)
-    queue_odlcs(redis_client, odlcs)
+    queue_odlcs(redis_client, image_id, odlcs)
+
+    t_5 = curr_time()
+
+    print(' --> sent results in {:d} ms'.format(t_5 - t_4))
 
 
 def main():
