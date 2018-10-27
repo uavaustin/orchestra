@@ -211,7 +211,7 @@ def queue_odlcs(redis_client, image_id, odlcs):
             pipeline = redis_client.pipeline()
 
             pipeline.lrem('processing-auto', 0, image_id)
-            pipeline.lpush('processed-auto', image_id)
+            pipeline.sadd('processed-auto', image_id)
 
             if len(encoded) > 0:
                 pipeline.lpush('found-auto', *encoded)
