@@ -19,8 +19,16 @@ message PingTimes {
         uint32 ms = 5;
     }
 
+    message DevicePing {
+        string name = 1;
+        string host = 2;
+        bool online = 3;
+        uint32 ms = 4;
+    }
+
     double time = 1;
-    repeated ServicePing api_pings = 2;
+    repeated ServicePing list = 2;
+    repeated DevicePing icmp = 3;
 }
 
 // Rate at which the interop server receives telemetry.
