@@ -1,8 +1,12 @@
-# Ignoring things from npm
-node_modules/
-npm-debug.log*
-package-lock.json
+# Python defaults
+__pycache__/
+*.py[cod]
 
-# Ignore message and babel output
-src/messages/
-lib/
+# Environments
+.env
+.venv
+env/
+venv/
+
+# pytest
+.pytest_cache/

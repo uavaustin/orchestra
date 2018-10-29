@@ -1,0 +1,4 @@
+aiohttp
+aioredis
+protobuf>=3.6.1
+termcolor

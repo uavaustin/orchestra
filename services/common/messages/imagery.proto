@@ -31,11 +31,3 @@ message Image {
     // The image is a JPEG.
     bytes image = 5;
 }
-
-message UnprocessedImages {
-    double time = 1;
-    uint32 count = 2;
-    // The list of image ids which haven't been processed in
-    // increasing order.
-    repeated uint32 list = 3;
-}

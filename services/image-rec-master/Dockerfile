@@ -1,48 +1,51 @@
-ARG BASE=node:8-slim
+ARG BASE=python:3.6-alpine
 
-# Compile our js source
+# Compile the proto files and fetch pip dependencies.
 FROM ${BASE} AS builder
 
 WORKDIR /builder
 
-COPY image-rec-master/package.json .
+# gcc and musl-dev are required for the aioredis dependency.
+RUN apk --no-cache add \
+    gcc \
+    musl-dev \
+    protobuf
 
-RUN npm install
+COPY image-rec-master/requirements.txt .
 
-COPY image-rec-master/src/messages src/messages
+RUN pip install -r requirements.txt
 
-RUN npm run build-msg
+COPY common/messages/imagery.proto \
+    common/messages/image_rec.proto \
+    common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    messages/
 
-COPY image-rec-master .
+RUN mkdir -p dist/messages && protoc -I=messages/ --python_out=dist/messages \
+    messages/*.proto
 
-RUN npm run build
-
-# Making the actual image now
+# Making the actual image now.
 FROM ${BASE}
 
 WORKDIR /app
 
-# We need curl so we can wait for the imagery service to be online
-RUN apt-get update && apt-get install -y \
-    curl
+# Copy the pip requirements and protobuf messages from above.
+COPY --from=builder /usr/local/lib/python3.6/site-packages \
+                    /usr/local/lib/python3.6/site-packages
+COPY --from=builder /builder/dist/messages .
 
-COPY image-rec-master/package.json .
+COPY image-rec-master/service service
 
-RUN export NODE_ENV=production && npm install
+ENV PORT='8082' \
+    IMAGERY_HOST='imagery' \
+    IMAGERY_PORT='8081' \
+    INTEROP_PROXY_HOST='interop-proxy' \
+    INTEROP_PROXY_PORT='8000' \
+    REDIS_HOST='redis' \
+    REDIS_PORT='6379'
 
-COPY common/scripts/wait-for-it.sh .
-
-# Adding in the output from the js builder above
-COPY --from=builder /builder/lib lib
-
-ENV IMAGERY_URL='0.0.0.0:8081' \
-    INTEROP_PROXY='0.0.0.0:8000' \
-    REDIS_URL='0.0.0.0:6379'
-
-VOLUME /found
+ENV PYTHONUNBUFFERED=TRUE
 
 EXPOSE 8082
 
-# Waiting for a response from the imagery service first
-CMD ./wait-for-it.sh "http://$IMAGERY_URL/api/alive" "imagery service" && \
-    npm start --silent
+CMD python -m service

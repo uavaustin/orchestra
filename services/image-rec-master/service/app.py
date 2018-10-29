@@ -1,0 +1,109 @@
+from time import time
+
+from aiohttp import web
+from google.protobuf.json_format import MessageToJson
+
+import image_rec_pb2
+
+
+routes = web.RouteTableDef()
+
+
+@routes.get('/api/alive')
+async def handle_alive(request):
+    """Send back text as a sanity check."""
+    return web.Response(text='Wazzup?\n')
+
+
+@routes.get('/api/pipeline')
+async def handle_get_pipeline(request):
+    """Return the current pipeline state."""
+    tr = request.app['redis'].multi_exec()
+
+    get_set = lambda key: tr.smembers(key)
+    get_list = lambda key: tr.lrange(key, 0, -1)
+
+    # All registered images.
+    get_set('all-images')
+
+    # Auto image rec state.
+    get_list('unprocessed-auto')
+    get_list('processing-auto')
+    get_set('processed-auto')
+    get_set('retrying-auto')
+    get_set('errored-auto')
+    get_set('skipped-auto')
+
+    # Manual image rec state.
+    get_list('unprocessed-manual')
+    get_set('processed-manual')
+    get_set('skipped-manual')
+
+    # Target submission state.
+    get_set('all-targets')
+    get_list('unsubmitted-targets')
+    get_list('submitting-targets')
+    get_set('submitted-targets')
+    get_set('errored-targets')
+    get_list('unremoved-targets')
+    get_list('removing-targets')
+    get_set('removed-targets')
+
+    data_str = await tr.execute()
+
+    msg = image_rec_pb2.PipelineState()
+    msg.time = time()
+
+    fields = [
+        msg.all_images,
+        msg.unprocessed_auto,
+        msg.processing_auto,
+        msg.processed_auto,
+        msg.retrying_auto,
+        msg.errored_auto,
+        msg.skipped_auto,
+        msg.unprocessed_manual,
+        msg.processed_manual,
+        msg.skipped_manual,
+        msg.all_targets,
+        msg.unsubmitted_targets,
+        msg.submitting_targets,
+        msg.submitted_targets,
+        msg.errored_targets,
+        msg.unremoved_targets,
+        msg.removing_targets,
+        msg.removed_targets
+    ]
+
+    # Convert the string lists to integer lists and add them to the
+    # proto message.
+    for field, str_list in zip(fields, data_str):
+        field.extend([int(id_str) for id_str in str_list])
+        field.sort()
+
+    return _proto_response(request, msg)
+
+
+@routes.post('/api/pipeline/clear')
+async def handle_clear_pipeline(request):
+    """Empty out the current Redis database to reset the pipeline."""
+    await request.app['redis'].flushdb()
+    return web.Response(status=204)
+
+
+def _proto_response(request, msg):
+    """Return a protobuf wire or JSON response."""
+    if not request.headers.getone('accept', '').startswith('application/json'):
+        body = msg.SerializeToString()
+        return web.Response(body=body, content_type='application/x-protobuf')
+    else:
+        body = MessageToJson(msg)
+        return web.json_response(body=body)
+
+
+def create_app():
+    """Create an aiohttp web application."""
+    app = web.Application()
+    app.router.add_routes(routes)
+
+    return app
