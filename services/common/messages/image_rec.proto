@@ -57,3 +57,22 @@ message PipelineState {
     repeated uint32 removing_targets = 18;
     repeated uint32 removed_targets = 19;
 }
+
+message Target {
+    // Time last updated.
+    double time = 1;
+    // Target id number given by the image rec pipeline.
+    uint32 id = 2;
+    // Odlc submitted to the server. After submission, this is
+    // overrided with the response which fills in the interop id
+    // number.
+    interop.Odlc odlc = 3;
+    // The image that this target originates from.
+    uint32 image_id = 4;
+    // If the target has even been successfully submitted.
+    bool submitted = 5;
+    // If the target couldn't be submitted.
+    bool errored = 6;
+    // If the target has been removed.
+    bool removed = 7;
+}

@@ -84,8 +84,30 @@ async def handle_get_pipeline(request):
     return _proto_response(request, msg)
 
 
-@routes.post('/api/pipeline/clear')
-async def handle_clear_pipeline(request):
+@routes.get(r'/api/pipeline/targets/{id:\d+}')
+async def handle_get_pipeline_target_by_id(request):
+    """Return a target by id in the pipeline."""
+    target_id = int(request.match_info['id'])
+    target_hash = await request.app['redis'].hgetall(f'target:{target_id}')
+
+    if target_hash:
+        msg = image_rec_pb2.Target()
+        msg.time = time()
+
+        msg.id = int(target_hash.get(b'id', b'0'))
+        msg.image_id = int(target_hash.get(b'image_id', b'0'))
+        msg.odlc.ParseFromString(target_hash.get(b'odlc', b''))
+        msg.submitted = target_hash.get(b'submitted', b'0') == b'1'
+        msg.errored = target_hash.get(b'errored', b'0') == b'1'
+        msg.removed = target_hash.get(b'removed', b'0') == b'1'
+
+        return _proto_response(request, msg)
+    else:
+        return web.Response(status=404)
+
+
+@routes.post('/api/pipeline/reset')
+async def handle_reset_pipeline(request):
     """Empty out the current Redis database to reset the pipeline."""
     await request.app['redis'].flushdb()
     return web.Response(status=204)
