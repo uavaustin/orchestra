@@ -117,24 +117,24 @@ test('check the protobuf response', async () => {
 });
 
 test('check the ICMP response', async () => {
-  let res = await request('http://127.0.0.1')
+  let res = await request('http://127.0.0.1:7000')
     .get('/api/ping')
     .proto(stats.PingTimes);
 
   expect(res.status).toEqual(200);
 
-  let list = res.body.list;
+  let device_pings = res.body.device_pings;
 
-  expect(list[0].name).toEqual('meta');
-  expect(list[0].host).toEqual('127.0.0.1');
-  expect(list[0].online).toEqual(true);
-  expect(list[0].ms).toBeGreaterThan(0);
-  expect(list[0].ms).toBeLessThan(1000);
+  expect(device_pings[0].name).toEqual('meta');
+  expect(device_pings[0].host).toEqual('127.0.0.1');
+  expect(device_pings[0].online).toEqual(true);
+  expect(device_pings[0].ms).toBeGreaterThan(0);
+  expect(device_pings[0].ms).toBeLessThan(1000);
 
-  expect(list[1].name).toEqual('no-endpoint');
-  expect(list[1].host).toEqual('no-endpoint-service');
-  expect(list[1].online).toEqual(false);
-  expect(list[1].ms).toEqual(0);
+  expect(device_pings[1].name).toEqual('no-endpoint');
+  expect(device_pings[1].host).toEqual('no-endpoint-service');
+  expect(device_pings[1].online).toEqual(false);
+  expect(device_pings[1].ms).toEqual(0);
 
 });
 

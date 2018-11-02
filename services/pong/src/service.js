@@ -8,6 +8,8 @@ import { createTimeoutTask } from './common/task';
 import router from './router';
 import PingStore from './ping-store';
 
+import promisify from 'util';
+
 /**
  * Service-level implementation for pong.
  */
@@ -85,17 +87,17 @@ export default class Service {
 
   // Start the loops for collecting ping times.
   _startTasks() {
+    this._deviceTasks = this._pingDevices.map((s) => {
+      const deviceurl = s.host + ':' + s.endpoint;
+
+      return createTimeoutTask(()=>this._pingDevice(s.name, deviceurl), 3000)
+        .on('error', logger.error)
+        .start();
+    });
     this._serviceTasks = this._pingServices.map((s) => {
       const serviceurl = 'http://' + s.host + ':' + s.port + s.endpoint;
 
       return createTimeoutTask(()=>this._pingService(s.name, serviceurl), 3000)
-        .on('error', logger.error)
-        .start();
-    });
-    this._deviceTasks = this._pingDevices.map((s) => {
-      const deviceurl = 'http://' + s.host + ':' + s.endpoint;
-
-      return createTimeoutTask(()=>this._pingDevice(s.name, deviceurl), 3000)
         .on('error', logger.error)
         .start();
     });
@@ -127,28 +129,20 @@ export default class Service {
   }
 
   //Ping device and update how long the request takes
-  async _pingDevice(device, deviceurl){
+  async _pingDevice(device, deviceurl) {
     var ping = require('net-ping');
     var session = ping.createSession();
     var target = deviceurl;
     let online;
 
-    session.pingHost(target, function (error, target, sent, rcvd) {
+    try {
+      let [ , sent, rcvd ] = await (promisify(session.pingHost(target)));
       var ms = rcvd - sent;
-      if (error){
-        online = false;
-      }
-      else{
-        request.get(deviceurl)
-          .timeout(this._serviceTimeout)
-          // Don't follow redirects and consider 3xx status codes as
-          // being successful.
-          .redirects(0)
-          .ok(res => res.status < 400);
+      online = true;
+    } catch(error){
+      online = false;
+    }
 
-        online = true;
-        this._pingStore.updateDevicePing(device, online, ms);
-      }
-    });
+    this._pingStore.updateDevicePing(device, online, ms);
   }
 }

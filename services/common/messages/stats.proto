@@ -28,7 +28,7 @@ message PingTimes {
 
     double time = 1;
     repeated ServicePing list = 2;
-    repeated DevicePing icmp = 3;
+    repeated DevicePing device_pings = 3;
 }
 
 // Rate at which the interop server receives telemetry.

@@ -17,9 +17,12 @@ export default class PingStore {
       time: time(),
       // Get the services in the correct format and sort by name.
       list: services.map(this._parseService.bind(this))
-        .sort((a, b) => a.name > b.name)
+        .sort((a, b) => a.name > b.name),
 
       api_pings: services.map(this._parseService.bind(this))
+        .sort((a, b) => a.name > b.name),
+
+      device_pings: services.map(this._parseDevice.bind(this))
         .sort((a, b) => a.name > b.name)
     });
   }
@@ -34,10 +37,19 @@ export default class PingStore {
   updateServicePing(name, online, ms) {
     this._ping.time = time();
 
-    const index = this._ping.api_pings.findIndex(s => s.name === name);
+    const index = this._ping.list.findIndex(s => s.name === name);
 
-    this._ping.api_pings[index].online = online;
-    this._ping.api_pings[index].ms = ms;
+    this._ping.list[index].online = online;
+    this._ping.list[index].ms = ms;
+  }
+
+  updateDevicePing(name, online, ms) {
+    this._ping.time = time();
+
+    const index = this._ping.device_pings.findIndex(s => s.name === name);
+
+    this._ping.device_pings[index].online = online;
+    this._ping.device_pings[index].ms = ms;
   }
 
   /**
@@ -56,6 +68,15 @@ export default class PingStore {
       name: service.name,
       host: service.host,
       port: service.port.toString(),
+      online: false,
+      ms: 0
+    };
+  }
+
+  _parseDevice(device){
+    return {
+      name: device.name,
+      host: device.name,
       online: false,
       ms: 0
     };
