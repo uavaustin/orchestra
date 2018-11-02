@@ -29,6 +29,7 @@ export default class Service {
 
     this._serviceTimeout = options.serviceTimeout;
     this._pingServices = options.pingServices;
+    this._pingDevices = options.pingDevices;
   }
 
   /** Start the service. */
@@ -48,7 +49,8 @@ export default class Service {
 
     await Promise.all([
       this._server.closeAsync(),
-      Promise.all(this._serviceTasks.map(t => t.stop()))
+      Promise.all(this._serviceTasks.map(t => t.stop())),
+      Promise.all(this._deviceTasks.map(t => t.stop()))
     ]);
 
     logger.debug('Service stopped.');
@@ -84,21 +86,28 @@ export default class Service {
   // Start the loops for collecting ping times.
   _startTasks() {
     this._serviceTasks = this._pingServices.map((s) => {
-      const url = 'http://' + s.host + ':' + s.port + s.endpoint;
+      const serviceurl = 'http://' + s.host + ':' + s.port + s.endpoint;
 
-      return createTimeoutTask(() => this._pingService(s.name, url), 3000)
+      return createTimeoutTask(()=>this._pingService(s.name, serviceurl), 3000)
+        .on('error', logger.error)
+        .start();
+    });
+    this._deviceTasks = this._pingDevices.map((s) => {
+      const deviceurl = 'http://' + s.host + ':' + s.endpoint;
+
+      return createTimeoutTask(()=>this._pingDevice(s.name, deviceurl), 3000)
         .on('error', logger.error)
         .start();
     });
   }
 
   // Hit a service and record how long the request takes round-trip.
-  async _pingService(service, url) {
+  async _pingService(service, serviceurl) {
     const start = Date.now();
     let online;
 
     try {
-      await request.get(url)
+      await request.get(serviceurl)
         .timeout(this._serviceTimeout)
         // Don't follow redirects and consider 3xx status codes as
         // being successful.
@@ -115,5 +124,31 @@ export default class Service {
 
     // Update the ping details.
     this._pingStore.updateServicePing(service, online, ms);
+  }
+
+  //Ping device and update how long the request takes
+  async _pingDevice(device, deviceurl){
+    var ping = require('net-ping');
+    var session = ping.createSession();
+    var target = deviceurl;
+    let online;
+
+    session.pingHost(target, function (error, target, sent, rcvd) {
+      var ms = rcvd - sent;
+      if (error){
+        online = false;
+      }
+      else{
+        request.get(deviceurl)
+          .timeout(this._serviceTimeout)
+          // Don't follow redirects and consider 3xx status codes as
+          // being successful.
+          .redirects(0)
+          .ok(res => res.status < 400);
+
+        online = true;
+        this._pingStore.updateDevicePing(device, online, ms);
+      }
+    });
   }
 }

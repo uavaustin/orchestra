@@ -47,6 +47,13 @@ beforeAll(async () => {
         port: 7000,
         endpoint: '/api/alive'
       }
+    ],
+    pingDevices: [
+      {
+        name: 'test1',
+        host: 'test1-service',
+        endpoint: '/api/alive'
+      }
     ]
   });
 
@@ -107,6 +114,28 @@ test('check the protobuf response', async () => {
   expect(list[4].online).toEqual(true);
   expect(list[4].ms).toBeGreaterThan(0);
   expect(list[4].ms).toBeLessThan(1000);
+});
+
+test('check the ICMP response', async () => {
+  let res = await request('http://127.0.0.1')
+    .get('/api/ping')
+    .proto(stats.PingTimes);
+
+  expect(res.status).toEqual(200);
+
+  let list = res.body.list;
+
+  expect(list[0].name).toEqual('meta');
+  expect(list[0].host).toEqual('127.0.0.1');
+  expect(list[0].online).toEqual(true);
+  expect(list[0].ms).toBeGreaterThan(0);
+  expect(list[0].ms).toBeLessThan(1000);
+
+  expect(list[1].name).toEqual('no-endpoint');
+  expect(list[1].host).toEqual('no-endpoint-service');
+  expect(list[1].online).toEqual(false);
+  expect(list[1].ms).toEqual(0);
+
 });
 
 test('mock apis were hit correctly', () => {

@@ -5,7 +5,8 @@ const Service = require('..');
 const service = new Service({
   port: parseInt(process.env.PORT),
   serviceTimeout: parseInt(process.env.SERVICE_TIMEOUT),
-  pingServices: process.env.PING_SERVICES.split(' ')
+  pingServices: process.env.PING_SERVICES.split(' '),
+  pingDevices: process.env.PING_DEVICES.split(' ')
     .map((line) => {
       const split = line.split(',');
 

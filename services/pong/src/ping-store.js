@@ -18,6 +18,9 @@ export default class PingStore {
       // Get the services in the correct format and sort by name.
       list: services.map(this._parseService.bind(this))
         .sort((a, b) => a.name > b.name)
+
+      api_pings: services.map(this._parseService.bind(this))
+        .sort((a, b) => a.name > b.name)
     });
   }
 
@@ -31,10 +34,10 @@ export default class PingStore {
   updateServicePing(name, online, ms) {
     this._ping.time = time();
 
-    const index = this._ping.list.findIndex(s => s.name === name);
+    const index = this._ping.api_pings.findIndex(s => s.name === name);
 
-    this._ping.list[index].online = online;
-    this._ping.list[index].ms = ms;
+    this._ping.api_pings[index].online = online;
+    this._ping.api_pings[index].ms = ms;
   }
 
   /**
