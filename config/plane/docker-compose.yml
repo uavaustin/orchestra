@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  mavproxy-plane:
+    image: uavaustin/mavproxy
+    command: --master=/dev/pixhawk
+             --out udpin:0.0.0.0:14550
+             --out udpin:0.0.0.0:14551
+             --daemon
+             --nowait
+    ports:
+      - '14550:14550/udp'
+      - '14551:14551/udp'
+    networks:
+      - plane-net
+    devices:
+      - /dev/pixhawk:/dev/pixhawk
+    restart: unless-stopped
+
+  telemetry-plane:
+    image: uavaustin/telemetry
+    environment:
+      - PLANE_HOST=mavproxy-plane
+      - PLANE_PORT=14550
+    ports:
+      - '5000:5000'
+    networks:
+      - plane-net
+    restart: unless-stopped
+
+  imagery-plane:
+    image: uavaustin/imagery
+    environment:
+      - BACKEND=gphoto2
+      - TELEMETRY_URL=telemetry-plane:5000
+    ports:
+      - '8081:8081'
+    networks:
+      - plane-net
+    volumes:
+      - './imagery:/opt/imagery'
+    privileged: true
+    restart: unless-stopped
+
+networks:
+  plane-net:

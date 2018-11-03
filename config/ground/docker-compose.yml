@@ -1,0 +1,118 @@
+version: '3'
+
+services:
+  portainer:
+    image: portainer/portainer
+    command: -H unix:///var/run/docker.sock
+    ports:
+      - '9000:9000'
+    networks:
+      - ground-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    restart: unless-stopped
+
+  interop-server:
+    image: auvsisuas/interop-server
+    ports:
+      - '8080:80'
+    networks:
+      - ground-net
+    restart: unless-stopped
+
+  mavproxy-ground:
+    image: uavaustin/mavproxy
+    command: --master=/dev/3dr
+             --master udpout:mavproxy-plane:14551
+             --out udpin:0.0.0.0:14550
+             --out udpin:0.0.0.0:14551
+             --nowait
+             --daemon
+    ports:
+      - '14550:14550/udp'
+    extra_hosts:
+      - mavproxy-plane:${PLANE_IP}
+    networks:
+      - ground-net
+    devices:
+      - /dev/3dr:/dev/3dr
+    restart: unless-stopped
+
+  telemetry-ground:
+    image: uavaustin/telemetry
+    environment:
+     - PLANE_HOST=mavproxy-ground
+     - PLANE_PORT=14551
+    networks:
+      - ground-net
+    restart: unless-stopped
+
+  interop-proxy:
+    image: uavaustin/interop-proxy
+    environment:
+      - INTEROP_URL=interop-server
+      - USERNAME=testuser
+      - PASSWORD=testpass
+    networks:
+      - ground-net
+    restart: unless-stopped
+
+  pong:
+    image: uavaustin/pong
+    environment:
+      - PING_SERVICES=interop-server,interop-server,/
+                      interop-proxy,interop-proxy:8000
+                      telemetry-plane,telemetry-plane:5000
+                      telemetry-ground,telemetry-ground:5000
+                      forward-interop,forward-interop:4000
+                      imagery-plane,image-plane:8081
+                      imagery-ground,image-ground:8081
+                      pong,pong:7000
+    extra_hosts:
+      - telemetry-plane:${PLANE_IP}
+      - imagery-plane:${PLANE_IP}
+    networks:
+      - ground-net
+    restart: unless-stopped
+
+  forward-interop:
+    image: uavaustin/forward-interop
+    environment:
+      - TELEMETRY_HOST=telemetry-plane
+      - INTEROP_PROXY_HOST=interop-proxy
+    extra_hosts:
+      - telemetry-plane:${PLANE_IP}
+    networks:
+      - ground-net
+    restart: unless-stopped
+
+  dashboard:
+    image: uavaustin/dashboard
+    tty: true
+    environment:
+      - INTEROP_PROXY_URL=interop-proxy:8000
+      - FORWARD_INTEROP_URL=forward-interop:4000
+      - PONG_URL=pong:7000
+    networks:
+      - ground-net
+    restart: unless-stopped
+
+  imagery-ground:
+    image: uavaustin/imagery
+    environment:
+      - BACKEND=sync
+      - IMAGERY_SYNC_URL=imagery-plane:8081
+    extra_hosts:
+      - imagery-plane:${PLANE_IP}
+    networks:
+      - ground-net
+    volumes:
+      - ./imagery:/opt/imagery
+    restart: unless-stopped
+
+networks:
+  ground-net:
+
+volumes:
+  portainer-data:
