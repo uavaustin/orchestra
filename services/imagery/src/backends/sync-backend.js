@@ -49,7 +49,9 @@ export default class SyncBackend {
         let missing = remoteAvailable.filter(id => !stored.has(id));
 
         // Getting the images we don't have.
-        missing.forEach(async (id) => {
+        // This must be sequential rather than parallel
+        // to keep the `next` endpoint's behavior consistent.
+        for (const id of missing) {
           logger.debug('Fetching image: ' + id);
 
           const msg = await this._getImage(id);
@@ -64,7 +66,7 @@ export default class SyncBackend {
           await this._imageStore.addImage(image, msg, id);
 
           stored.add(id);
-        });
+        }
       } catch (err) {
         const message = err.name + ': ' + err.message;
         logger.error('Encountered an error in sync loop: ' + message);
