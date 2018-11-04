@@ -48,25 +48,25 @@ export default class ImageStore extends EventEmitter {
   async setup() {
     if (this._clearExisting === true) {
       await fs.emptyDir(FOLDER_NAME);
-    } else {
-      // If there isn't a database file, we'll make sure this directory
-      // exists.
-      await fs.mkdirp(FOLDER_NAME);
-
-      // A connection pool prevents database queries from intefering with
-      // each other while a transaction is occurring. Instead, connections
-      // will wait on each others' transactions to finish before proceeding
-      // execution or starting another transaction.
-      this._dbPool = genericPool.createPool({
-        create: () => sqlite.open(DB_FILE),
-        destroy: (db) => db.close()
-      }, { max: 5, min: 0 });
-
-      let db = await this._dbPool.acquire();
-      await db.run('CREATE TABLE IF NOT EXISTS ' +
-        'images(id INTEGER PRIMARY KEY AUTOINCRMEMENT)');
-      this._dbPool.release(db);
     }
+
+    // If there isn't a database file, we'll make sure this
+    // directory exists.
+    await fs.mkdirp(FOLDER_NAME);
+
+    // A connection pool prevents database queries from intefering
+    // with each other while a transaction is occurring. Instead,
+    // connections will wait on each others' transactions to finish
+    // before proceeding execution or starting another transaction.
+    this._dbPool = genericPool.createPool({
+      create: () => sqlite.open(DB_FILE),
+      destroy: (db) => db.close()
+    }, { max: 5, min: 0 });
+
+    let db = await this._dbPool.acquire();
+    await db.run('CREATE TABLE IF NOT EXISTS ' +
+      'images(id INTEGER PRIMARY KEY AUTOINCREMENT)');
+    this._dbPool.release(db);
   }
 
   /** Get the number of images stored. */
@@ -129,8 +129,7 @@ export default class ImageStore extends EventEmitter {
 
     try {
       if (id === undefined) {
-        await db.run('INSERT INTO images DEFAULT VALUES');
-        id = db.lastID;
+        id = (await db.run('INSERT INTO images DEFAULT VALUES')).lastID;
       } else {
         await db.run('INSERT INTO images VALUES (?)', id);
       }

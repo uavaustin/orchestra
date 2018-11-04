@@ -112,9 +112,9 @@ test('get the latest image with GET /api/image/latest', async () => {
   const image = imagery.Image.create({ id: 3, image: imageData });
 
   app.context.imageStore = {
-    getCount: jest.fn().mockReturnValueOnce(4),
     getImage: jest.fn().mockReturnValueOnce(imageData),
-    getMetadata: jest.fn().mockReturnValueOnce(imageMeta)
+    getMetadata: jest.fn().mockReturnValueOnce(imageMeta),
+    getLatestId: jest.fn().mockReturnValueOnce(Promise.resolve(3))
   };
 
   const server = app.listen();
@@ -178,7 +178,8 @@ test('get the image by id with GET /api/image/:id', async () => {
   app.context.imageStore = {
     getCount: jest.fn().mockReturnValueOnce(4),
     getImage: jest.fn().mockReturnValueOnce(imageData),
-    getMetadata: jest.fn().mockReturnValueOnce(imageMeta)
+    getMetadata: jest.fn().mockReturnValueOnce(imageMeta),
+    exists: jest.fn().mockReturnValueOnce(Promise.resolve(true))
   };
 
   const server = app.listen();
@@ -191,6 +192,7 @@ test('get the image by id with GET /api/image/:id', async () => {
 
     expect(app.context.imageStore.getImage).toBeCalledWith(2);
     expect(app.context.imageStore.getMetadata).toBeCalledWith(2);
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
   } finally {
     await new Promise(resolve => server.close(() => resolve()));
   }

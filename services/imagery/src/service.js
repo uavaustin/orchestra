@@ -54,7 +54,7 @@ export default class Service {
   async start() {
     logger.debug('Starting service.');
 
-    this._imageStore = new ImageStore(maxImages = this._maxImages);
+    this._imageStore = new ImageStore(false, this._maxImages);
     await this._imageStore.setup();
 
     this._imageStore.on('image', id => logger.debug(`Added image ${id}.`));

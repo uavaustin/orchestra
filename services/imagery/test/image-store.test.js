@@ -22,7 +22,7 @@ test('create an empty image store', async () => {
   const imageStore = new ImageStore();
   await imageStore.setup();
 
-  expect(imageStore.getCount()).toEqual(0);
+  expect(await imageStore.getCount()).toEqual(0);
 });
 
 test('images can be added to the image store', async () => {
@@ -36,7 +36,7 @@ test('images can be added to the image store', async () => {
     shapes[1], imagery.Image.create({ time: 5 })
   );
 
-  expect(imageStore.getCount()).toEqual(2);
+  expect(await imageStore.getCount()).toEqual(2);
 
   expect(await imageStore.getImage(id1)).toEqual(shapes[0]);
   expect(await imageStore.getImage(id2)).toEqual(shapes[1]);
@@ -53,7 +53,7 @@ test('clear existing removes existing images', async () => {
   const imageStore2 = new ImageStore(true);
   await imageStore2.setup();
 
-  expect(imageStore2.getCount()).toEqual(0);
+  expect(await imageStore2.getCount()).toEqual(0);
 });
 
 test('not using clear existing keeps existing images', async () => {
@@ -65,11 +65,13 @@ test('not using clear existing keeps existing images', async () => {
   const imageStore2 = new ImageStore();
   await imageStore2.setup();
 
-  expect(imageStore2.getCount()).toEqual(1);
+  expect(await imageStore2.getCount()).toEqual(1);
 });
 
 test('image store stores image add rates', async () => {
   const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
   const clock = lolex.install();
 
   expect(imageStore.getRate()).toEqual(0);

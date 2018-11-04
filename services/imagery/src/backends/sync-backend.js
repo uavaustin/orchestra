@@ -44,8 +44,8 @@ export default class SyncBackend {
         // First we'll just see what the latest id number is.
         const remoteAvailable = await this._getAvailable();
 
-        // Filter the available images by the ones that our local store
-        // currently doesn't have.
+        // Filter the available images by the ones that our local
+        // store currently doesn't have.
         let missing = remoteAvailable.filter(id => !stored.has(id));
 
         // Getting the images we don't have.
