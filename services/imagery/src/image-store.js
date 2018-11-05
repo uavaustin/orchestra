@@ -81,9 +81,9 @@ export default class ImageStore extends EventEmitter {
   /** Get a list of image IDs available for retrieval. */
   async getAvailable() {
     let db = await this._dbPool.acquire();
-    const available = (await db.all('SELECT id FROM images SORT BY id ASC'))
+    const available = (await db.all('SELECT id FROM images ORDER BY id ASC'))
       .map(row => row.id);
-    this._dbPool.release();
+    this._dbPool.release(db);
 
     return available;
   }
@@ -93,7 +93,7 @@ export default class ImageStore extends EventEmitter {
     let db = await this._dbPool.acquire();
     const latest = (await db.get(
       'SELECT id FROM images SORT BY id DESC'))['id'];
-    this._dbPool.release();
+    this._dbPool.release(db);
 
     return latest;
   }
@@ -103,7 +103,7 @@ export default class ImageStore extends EventEmitter {
     let db = await this._dbPool.acquire();
     const exists = await db.get('SELECT id FROM images WHERE id = ?', id)
       !== null;
-    this._dbPool.release();
+    this._dbPool.release(db);
 
     return exists;
   }
@@ -125,7 +125,7 @@ export default class ImageStore extends EventEmitter {
     let db = await this._dbPool.acquire();
 
     // Allow only one image at a time to be added to the database.
-    await db.run('BEGIN TRANSACTION');
+    await db.run('BEGIN IMMEDIATE TRANSACTION');
 
     try {
       if (id === undefined) {
@@ -147,16 +147,16 @@ export default class ImageStore extends EventEmitter {
       this.emit('image', id);
 
       await db.exec('COMMIT');
-
-      await this.purgeImages();
-
-      return id;
     } catch (e) {
       await db.exec('ROLLBACK');
       throw e;
     } finally {
       this._dbPool.release(db);
     }
+
+    await this.purgeImages();
+
+    return id;
   }
 
   /** Remove old images such that the image store is no longer
@@ -166,20 +166,27 @@ export default class ImageStore extends EventEmitter {
 
     let db = await this._dbPool.acquire();
 
-    await db.run('BEGIN TRANSACTION');
+    await db.exec('BEGIN IMMEDIATE TRANSACTION');
+
+    // We cannot use this.getCount because it uses a new connection
+    // from the connection pool, so it will not work while we are
+    // performing a transaction.
+    let getCount = async () => (await db.get(
+      'SELECT COUNT(id) FROM images'
+    ))['COUNT(id)'];
 
     try {
-      while (await this.getCount() > this._maxImages) {
-        let id = (await db.get('SELECT id FROM images SORT BY id ASC'))['id'];
+      while (await getCount() > this._maxImages) {
+        let id = (await db.get('SELECT id FROM images ORDER BY id ASC'))['id'];
         await db.run('DELETE FROM images WHERE id = ?', id);
 
         await this.removeImage(id);
         await this.removeMetadata(id);
       }
 
-      await db.run('COMMIT');
+      await db.exec('COMMIT');
     } catch (e) {
-      await db.run('ROLLBACK');
+      await db.exec('ROLLBACK');
       throw e;
     } finally {
       this._dbPool.release(db);

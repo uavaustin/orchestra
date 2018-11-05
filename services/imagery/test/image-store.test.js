@@ -90,3 +90,20 @@ test('image store stores image add rates', async () => {
 
   clock.uninstall();
 });
+
+test('image store deletes old images', async () => {
+  const imageStore = new ImageStore(true, 2);
+  await imageStore.setup();
+
+  const ids = [];
+  for (let i = 0; i < 3; i++) {
+    ids[i] = await imageStore.addImage(
+      shapes[i],
+      imagery.Image.create({ time: i })
+    );
+  }
+  const lastIds = [ids[ids.length - 2], ids[ids.length - 1]];
+
+  expect(await imageStore.getCount()).toEqual(2);
+  expect(await imageStore.getAvailable()).toEqual(lastIds);
+});
