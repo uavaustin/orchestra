@@ -45,9 +45,12 @@ test('telemetry data is forwarded to interop-proxy', async () => {
   try {
     await service.start();
 
+    logger.transports[0].silent = true;
+
     // Give enough time for two forward operations.
-    await new Promise(resolve =>
-      setTimeout(resolve, 399));
+    await new Promise(resolve => setTimeout(resolve, 399));
+
+    logger.transports[0].silent = false;
 
     telemetryApi.done();
     interopProxyApi.done();
@@ -121,8 +124,7 @@ test('forward failures are recovered from', async () => {
     logger.transports[0].silent = true;
 
     // Give enough time for two forward operations.
-    await new Promise(resolve =>
-      setTimeout(resolve, 399));
+    await new Promise(resolve => setTimeout(resolve, 399));
 
     logger.transports[0].silent = false;
 
@@ -159,16 +161,14 @@ test('last telemetry is uploaded when service is stopped', async () => {
     await service.start();
 
     // Give enough time for the forward operation to be happening.
-    await new Promise(resolve =>
-      setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     await service.stop();
 
     didStop = true;
 
     // Give enough time for the operation to finish.
-    await new Promise(resolve =>
-      setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     telemetryApi.done();
     interopProxyApi.done();
