@@ -11,8 +11,11 @@ export default class PingStore {
    * @param {string}   services[].name
    * @param {string}   services[].host
    * @param {number}   services[].port
+   * @param {Object[]} devices
+   * @param {string}   devices[].name
+   * @param {string}   devices[].host
    */
-  constructor(services) {
+  constructor(services, devices) {
     this._ping = stats.PingTimes.create({
       time: time(),
       // Get the services in the correct format and sort by name.
@@ -22,7 +25,7 @@ export default class PingStore {
       api_pings: services.map(this._parseService.bind(this))
         .sort((a, b) => a.name > b.name),
 
-      device_pings: services.map(this._parseDevice.bind(this))
+      device_pings: devices.map(this._parseDevice.bind(this))
         .sort((a, b) => a.name > b.name)
     });
   }
@@ -76,7 +79,7 @@ export default class PingStore {
   _parseDevice(device){
     return {
       name: device.name,
-      host: device.name,
+      host: device.host,
       online: false,
       ms: 0
     };

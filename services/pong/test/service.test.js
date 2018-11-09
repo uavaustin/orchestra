@@ -52,7 +52,22 @@ beforeAll(async () => {
       {
         name: 'test1',
         host: 'test1-service',
-        endpoint: '/api/alive'
+      },
+      {
+        name: 'test2',
+        host: 'test2-service',
+      },
+      {
+        name: 'no-endpoint',
+        host: 'no-endpoint-service',
+      },
+      {
+        name: 'non-existent',
+        host: 'non-existent-service',
+      },
+      {
+        name: 'meta',
+        host: '127.0.0.1',
       }
     ]
   });
@@ -80,50 +95,49 @@ test('check the protobuf response', async () => {
 
   expect(res.status).toEqual(200);
 
-  let list = res.body.list;
+  let api_pings = res.body.list;
 
-  expect(list[0].name).toEqual('meta');
-  expect(list[0].host).toEqual('127.0.0.1');
-  expect(list[0].port).toEqual('7000');
-  expect(list[0].online).toEqual(true);
-  expect(list[0].ms).toBeGreaterThan(0);
-  expect(list[0].ms).toBeLessThan(1000);
+  expect(api_pings[0].name).toEqual('meta');
+  expect(api_pings[0].host).toEqual('127.0.0.1');
+  expect(api_pings[0].port).toEqual('7000');
+  expect(api_pings[0].online).toEqual(true);
+  expect(api_pings[0].ms).toBeGreaterThan(0);
+  expect(api_pings[0].ms).toBeLessThan(1000);
 
-  expect(list[1].name).toEqual('no-endpoint');
-  expect(list[1].host).toEqual('no-endpoint-service');
-  expect(list[1].port).toEqual('7003');
-  expect(list[1].online).toEqual(false);
-  expect(list[1].ms).toEqual(0);
+  expect(api_pings[1].name).toEqual('no-endpoint');
+  expect(api_pings[1].host).toEqual('no-endpoint-service');
+  expect(api_pings[1].port).toEqual('7003');
+  expect(api_pings[1].online).toEqual(false);
+  expect(api_pings[1].ms).toEqual(0);
 
-  expect(list[2].name).toEqual('non-existent');
-  expect(list[2].host).toEqual('non-existent-service');
-  expect(list[2].port).toEqual('12345');
-  expect(list[2].online).toEqual(false);
-  expect(list[2].ms).toEqual(0);
+  expect(api_pings[2].name).toEqual('non-existent');
+  expect(api_pings[2].host).toEqual('non-existent-service');
+  expect(api_pings[2].port).toEqual('12345');
+  expect(api_pings[2].online).toEqual(false);
+  expect(api_pings[2].ms).toEqual(0);
 
-  expect(list[3].name).toEqual('test1');
-  expect(list[3].host).toEqual('test1-service');
-  expect(list[3].port).toEqual('7001');
-  expect(list[3].online).toEqual(true);
-  expect(list[3].ms).toBeGreaterThan(0);
-  expect(list[3].ms).toBeLessThan(1000);
+  expect(api_pings[3].name).toEqual('test1');
+  expect(api_pings[3].host).toEqual('test1-service');
+  expect(api_pings[3].port).toEqual('7001');
+  expect(api_pings[3].online).toEqual(true);
+  expect(api_pings[3].ms).toBeGreaterThan(0);
+  expect(api_pings[3].ms).toBeLessThan(1000);
 
-  expect(list[4].name).toEqual('test2');
-  expect(list[4].host).toEqual('test2-service');
-  expect(list[4].port).toEqual('7002');
-  expect(list[4].online).toEqual(true);
-  expect(list[4].ms).toBeGreaterThan(0);
-  expect(list[4].ms).toBeLessThan(1000);
+  expect(api_pings[4].name).toEqual('test2');
+  expect(api_pings[4].host).toEqual('test2-service');
+  expect(api_pings[4].port).toEqual('7002');
+  expect(api_pings[4].online).toEqual(true);
+  expect(api_pings[4].ms).toBeGreaterThan(0);
+  expect(api_pings[4].ms).toBeLessThan(1000);
 });
 
 test('check the ICMP response', async () => {
-  let res = await request('http://127.0.0.1:7000')
-    .get('/api/ping')
-    .proto(stats.PingTimes);
-
-  expect(res.status).toEqual(200);
-
-  let device_pings = res.body.device_pings;
+  /*
+  Mock pingDevice
+  Call the pingDevice function with some devices and 
+  Check that device_pings is good
+  */
+  Service.pingDevice = jest.fn();
 
   expect(device_pings[0].name).toEqual('meta');
   expect(device_pings[0].host).toEqual('127.0.0.1');
@@ -136,6 +150,22 @@ test('check the ICMP response', async () => {
   expect(device_pings[1].online).toEqual(false);
   expect(device_pings[1].ms).toEqual(0);
 
+  expect(device_pings[2].name).toEqual('non-existent');
+  expect(device_pings[2].host).toEqual('non-existent-service');
+  expect(device_pings[2].online).toEqual(false);
+  expect(device_pings[2].ms).toEqual(0);
+
+  expect(device_pings[3].name).toEqual('test1');
+  expect(device_pings[3].host).toEqual('test1-service');
+  expect(device_pings[3].online).toEqual(true);
+  expect(device_pings[3].ms).toBeGreaterThan(0);
+  expect(device_pings[3].ms).toBeLessThan(1000);
+
+  expect(device_pings[4].name).toEqual('test2');
+  expect(device_pings[4].host).toEqual('test2-service');
+  expect(device_pings[4].online).toEqual(true);
+  expect(device_pings[4].ms).toBeGreaterThan(0);
+  expect(device_pings[4].ms).toBeLessThan(1000);
 });
 
 test('mock apis were hit correctly', () => {

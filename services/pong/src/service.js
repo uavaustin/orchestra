@@ -38,7 +38,7 @@ export default class Service {
   async start() {
     logger.debug('Starting service.');
 
-    this._pingStore = new PingStore(this._pingServices);
+    this._pingStore = new PingStore(this._pingServices, this._pingDevices);
     this._server = await this._createApi(this._pingStore);
     this._startTasks();
 
@@ -88,9 +88,7 @@ export default class Service {
   // Start the loops for collecting ping times.
   _startTasks() {
     this._deviceTasks = this._pingDevices.map((s) => {
-      const deviceurl = s.host + ':' + s.endpoint;
-
-      return createTimeoutTask(()=>this._pingDevice(s.name, deviceurl), 3000)
+      return createTimeoutTask(()=>this._pingDevice(s.name, s.host), 3000)
         .on('error', logger.error)
         .start();
     });
@@ -129,17 +127,17 @@ export default class Service {
   }
 
   //Ping device and update how long the request takes
-  async _pingDevice(device, deviceurl) {
-    var ping = require('net-ping');
-    var session = ping.createSession();
-    var target = deviceurl;
+  async _pingDevice(device, host) {
+    const ping = require('net-ping');
+    const session = ping.createSession();
+    const target = host;
     let online;
 
     try {
       let [ , sent, rcvd ] = await (promisify(session.pingHost(target)));
       var ms = rcvd - sent;
       online = true;
-    } catch(error){
+    } catch (e) {
       online = false;
     }
 
