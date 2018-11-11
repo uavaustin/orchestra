@@ -116,6 +116,22 @@ test('download raw mission 2', async () => {
     .toHaveLength(rawMission2.mission_items.length);
 });
 
+test('download raw mission 2 concurrently', async () => {
+  let dl = async () => {
+    let res = await request('http://localhost:5000')
+      .get('/api/raw-mission')
+      .proto(telemetry.RawMission);
+
+    expect(res.status).toEqual(200);
+    expect(res.body.mission_items)
+      .toHaveLength(rawMission2.mission_items.length);
+  };
+
+  await Promise.all([
+    dl(), dl(), dl()
+  ]);
+});
+
 test('upload raw mission 3', async () => {
   let res = await request('http://localhost:5000')
     .post('/api/raw-mission')
