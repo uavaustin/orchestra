@@ -22,6 +22,7 @@ let m2 = interop.InteropMessage.encode({
 test('telemetry data is forwarded to interop-proxy', async () => {
   let service = new Service({
     port: 4000,
+    uploadInterval: 200,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -59,7 +60,7 @@ test('telemetry data is forwarded to interop-proxy', async () => {
   }
 });
 
-test('telemetry data is forwarded with upload interval', async () => {
+test('telemetry data is forwarded with smaller upload interval', async () => {
   let service = new Service({
     port: 4000,
     uploadInterval: 75, //this interval works consistently, can go a bit lower
@@ -100,6 +101,7 @@ test('telemetry data is forwarded with upload interval', async () => {
 test('forward failures are recovered from', async () => {
   let service = new Service({
     port: 4000,
+    uploadInterval: 200,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -138,6 +140,7 @@ test('forward failures are recovered from', async () => {
 test('last telemetry is uploaded when service is stopped', async () => {
   let service = new Service({
     port: 4000,
+    uploadInterval: 200,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
