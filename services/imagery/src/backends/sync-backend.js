@@ -61,9 +61,9 @@ export default class SyncBackend {
 
           // Adding it to the image store.
           await this._imageStore.addImage(image, msg);
-        }
 
-        lastId = latestId;
+          lastId = id;
+        }
       } catch (err) {
         const message = err.name + ': ' + err.message;
         logger.error('Encountered an error in sync loop: ' + message);
