@@ -28,7 +28,7 @@ export default class Service {
    * @param {string} [options.imagerySyncPort]
    * @param {string} [options.telemetryHost]
    * @param {string} [options.telemetryPort]
-   * @param {number} [options.captureInterval]
+   * @param {number} [options.captureInterval] - milliseconds
    */
   constructor(options) {
     if (['gphoto2', 'file', 'sync'].indexOf(options.backend) === -1)

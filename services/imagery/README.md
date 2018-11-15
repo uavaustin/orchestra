@@ -12,7 +12,8 @@ The service has three backends which can be used:
   no camera, or two or more cameras are found, an error will be thrown.
 
   By default, the capture rate is set to take a photo every two seconds. To set
-  a different interval, set the `CAPTURE_INTERVAL` environment variable.
+  a different interval, set the `CAPTURE_INTERVAL` environment variable. The
+  interval is in milliseconds.
 
   To specify the telemetry service for tagging images, you can specify the
   `TELEMETRY_HOST` and `TELEMETRY_PORT` environment variables. These both
@@ -44,7 +45,7 @@ onto the container, the service will use the images in that folder.
 - `IMAGERY_SYNC_PORT` - defaults to `8081`.
 - `TELEMETRY_HOST` - used with the `gphoto2` backend, defaults to `telemetry`.
 - `TELEMETRY_PORT` - defaults to `5000`.
-- `CAPTURE_INTERVAL` - used with the `gphoto2` backend, defaults to `2`.
+- `CAPTURE_INTERVAL` - used with the `gphoto2` backend, defaults to `2000` ms.
 
 ## Endpoints
 

@@ -42,7 +42,7 @@ export default class GPhoto2Backend {
   /** Continuously take photos. */
   async _runLoop(camera) {
     while (this._active) {
-      const startTime = (new Date()).getTime() / 1000;
+      const startTime = Date.now();
 
       let photo;
       const metadataPromise = this._getMeta();
@@ -70,14 +70,14 @@ export default class GPhoto2Backend {
         logger.error('Error while registering photo: ' + message);
       });
 
-      const endTime = (new Date()).getTime() / 1000;
+      const endTime = Date.now();
 
       // If we haven't hit the interval time yet, wait some more
       // time.
       const duration = endTime - startTime;
 
       if (duration < this._interval) {
-        await wait((this._interval - duration) * 1000);
+        await wait(this._interval - duration);
       }
     }
   }

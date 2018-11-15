@@ -66,7 +66,7 @@ ENV PORT=8081 \
     TELEMETRY_HOST='5000' \
     # Interval to trigger gphoto2 images at in the gphoto2 backend.
     # Defaults to 2 seconds.
-    CAPTURE_INTERVAL='2'
+    CAPTURE_INTERVAL='2000'
 
 EXPOSE 8081
 
