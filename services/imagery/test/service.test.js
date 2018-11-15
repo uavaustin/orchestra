@@ -1,8 +1,13 @@
+import gphoto2 from 'gphoto2';
 import _ from 'lodash';
 
 import logger from '../src/common/logger';
 
 import Service from '../src/service';
+
+gphoto2.GPhoto2 = jest.fn(() => {
+  return { list: jest.fn((cb => cb([{ }]))) };
+});
 
 const names = ['gphoto2', 'file', 'sync'];
 const options = [
