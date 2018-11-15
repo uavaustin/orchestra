@@ -22,6 +22,7 @@ jobs:
     - env: SERVICE_TEST=interop-proxy
     - env: SERVICE_TEST=pong
     - env: SERVICE_TEST=forward-interop
+    - env: SERVICE_TEST=imagery
 notifications:
   email: false
   webhooks:
