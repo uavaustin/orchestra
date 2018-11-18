@@ -6,7 +6,7 @@ import aioredis
 import imagery_pb2
 import interop_pb2
 
-from .util import get_int_list, print_error
+from .util import get_client, get_int_list, print_error
 
 
 async def start_tasks(app):
@@ -39,20 +39,21 @@ async def _queue_new(app):
     try:
         available = await _get_available(app)
 
-        await app['redis'].watch('all-images')
+        async with get_client(app['redis']) as r:
+            await r.watch('all-images')
 
-        all_ids = await app['redis'].smembers('all-images')
-        ids = sorted(set(available) - set(all_ids))
+            all_ids = await r.smembers('all-images')
+            ids = sorted(set(available) - set(all_ids))
 
-        if len(ids) > 0:
-            tr = app['redis'].multi_exec()
-            tr.sadd('all-images', *ids)
-            tr.lpush('unprocessed-auto', *ids)
-            tr.lpush('unprocessed-manual', *ids)
+            if len(ids) > 0:
+                tr = r.multi_exec()
+                tr.sadd('all-images', *ids)
+                tr.lpush('unprocessed-auto', *ids)
+                tr.lpush('unprocessed-manual', *ids)
 
-            await tr.execute()
-        else:
-            await app['redis'].unwatch()
+                await tr.execute()
+            else:
+                await r.unwatch()
     except aioredis.MultiExecError:
         # Another instance updated the ids before our transaction
         # could complete.

@@ -1,4 +1,4 @@
-ARG BASE=python:3.6-alpine
+ARG BASE=python:3.7-alpine
 
 # Compile the proto files and fetch pip dependencies.
 FROM ${BASE} AS builder
@@ -30,8 +30,8 @@ FROM ${BASE}
 WORKDIR /app
 
 # Copy the pip requirements and protobuf messages from above.
-COPY --from=builder /usr/local/lib/python3.6/site-packages \
-                    /usr/local/lib/python3.6/site-packages
+COPY --from=builder /usr/local/lib/python3.7/site-packages \
+                    /usr/local/lib/python3.7/site-packages
 COPY --from=builder /builder/dist/messages .
 
 COPY image-rec-master/service service

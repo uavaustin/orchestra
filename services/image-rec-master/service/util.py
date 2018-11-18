@@ -1,6 +1,19 @@
+from contextlib import asynccontextmanager
 import sys
 
+import aioredis
 from termcolor import colored
+
+
+@asynccontextmanager
+async def get_client(redis):
+    """Get a single redis client from a pool."""
+    conn = await redis.connection.acquire()
+
+    try:
+        yield aioredis.Redis(conn)
+    finally:
+        redis.connection.release(conn)
 
 
 async def get_int_list(redis, key):
