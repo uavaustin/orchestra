@@ -5,6 +5,8 @@ from google.protobuf.json_format import MessageToJson
 
 import image_rec_pb2
 
+from .tasks import start_tasks, stop_tasks
+
 
 routes = web.RouteTableDef()
 
@@ -126,6 +128,8 @@ def _proto_response(request, msg):
 def create_app():
     """Create an aiohttp web application."""
     app = web.Application()
+    app.on_startup.append(start_tasks)
+    app.on_shutdown.append(stop_tasks)
     app.router.add_routes(routes)
 
     return app
