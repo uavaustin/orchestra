@@ -1,3 +1,4 @@
+import Docker from 'dockerode';
 import nock from 'nock';
 import addProtobuf from 'superagent-protobuf';
 import request from 'supertest';
@@ -12,8 +13,17 @@ let service;
 let aliveApi;
 let customApi;
 let noEndpointApi;
+let docker;
+let device;
+let deviceIP;
 
 beforeAll(async () => {
+  docker = new Docker();
+  device = await docker.createContainer({ Image: 'alpine' });
+  await device.start();
+
+  deviceIP = (await device.inspect()).NetworkSettings.IPAddress;
+
   service = new Service({
     port: 7000,
     pingServices: [
@@ -50,25 +60,18 @@ beforeAll(async () => {
     ],
     pingDevices: [
       {
-        name: 'test1',
-        host: 'test1-service',
+        name: 'device1',
+        host: deviceIP
       },
       {
-        name: 'test2',
-        host: 'test2-service',
+        name: 'device2',
+        host: '127.0.0.1'
       },
       {
-        name: 'no-endpoint',
-        host: 'no-endpoint-service',
+        name: 'non-existent-device',
+        host: 'no-host'
       },
-      {
-        name: 'non-existent',
-        host: 'non-existent-service',
-      },
-      {
-        name: 'meta',
-        host: '127.0.0.1',
-      }
+
     ]
   });
 
@@ -86,7 +89,8 @@ beforeAll(async () => {
 
   // Allow a little time to get things up and running.
   await new Promise(resolve => setTimeout(resolve, 100));
-});
+
+}, 10000);
 
 test('check the protobuf response', async () => {
   let res = await request('http://127.0.0.1:7000')
@@ -95,7 +99,7 @@ test('check the protobuf response', async () => {
 
   expect(res.status).toEqual(200);
 
-  let api_pings = res.body.list;
+  let api_pings = res.body.api_pings;
 
   expect(api_pings[0].name).toEqual('meta');
   expect(api_pings[0].host).toEqual('127.0.0.1');
@@ -134,38 +138,33 @@ test('check the protobuf response', async () => {
 test('check the ICMP response', async () => {
   /*
   Mock pingDevice
-  Call the pingDevice function with some devices and 
+  Call the pingDevice function with some devices and
   Check that device_pings is good
   */
-  Service.pingDevice = jest.fn();
+  let res = await request('http://127.0.0.1:7000')
+    .get('/api/ping')
+    .proto(stats.PingTimes);
 
-  expect(device_pings[0].name).toEqual('meta');
-  expect(device_pings[0].host).toEqual('127.0.0.1');
+  expect(res.status).toEqual(200);
+
+  let device_pings = res.body.device_pings;
+
+  expect(device_pings[0].name).toEqual('device1');
+  expect(device_pings[0].host).toEqual('172.17.0.3');
   expect(device_pings[0].online).toEqual(true);
   expect(device_pings[0].ms).toBeGreaterThan(0);
   expect(device_pings[0].ms).toBeLessThan(1000);
 
-  expect(device_pings[1].name).toEqual('no-endpoint');
-  expect(device_pings[1].host).toEqual('no-endpoint-service');
-  expect(device_pings[1].online).toEqual(false);
-  expect(device_pings[1].ms).toEqual(0);
+  expect(device_pings[1].name).toEqual('device2');
+  expect(device_pings[1].host).toEqual('127.0.0.1');
+  expect(device_pings[1].online).toEqual(true);
+  expect(device_pings[1].ms).toBeGreaterThan(0);
+  expect(device_pings[1].ms).toBeLessThan(1000);
 
-  expect(device_pings[2].name).toEqual('non-existent');
-  expect(device_pings[2].host).toEqual('non-existent-service');
+  expect(device_pings[2].name).toEqual('non-existent-device');
+  expect(device_pings[2].host).toEqual('no-host');
   expect(device_pings[2].online).toEqual(false);
   expect(device_pings[2].ms).toEqual(0);
-
-  expect(device_pings[3].name).toEqual('test1');
-  expect(device_pings[3].host).toEqual('test1-service');
-  expect(device_pings[3].online).toEqual(true);
-  expect(device_pings[3].ms).toBeGreaterThan(0);
-  expect(device_pings[3].ms).toBeLessThan(1000);
-
-  expect(device_pings[4].name).toEqual('test2');
-  expect(device_pings[4].host).toEqual('test2-service');
-  expect(device_pings[4].online).toEqual(true);
-  expect(device_pings[4].ms).toBeGreaterThan(0);
-  expect(device_pings[4].ms).toBeLessThan(1000);
 });
 
 test('mock apis were hit correctly', () => {
@@ -176,4 +175,5 @@ test('mock apis were hit correctly', () => {
 
 afterAll(async () => {
   await service.stop();
-});
+  await device.remove({ force: true});
+}, 10000);

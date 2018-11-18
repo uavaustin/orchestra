@@ -40,10 +40,10 @@ export default class PingStore {
   updateServicePing(name, online, ms) {
     this._ping.time = time();
 
-    const index = this._ping.list.findIndex(s => s.name === name);
+    const index = this._ping.api_pings.findIndex(s => s.name === name);
 
-    this._ping.list[index].online = online;
-    this._ping.list[index].ms = ms;
+    this._ping.api_pings[index].online = online;
+    this._ping.api_pings[index].ms = ms;
   }
 
   updateDevicePing(name, online, ms) {

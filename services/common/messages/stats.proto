@@ -27,7 +27,7 @@ message PingTimes {
     }
 
     double time = 1;
-    repeated ServicePing list = 2;
+    repeated ServicePing api_pings = 2;
     repeated DevicePing device_pings = 3;
 }
 

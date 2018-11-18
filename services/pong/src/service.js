@@ -8,8 +8,6 @@ import { createTimeoutTask } from './common/task';
 import router from './router';
 import PingStore from './ping-store';
 
-import promisify from 'util';
-
 /**
  * Service-level implementation for pong.
  */
@@ -105,7 +103,6 @@ export default class Service {
   async _pingService(service, serviceurl) {
     const start = Date.now();
     let online;
-
     try {
       await request.get(serviceurl)
         .timeout(this._serviceTimeout)
@@ -130,12 +127,16 @@ export default class Service {
   async _pingDevice(device, host) {
     const ping = require('net-ping');
     const session = ping.createSession();
-    const target = host;
     let online;
+    let ms;
 
     try {
-      let [ , sent, rcvd ] = await (promisify(session.pingHost(target)));
-      var ms = rcvd - sent;
+      ms = await new Promise((resolve, reject) => {
+        session.pingHost(host, (err, target, sent, rcvd) => {
+          if (err) reject(err);
+          else resolve(rcvd - sent);
+        });
+      });
       online = true;
     } catch (e) {
       online = false;
