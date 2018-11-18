@@ -5,16 +5,17 @@
     "license": "MIT",
     "scripts": {
         "start": "node .",
-        "build": "babel src --out-dir lib"
+        "build": "babel src --out-dir lib",
+        "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto"
     },
     "dependencies": {
         "async": "^2.6.0",
         "blessed": "^0.1.81",
         "blessed-contrib": "^4.8.5",
         "chalk": "^2.3.1",
-        "google-protobuf": "3.4.0",
         "lodash": "^4.17.5",
         "request": "^2.83.0",
+        "protobufjs": "~6.8.6",
         "source-map-support": "^0.5.6",
         "sprintf-js": "^1.1.1"
     },

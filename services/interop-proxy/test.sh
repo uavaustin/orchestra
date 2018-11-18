@@ -15,7 +15,8 @@ start_interop_server() {
     printf "\033[33mStarting interop server..." 1>&2
 
     docker run -itd --rm --net=interop-proxy-test-net --ip=172.37.0.2 \
-            -p 8081:80 --name interop-proxy-test auvsisuas/interop-server \
+            -p 8081:80 --name interop-proxy-test \
+            auvsisuas/interop-server:2018.09 \
             > /dev/null
 
     if [ "$?" -ne 0 ]; then

@@ -1,15 +1,22 @@
-ARG BASE=node:8-slim
+ARG BASE=node:8-alpine
 
 FROM ${BASE}
 
+ENV NODE_ENV=test
+
 WORKDIR /test
 
+COPY common/nodejs/package.json src/common/
 COPY pong/package.json .
 
 RUN npm install
 
+COPY common/messages/stats.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
 COPY pong .
 
-RUN npm run build
-
-CMD npm test
+CMD npm run lint && npm test

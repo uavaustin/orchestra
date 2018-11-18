@@ -4,11 +4,7 @@ export function parseMessage(err, resp, message) {
     if (err || !(/^2/.test('' + resp.statusCode))) {
         return null;
     } else {
-        let buffer = resp.body;
-
-        return message.deserializeBinary(buffer.buffer.slice(
-            buffer.byteOffset, buffer.byteOffset + buffer.byteLength
-        ));
+        return message.decode(resp.body);
     }
 }
 

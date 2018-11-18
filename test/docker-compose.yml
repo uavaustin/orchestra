@@ -22,7 +22,7 @@ services:
         ipv4_address: 172.16.238.10
 
   interop-server:
-    image: auvsisuas/interop-server
+    image: auvsisuas/interop-server:2018.09
     ports:
       - '8080:80'
     networks:
@@ -31,10 +31,6 @@ services:
 
   telemetry:
     image: uavaustin/telemetry
-    environment:
-      - CXN_STR=udpout:172.16.238.10:14550
-      - CXN_TIMEOUT=30
-      - RETRY_CXN=1
     ports:
       - '5000:5000'
     depends_on:
@@ -59,13 +55,14 @@ services:
 
   pong:
     image: uavaustin/pong
-    command: interop-server,172.16.238.11,/
-             telemetry,172.16.238.12:5000
-             interop-proxy,172.16.238.13:8000
-             pong,172.16.238.14:7000
-             forward-interop,172.16.238.15:4000
-             imagery,172.16.238.50:8081
-             image-rec-master,172.16.238.52:8082
+    environment:
+      - PING_SERVICES=interop-server,172.16.238.11,/
+                      telemetry,172.16.238.12:5000
+                      interop-proxy,172.16.238.13:8000
+                      pong,172.16.238.14:7000
+                      forward-interop,172.16.238.15:4000
+                      imagery,172.16.238.50:8081
+                      image-rec-master,172.16.238.52:8082
     ports:
       - '7000:7000'
     networks:
@@ -74,9 +71,6 @@ services:
 
   forward-interop:
     image: uavaustin/forward-interop
-    environment:
-      - INTEROP_PROXY_URL=172.16.238.13:8000
-      - TELEMETRY_URL=172.16.238.12:5000
     ports:
       - '4000:4000'
     depends_on:

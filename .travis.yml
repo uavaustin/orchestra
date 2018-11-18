@@ -1,0 +1,30 @@
+language: node_js
+node_js: '8'
+sudo: required
+env:
+  - COVERALLS_PARALLEL=true
+services:
+  - docker
+script: ./ci/script.sh
+after_script: ./ci/after-script.sh
+jobs:
+  include:
+    - stage: build
+      env: SERVICE=mavproxy
+    - env: SERVICE=telemetry
+    - env: SERVICE=interop-proxy
+    - env: SERVICE=pong
+    - env: SERVICE=forward-interop
+    - env: SERVICE=imagery
+    - env: SERVICE=dashboard
+    - stage: test
+      env: SERVICE_TEST=telemetry
+    - env: SERVICE_TEST=interop-proxy
+    - env: SERVICE_TEST=pong
+    - env: SERVICE_TEST=forward-interop
+notifications:
+  email: false
+  webhooks:
+    secure: YUGBaW1KnSX/z42uGA2a+DYIkAqVofJDmJdV3pdxR3oJpMyddbOsjSIVcndlFq6mKaoJfaQtBY46vsfEtiU9VbbMbToL6m+DMnFy0jgkfABIbH1mdX59hPEBjGIXF2KnYfO+JUGgAq36Te9wuzOYwBLgt2NYsUMunYFTXoCEj0rfJNwABxArIiuw3FXFOD3Oo+kWWq1QJrbF/0GCS/IcyonLpvDCUHiO+e7TbNQ3aY+8vQuPxf7U7aiVamRxIfKzhf9RFzTXv7vkLGKd6ojH+SQ+eduSIq9NJl9qDMxuCW0MVSxU2C00PdEcIGDEAdYmP3fIf8NZLdXYJlt2VEe1oGWKfkslBNwzw3xl4S5Dr4ka4QLaw3iu9JBl3kqigkVAzT9epy0HPlo7JT5odJnyMNsKr2mELtJM7aBVpzVVV2r7j3WDugB/0WZGhn0hRmB9DpFbEoXeWoc+9Wov50WZiLn7cf+Z+sOjnTO1XbAfWZ9iNOI3fEk96R1HZEMjnEz3hb7TD6u6Z3wTvJV4kRACdOzA/vFo14ELywiB7uQBHJba7mxHp4jOsqpuqRpb9jI7zQWPZaACjE+Bm/4b5xrGeX1Py+xVcGvkCYf1t81Pi5eNVjq05t8eXmw2MU4qkFo6C6bjB4/sQjYDWn9dFk19XL5KwNiWU2Hl31f7Fex5tTE=
+  slack:
+    secure: kNS3Ep7VWBnpjd6hoRl4L3dudat60ISsv674m1Slh0Le0le2ewN2sFFk00Y/jwXPmFu+6yyHVVZCTULRQBMt9NDpp85dMgFDL/ASKZV4TaC2XUmvwiTADAypoX41Q2FsqKBRbG0S1Rhcbdqdg3gwAGNw0LUm49HDzEf9nYic/AETboDJJ8YA4NspyWiu6d2de9mc0mCTQ/RIyoQEme5h4fufPKhmRsV4HCq7KWpXS3X8RGJ11lPYYiJ8cmeSCD8WSahJj0o/Z3lJh4Y6N9QIeTYnnBWu07DHWVIHDqtF1OCi9qfa3e0rQSP18JMNkfmFT3H5xJHapEF6qJLBJpPLquecrfFxSC/gAEC4DsR9awQSUsAkheyWyTM6eNz+XuubJjpuUmw/jR85LTfaVjFIu9io+CHx/6xtdjt0fi/AwJBGK69ONFiSmILrbP+DqGf8EvA9yVWx5EnirUa10miMd3bb/Uk50X3k69LT3SmrZqdpKzdZ3auWNSgm23VVrDYiO5ueUTY3CfVI8u6K0gy0lLJly0zLa1pblWUfKqBc0yOQ541x0+GIenGLw/Z/SsU4JopDatJG2/93gcuWBBqzGnB4w8EWxxURxb+g/kFpsL4fXMZ9ONfYeFtwKVPx+TnjE6AQn+xyJowOwGrvhcv31NjjoIxY65p4NL6WKscX7dg=

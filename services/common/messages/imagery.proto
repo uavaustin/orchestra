@@ -21,6 +21,12 @@ message ImageCount {
     uint32 count = 2;
 }
 
+message AvailableImages {
+    double time = 1;
+    uint32 count = 2;
+    repeated uint32 id_list = 3;
+}
+
 message Image {
     // Time at which the image was taken.
     double time = 1;

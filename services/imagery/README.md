@@ -4,14 +4,17 @@ Service that hosts either gathers images or repeats imagery data.
 
 The service has three backends which can be used:
 
-- `camera` (default)
+- `gphoto2` (default)
 
   This backend takes images directly from a camera device passed in to the
   container. Running as priviledged will do this if it's hard to find which
   device is the camera. The gphoto2 dependency will autodetect the camera. If
   no camera, or two or more cameras are found, an error will be thrown.
 
-  *** Note that this backend may be currently unstable. ***
+  By default, the capture rate is set to take a photo every two seconds. To set
+  a different interval, set the `CAPTURE_INTERVAL` environment variable.
+
+  To add telemetry to images, set the `TELEMETRY_URL` environment variable.
 
 - `file`
 
@@ -30,8 +33,14 @@ Note that no telemetry data is gathered for images at the current time.
 
 ## Running the Image
 
-The `BACKEND` environment variable should be set to one of `camera`, `file`, or
-`sync`.
+The `BACKEND` environment variable should be set to one of `gphoto2`, `file`,
+or `sync`.
+
+If using `gphoto2`, the `CAPTURE_INTERVAL` environment variable can be set to
+set the rate at which images are taken in seconds. This defaults to every two
+seconds. To add telemetry to images, set the `TELEMETRY_URL` environment
+variable. Without this, the image metadata will not contain any camera
+telemetry.
 
 If using `sync`, the `IMAGERY_SYNC_URL` should be set to the imagery service to
 be synced from.
@@ -42,13 +51,15 @@ to go to (`/opt/new-images`).
 To see and access the images registered, you can mount the the imagery
 directory on the host (`/opt/imagery`).
 
-Here's an example of using the camera backend (camera required to use) and
+Here's an example of using the `gphoto2` backend (camera required to use) and
 mounting the imagery directory on the host computer:
 
 ```
 $ docker run -it -p 8081:8081 \
     --privileged
-    -e BACKEND=camera
+    -e BACKEND=gphoto2
+    -e CAPTURE_INTERVAL=2.5
+    -e TELEMETRY_URL=192.168.0.4:5000
     -v '$HOME/Desktop/imagery:/opt/imagery'
     uavaustin/forward-interop
 ```
@@ -68,8 +79,26 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
   Lists the number of images currently registered.
 
+  ***In the future relying on the count to assume image ids may not be
+  reliable. Use `GET /api/availble` to fetch the list.***
+
   On successful response: `200` status code with `imagery::ImageCount` Protobuf
   message.
+
+- `GET /api/available`
+
+  Lists available image ids.
+
+  On successful response: `200` status code with `imagery::AvailableImages`
+  Protobuf message.
+
+- `GET /api/capture-rate`
+
+  Gives the rate at which images are being captured.
+
+  On successful response: `200` status code with `stats::ImageCaptureRate`
+  Protobuf message.
+
 
 - `GET /api/image/latest`
 

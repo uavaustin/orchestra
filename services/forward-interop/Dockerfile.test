@@ -1,0 +1,23 @@
+ARG BASE=node:8-alpine
+
+FROM ${BASE}
+
+ENV NODE_ENV=test
+
+WORKDIR /test
+
+COPY common/nodejs/package.json src/common/
+COPY forward-interop/package.json .
+
+RUN npm install
+
+COPY common/messages/interop.proto \
+    common/messages/stats.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
+COPY forward-interop .
+
+CMD npm run lint && npm test
