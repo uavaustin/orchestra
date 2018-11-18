@@ -37,8 +37,7 @@ def _create_task(app, coro):
 
 async def _queue_new(app):
     try:
-        count = await _get_image_count(app)
-        available = list(range(count))
+        available = await _get_available(app)
 
         await app['redis'].watch('all-images')
 
@@ -68,16 +67,16 @@ async def _queue_new(app):
         await asyncio.sleep(0.5)
 
 
-async def _get_image_count(app):
+async def _get_available(app):
     client = app['http_client']
     url = app['imagery_url']
 
-    msg = imagery_pb2.ImageCount()
+    msg = imagery_pb2.AvailableImages()
 
-    async with client.get(f'{url}/api/count') as resp:
+    async with client.get(f'{url}/api/available') as resp:
         resp.raise_for_status()
 
         content = await resp.read()
         msg.ParseFromString(content)
 
-    return msg.count
+    return msg.id_list
