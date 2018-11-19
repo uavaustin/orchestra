@@ -25,4 +25,4 @@ RUN npm run build-msg
 COPY common/nodejs src/common
 COPY pong .
 
-CMD npm run lint ; npm test
+CMD npm run lint && npm test
