@@ -31,8 +31,8 @@ FROM ${BASE}
 
 WORKDIR /app
 
-# Copying over gphoto2 since we don't have to build it again.
-#COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2
+# Copying over raw-socket since we don't have to build it again.
+COPY --from=builder /builder/node_modules/raw-socket node_modules/raw-socket
 
 ENV NODE_ENV=production
 
