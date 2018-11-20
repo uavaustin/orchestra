@@ -1,4 +1,5 @@
 import Koa from 'koa';
+import ping from 'net-ping';
 import request from 'superagent';
 
 import koaLogger from './common/koa-logger';
@@ -23,6 +24,9 @@ export default class Service {
    * @param {string}   options.pingServices[].host
    * @param {number}   options.pingServices[].port
    * @param {string}   options.pingServices[].endpoint
+   * @param {Object[]} options.pingDevices
+   * @param {string}   options.pingDevices[].name
+   * @param {string}   options.pingDevices[].host
    */
   constructor(options) {
     this._port = options.port;
@@ -85,26 +89,27 @@ export default class Service {
 
   // Start the loops for collecting ping times.
   _startTasks() {
-    this._deviceTasks = this._pingDevices.map((s) => {
-      return createTimeoutTask(()=>this._pingDevice(s.name, s.host), 3000)
+    this._serviceTasks = this._pingServices.map((s) => {
+      const url = 'http://' + s.host + ':' + s.port + s.endpoint;
+
+      return createTimeoutTask(() => this._pingService(s.name, url), 3000)
         .on('error', logger.error)
         .start();
     });
-    this._serviceTasks = this._pingServices.map((s) => {
-      const serviceurl = 'http://' + s.host + ':' + s.port + s.endpoint;
-
-      return createTimeoutTask(()=>this._pingService(s.name, serviceurl), 3000)
+    this._deviceTasks = this._pingDevices.map((s) => {
+      return createTimeoutTask(() => this._pingDevice(s.name, s.host), 3000)
         .on('error', logger.error)
         .start();
     });
   }
 
   // Hit a service and record how long the request takes round-trip.
-  async _pingService(service, serviceurl) {
+  async _pingService(service, url) {
     const start = Date.now();
     let online;
+
     try {
-      await request.get(serviceurl)
+      await request.get(url)
         .timeout(this._serviceTimeout)
         // Don't follow redirects and consider 3xx status codes as
         // being successful.
@@ -123,22 +128,25 @@ export default class Service {
     this._pingStore.updateServicePing(service, online, ms);
   }
 
-  //Ping device and update how long the request takes
+  // Ping device and update how long the request takes.
   async _pingDevice(device, host) {
-    const ping = require('net-ping');
     const session = ping.createSession();
     let online;
     let ms;
 
     try {
       ms = await new Promise((resolve, reject) => {
-        session.pingHost(host, (err, target, sent, rcvd) => {
+        session.pingHost(host, (err, _target, sent, rcvd) => {
           if (err) reject(err);
           else resolve(rcvd - sent);
         });
       });
+
+      if (ms < 1) ms = 1;
+
       online = true;
-    } catch (e) {
+    } catch (_err) {
+      ms = 0;
       online = false;
     }
 
