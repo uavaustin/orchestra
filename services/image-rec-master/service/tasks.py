@@ -6,7 +6,7 @@ import aioredis
 import imagery_pb2
 import interop_pb2
 
-from .util import get_client, get_int_list, print_error
+from .util import get_int_list, print_error
 
 
 async def start_tasks(app):
@@ -39,7 +39,7 @@ async def _queue_new(app):
     try:
         available = await _get_available(app)
 
-        async with get_client(app['redis']) as r:
+        with await app['redis'] as r:
             await r.watch('all-images')
 
             all_ids = await r.smembers('all-images')
