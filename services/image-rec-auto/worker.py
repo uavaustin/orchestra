@@ -2,14 +2,10 @@
 
 """Identifies targets as new images come in."""
 
-import base64
-import json
 from io import BytesIO
 import os
 from math import pi, sin, cos, tan, sqrt
-import sys
 import time
-import urllib.parse
 
 import PIL.Image
 import requests
