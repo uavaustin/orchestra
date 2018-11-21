@@ -14,6 +14,11 @@ process, round-trip.
 
   For example:
   `interop-server,172.16.238.11,/ telemetry,172.16.238.12:5000`
+- `PING_DEVICES` - list of ip address to ping via ICMP ping in the form
+  `name,host` and separated by spaces. Note that only direct ip addresses are
+  accepted, e.g., `localhost` would not be acceptable.
+
+  For example: `google-dns,8.8.8.8 some-container,172.17.0.2`
 
 ## Endpoints
 

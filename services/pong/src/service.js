@@ -1,4 +1,5 @@
 import Koa from 'koa';
+import ping from 'net-ping';
 import request from 'superagent';
 
 import koaLogger from './common/koa-logger';
@@ -23,19 +24,23 @@ export default class Service {
    * @param {string}   options.pingServices[].host
    * @param {number}   options.pingServices[].port
    * @param {string}   options.pingServices[].endpoint
+   * @param {Object[]} options.pingDevices
+   * @param {string}   options.pingDevices[].name
+   * @param {string}   options.pingDevices[].host
    */
   constructor(options) {
     this._port = options.port;
 
     this._serviceTimeout = options.serviceTimeout;
     this._pingServices = options.pingServices;
+    this._pingDevices = options.pingDevices;
   }
 
   /** Start the service. */
   async start() {
     logger.debug('Starting service.');
 
-    this._pingStore = new PingStore(this._pingServices);
+    this._pingStore = new PingStore(this._pingServices, this._pingDevices);
     this._server = await this._createApi(this._pingStore);
     this._startTasks();
 
@@ -48,7 +53,8 @@ export default class Service {
 
     await Promise.all([
       this._server.closeAsync(),
-      Promise.all(this._serviceTasks.map(t => t.stop()))
+      Promise.all(this._serviceTasks.map(t => t.stop())),
+      Promise.all(this._deviceTasks.map(t => t.stop()))
     ]);
 
     logger.debug('Service stopped.');
@@ -90,6 +96,11 @@ export default class Service {
         .on('error', logger.error)
         .start();
     });
+    this._deviceTasks = this._pingDevices.map((s) => {
+      return createTimeoutTask(() => this._pingDevice(s.name, s.host), 3000)
+        .on('error', logger.error)
+        .start();
+    });
   }
 
   // Hit a service and record how long the request takes round-trip.
@@ -115,5 +126,30 @@ export default class Service {
 
     // Update the ping details.
     this._pingStore.updateServicePing(service, online, ms);
+  }
+
+  // Ping device and update how long the request takes.
+  async _pingDevice(device, host) {
+    const session = ping.createSession();
+    let online;
+    let ms;
+
+    try {
+      ms = await new Promise((resolve, reject) => {
+        session.pingHost(host, (err, _target, sent, rcvd) => {
+          if (err) reject(err);
+          else resolve(rcvd - sent);
+        });
+      });
+
+      if (ms < 1) ms = 1;
+
+      online = true;
+    } catch (_err) {
+      ms = 0;
+      online = false;
+    }
+
+    this._pingStore.updateDevicePing(device, online, ms);
   }
 }
