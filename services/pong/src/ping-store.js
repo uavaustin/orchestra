@@ -11,12 +11,21 @@ export default class PingStore {
    * @param {string}   services[].name
    * @param {string}   services[].host
    * @param {number}   services[].port
+   * @param {Object[]} devices
+   * @param {string}   devices[].name
+   * @param {string}   devices[].host
    */
-  constructor(services) {
+  constructor(services, devices) {
     this._ping = stats.PingTimes.create({
       time: time(),
       // Get the services in the correct format and sort by name.
       list: services.map(this._parseService.bind(this))
+        .sort((a, b) => a.name > b.name),
+
+      service_pings: services.map(this._parseService.bind(this))
+        .sort((a, b) => a.name > b.name),
+
+      device_pings: devices.map(this._parseDevice.bind(this))
         .sort((a, b) => a.name > b.name)
     });
   }
@@ -31,10 +40,21 @@ export default class PingStore {
   updateServicePing(name, online, ms) {
     this._ping.time = time();
 
-    const index = this._ping.list.findIndex(s => s.name === name);
+    const index = this._ping.service_pings.findIndex(s => s.name === name);
 
     this._ping.list[index].online = online;
     this._ping.list[index].ms = ms;
+    this._ping.service_pings[index].online = online;
+    this._ping.service_pings[index].ms = ms;
+  }
+
+  updateDevicePing(name, online, ms) {
+    this._ping.time = time();
+
+    const index = this._ping.device_pings.findIndex(s => s.name === name);
+
+    this._ping.device_pings[index].online = online;
+    this._ping.device_pings[index].ms = ms;
   }
 
   /**
@@ -53,6 +73,15 @@ export default class PingStore {
       name: service.name,
       host: service.host,
       port: service.port.toString(),
+      online: false,
+      ms: 0
+    };
+  }
+
+  _parseDevice(device) {
+    return {
+      name: device.name,
+      host: device.host,
       online: false,
       ms: 0
     };

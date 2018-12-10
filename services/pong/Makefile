@@ -3,6 +3,7 @@ DOCKERFLAGS :=
 
 PONG_IMAGE      := uavaustin/pong
 PONG_TEST_IMAGE := uavaustin/pong-test
+ALPINE_IMAGE    := alpine
 
 current_dir := $(shell pwd)
 
@@ -14,10 +15,16 @@ image:
 	docker build -t $(PONG_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: test
-test:
+test: alpine
 	docker build -t $(PONG_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
 	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
-		$(PONG_TEST_IMAGE)
+		-v /var/run/docker.sock:/var/run/docker.sock $(PONG_TEST_IMAGE)
+
+.PHONY: alpine
+alpine:
+	@if ! docker inspect --type=image $(ALPINE_IMAGE) &> /dev/null; then \
+		docker pull $(ALPINE_IMAGE); \
+	fi
 
 .PHONY: clean
 clean:
