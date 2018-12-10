@@ -102,7 +102,8 @@ services:
     image: uavaustin/imagery
     environment:
       - BACKEND=sync
-      - IMAGERY_SYNC_URL=imagery-plane:8081
+      - IMAGERY_SYNC_HOST=imagery-plane
+      - IMAGERY_SYNC_PORT=8081
     extra_hosts:
       - imagery-plane:${PLANE_IP}
     networks:
