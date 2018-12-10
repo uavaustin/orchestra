@@ -1,7 +1,7 @@
 import chokidar from 'chokidar';
 import fs from 'fs-extra';
 
-import logger from '../../src/common/logger';
+import logger from '../common/logger';
 import { imagery } from '../messages';
 
 import { convertPng, removeExif } from '../util';
