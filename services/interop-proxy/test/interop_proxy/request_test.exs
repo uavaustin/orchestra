@@ -28,32 +28,18 @@ defmodule InteropProxy.RequestTest do
     assert mission["active"] === true
   end
 
-  test "get moving and stationary obstacles" do
+  test "get stationary obstacles" do
     {:ok, _, cookie} = Request.login url(), username(), password()
 
     {:ok, obstacles_1} = Request.get_obstacles url(), cookie
 
-    # Should be two types of obstacles.
-    assert obstacles_1 |> Map.keys |> length === 2
+    # Should be one type of obstacles.
+    assert obstacles_1 |> Map.keys |> length === 1
 
-    mov_1  = obstacles_1["moving_obstacles"]
     stat_1 = obstacles_1["stationary_obstacles"]
 
-    # Both type of obstacles should have 4 keys.
-    assert mov_1 |> Enum.at(0) |> Map.keys |> length === 4
+    # Stationary obstacles should have 4 keys.
     assert stat_1 |> Enum.at(0) |> Map.keys |> length === 4
-
-    # Sleep a little and request again, the moving ones should have
-    # changed, but the stationary should be the same.
-    Process.sleep(100)
-
-    {:ok, obstacles_2} = Request.get_obstacles url(), cookie
-
-    mov_2  = obstacles_2["moving_obstacles"]
-    stat_2 = obstacles_2["stationary_obstacles"]
-
-    assert mov_1 !== mov_2
-    assert stat_1 === stat_2 
   end
 
   test "post valid telemetry" do

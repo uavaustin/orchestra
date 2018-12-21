@@ -16,13 +16,11 @@ defmodule InteropProxyTest do
     assert is_float(mission.home_pos.lat)
   end
 
-  test "get moving and stationary obstacles" do
+  test "get stationary obstacles" do
     obs = get_obstacles!()
 
     assert is_list(obs.stationary)
-    assert is_list(obs.moving)
 
-    assert is_float(Enum.at(obs.stationary, 0).pos.lat)
     assert is_float(Enum.at(obs.stationary, 0).pos.lat)
   end
 
