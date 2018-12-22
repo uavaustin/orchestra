@@ -14,7 +14,7 @@ defmodule InteropProxy.Request do
   Log in to the server and get a cookie.
   """
   def login(url, username, password) do
-    body = get_urlencoded %{username: username, password: password}
+    body = get_json %{username: username, password: password}
 
     "http://#{url}/api/login"
     |> HTTPoison.post(body, [@urlencoded])

@@ -9,7 +9,6 @@ defmodule InteropProxyWeb.ObstaclesControllerTest do
     |> protobuf_response(Obstacles)
 
     assert is_list(response.stationary)
-    assert is_list(response.moving)
   end
 
   test "returns the current obstacles as JSON", %{conn: conn} do
@@ -19,7 +18,6 @@ defmodule InteropProxyWeb.ObstaclesControllerTest do
     |> json_response(200)
 
     assert is_list(response["stationary"])
-    assert is_list(response["moving"])
   end
 
   test "stationary obstacles have a height, but no altitude", %{conn: conn} do
@@ -30,17 +28,6 @@ defmodule InteropProxyWeb.ObstaclesControllerTest do
     Enum.each response.stationary, fn obs ->
       assert is_float(obs.height)
       refute Map.has_key?(obs.pos, :alt_msl)
-    end
-  end
-
-  test "moving obstacles have an altitude, but no height", %{conn: conn} do
-    response = conn
-    |> get(obstacles_path(conn, :index))
-    |> protobuf_response(Obstacles)
-
-    Enum.each response.moving, fn obs ->
-      assert is_float(obs.pos.alt_msl)
-      refute Map.has_key?(obs, :height)
     end
   end
 end
