@@ -14,9 +14,14 @@ defmodule InteropProxyWeb.ControllerHelpers do
 
   def send_message(conn, _status_code, {:error, reason}) do
     {code, text} = case reason do
-      %HTTPoison.Error{} -> {503, "Interop server not available\n"}
-      :forbidden         -> {503, "Interop server did not accept cookie\n"}
-      other              -> {500, other}
+      %HTTPoison.Error{} ->
+        {503, "Interop server not available\n"}
+      :forbidden ->
+        {503, "Interop server did not accept cookie\n"}
+      {:message, code, message} when div(code, 100) < 4 ->
+        {500, "Unexpected interop status code #{code} with \"#{message}\""}
+      {:message, code, message} ->
+        {code, "Interop server: " <> message}
     end
 
     conn
