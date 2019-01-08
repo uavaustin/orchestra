@@ -198,9 +198,10 @@ defmodule InteropProxy.Request do
   defp handle_resp({:ok, %{status_code: 403}}, _type, _opts),
     do: {:error, :forbidden}
 
-  # If we have anything else, we'll return the body as the reason for
-  # an error.
-  defp handle_resp({:ok, %{body: body}}, _type, _opts), do: {:error, body}
+  # If we have anything else, we'll return the status code and body
+  # as the reason for an error.
+  defp handle_resp({:ok, resp}, _type, _opts),
+    do: {:error, {:message, resp.status_code, resp.body}}
 
   # Making a urlencoded message from a map.
   defp get_urlencoded(body) when is_map(body) do
