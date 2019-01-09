@@ -28,7 +28,7 @@ class Service:
         app['http_client'] = aiohttp.ClientSession(loop=app.loop)
 
         app['redis'] = await aioredis.create_redis_pool(
-            app.get('redis_url'), minsize=3, maxsize=10, loop=app.loop
+            app.get('redis_url'), minsize=5, maxsize=10, loop=app.loop
         )
 
         await runner.setup()
