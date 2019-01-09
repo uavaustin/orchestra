@@ -11,9 +11,10 @@ RUN apk --no-cache add \
     musl-dev \
     protobuf
 
+COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-master/requirements.txt .
 
-RUN pip install -r requirements.txt
+RUN pip install -r common/requirements.txt -r requirements.txt
 
 COPY common/messages/imagery.proto \
     common/messages/image_rec.proto \
@@ -34,6 +35,7 @@ COPY --from=builder /usr/local/lib/python3.7/site-packages \
                     /usr/local/lib/python3.7/site-packages
 COPY --from=builder /builder/dist/messages .
 
+COPY common/python service/common
 COPY image-rec-master/service service
 
 ENV PORT='8082' \

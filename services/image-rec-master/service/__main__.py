@@ -2,10 +2,13 @@ import asyncio
 import os
 import sys
 
+from .common.logger import configure_logger
+
 from . import Service
 
-
 if __name__ == '__main__':
+    configure_logger()
+
     service = Service(
         port=int(os.environ.get('PORT')),
         imagery_host=os.environ.get('IMAGERY_HOST'),
