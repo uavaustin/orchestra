@@ -24,8 +24,11 @@ async def handle_get_pipeline(request):
     """Return the current pipeline state."""
     tr = request.app['redis'].multi_exec()
 
-    get_set = lambda key: tr.smembers(key)
-    get_list = lambda key: tr.lrange(key, 0, -1)
+    def get_set(key):
+        tr.smembers(key)
+
+    def get_list(key):
+        tr.lrange(key, 0, -1)
 
     # All registered images.
     get_set('all-images')

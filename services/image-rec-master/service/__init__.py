@@ -14,7 +14,7 @@ class Service:
 
         app = create_app()
         app['redis_url'] = f'redis://{redis_host}:{redis_port}'
-        app['imagery_url']  = f'http://{imagery_host}:{imagery_port}'
+        app['imagery_url'] = f'http://{imagery_host}:{imagery_port}'
         app['interop_url'] = f'http://{interop_host}:{interop_port}'
 
         self._app = app

@@ -270,10 +270,10 @@ async def _submit_targets(app):
 
 async def _post_odlc(app, odlc):
     url = app['interop_url'] + '/api/odlcs'
-    headers = { 'Content-Type': 'application/x-protobuf' }
+    headers = {'Content-Type': 'application/x-protobuf'}
 
-    async with app['http_client'].post(url, data=odlc,
-                                            headers=headers) as resp:
+    async with app['http_client'].post(url, data=odlc, headers=headers) \
+            as resp:
         # Return if the post data was not good (4xx).
         if resp.status // 100 == 4:
             return None, None
