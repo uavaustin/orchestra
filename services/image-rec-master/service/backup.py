@@ -5,7 +5,7 @@ import zipfile
 import interop_pb2
 
 
-def create_arhive(odlcs):
+def create_archive(odlcs):
     """Create a backup zip file with targets.
 
     This is saved in the format that the interop server uses for
