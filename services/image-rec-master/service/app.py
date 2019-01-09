@@ -5,7 +5,9 @@ from google.protobuf.json_format import MessageToJson
 
 import image_rec_pb2
 
+from .backup import create_archive
 from .tasks import start_tasks, stop_tasks
+from .util import get_int_set
 
 
 routes = web.RouteTableDef()
@@ -90,6 +92,45 @@ async def handle_get_pipeline(request):
 async def handle_get_pipeline_target_by_id(request):
     """Return a target by id in the pipeline."""
     target_id = int(request.match_info['id'])
+    target = await _get_target(request, target_id)
+
+    if target:
+        return _proto_response(request, target)
+    else:
+        return web.Response(status=404)
+
+
+@routes.post('/api/pipeline/reset')
+async def handle_reset_pipeline(request):
+    """Empty out the current Redis database to reset the pipeline."""
+    await request.app['redis'].flushdb()
+    return web.Response(status=204)
+
+
+@routes.get('/api/pipeline/archive')
+async def handle_get_pipeline_archive(request):
+    """Return an archive for backup target submission."""
+    odlcs = []
+    target_ids = await get_int_set(request.app['redis'], 'all-targets')
+
+    for target_id in target_ids:
+        target = await _get_target(request, target_id)
+
+        # Add the target if it hasn't errored or been removed.
+        if not target.errored and not target.removed:
+            odlcs.append(target.odlc)
+
+    archive = create_archive(odlcs)
+
+    if archive:
+        return web.Response(body=archive, headers={
+            'Content-Disposition': 'attachment; filename="targets.zip"'
+        })
+    else:
+        return web.Response(status=204)
+
+
+async def _get_target(request, target_id):
     target_hash = await request.app['redis'].hgetall(f'target:{target_id}')
 
     if target_hash:
@@ -103,16 +144,9 @@ async def handle_get_pipeline_target_by_id(request):
         msg.errored = target_hash.get(b'errored', b'0') == b'1'
         msg.removed = target_hash.get(b'removed', b'0') == b'1'
 
-        return _proto_response(request, msg)
+        return msg
     else:
-        return web.Response(status=404)
-
-
-@routes.post('/api/pipeline/reset')
-async def handle_reset_pipeline(request):
-    """Empty out the current Redis database to reset the pipeline."""
-    await request.app['redis'].flushdb()
-    return web.Response(status=204)
+        return None
 
 
 def _proto_response(request, msg):
