@@ -69,9 +69,9 @@ import logging
 import aiohttp
 import aioredis
 
-from .common.logger import format_error
-import imagery_pb2
-import interop_pb2
+from common.logger import format_error
+from messages.imagery_pb2 import AvailableImages
+from messages.interop_pb2 import Odlc
 
 from .util import get_int_list, get_int_set
 
@@ -122,7 +122,7 @@ def _create_task(app, coro, interval):
 async def _queue_new_images(app):
     try:
         url = app['imagery_url'] + '/api/available'
-        msg = imagery_pb2.AvailableImages()
+        msg = AvailableImages()
 
         # Request the available images from the imagery service.
         async with app['http_client'].get(url) as resp:
@@ -281,13 +281,13 @@ async def _post_odlc(app, odlc):
         resp.raise_for_status()
 
         # Get the returned odlc and add the image back onto it.
-        sent = interop_pb2.Odlc()
-        returned = interop_pb2.Odlc()
+        sent = Odlc()
+        returned = Odlc()
 
         content = await resp.read()
 
-        sent = interop_pb2.Odlc.FromString(odlc)
-        returned = interop_pb2.Odlc.FromString(content)
+        sent = Odlc.FromString(odlc)
+        returned = Odlc.FromString(content)
 
         returned.image = sent.image
         return returned.id, returned.SerializeToString()
@@ -359,7 +359,7 @@ async def _remove_targets(app):
     while True:
         try:
             odlc = await r.hget(target_key, 'odlc')
-            odlc_id = interop_pb2.Odlc.FromString(odlc).id
+            odlc_id = Odlc.FromString(odlc).id
         except aioredis.RedisError as e:
             logging.error(format_error('redis error', str(e)))
             await asyncio.sleep(0.1)

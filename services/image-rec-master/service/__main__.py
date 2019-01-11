@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 
-from .common.logger import configure_logger
+from common.logger import configure_logger
 
 from . import Service
 

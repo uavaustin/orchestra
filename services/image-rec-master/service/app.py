@@ -3,7 +3,7 @@ from time import time
 from aiohttp import web
 from google.protobuf.json_format import MessageToJson
 
-import image_rec_pb2
+from messages.image_rec_pb2 import PipelineState, Target
 
 from .backup import create_archive
 from .tasks import start_tasks, stop_tasks
@@ -58,7 +58,7 @@ async def handle_get_pipeline(request):
 
     data_str = await tr.execute()
 
-    msg = image_rec_pb2.PipelineState()
+    msg = PipelineState()
     msg.time = time()
 
     fields = [
@@ -137,7 +137,7 @@ async def _get_target(request, target_id):
     target_hash = await request.app['redis'].hgetall(f'target:{target_id}')
 
     if target_hash:
-        msg = image_rec_pb2.Target()
+        msg = Target()
         msg.time = time()
 
         msg.id = int(target_hash.get(b'id', b'0'))

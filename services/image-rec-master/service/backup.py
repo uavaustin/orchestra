@@ -2,7 +2,7 @@ import io
 import json
 import zipfile
 
-import interop_pb2
+from messages.interop_pb2 import Odlc
 
 
 def create_archive(odlcs):
@@ -34,7 +34,7 @@ def create_archive(odlcs):
 # Convert an ODLC into a regular Python dictionary so it can be
 # serialized as the JSON that the interop server expects.
 def _convert_odlc(odlc):
-    if odlc.type != interop_pb2.Odlc.EMERGENT:
+    if odlc.type != Odlc.EMERGENT:
         return _convert_standard_odlc(odlc)
     else:
         return _convert_emergent_odlc(odlc)
@@ -65,33 +65,33 @@ def _convert_emergent_odlc(odlc):
 
 
 def _convert_type(type):
-    return interop_pb2.Odlc.Type.Name(type).lower()
+    return Odlc.Type.Name(type).lower()
 
 
 def _convert_orientation(orientation):
     orientation_map = {
-        interop_pb2.Odlc.NORTH: 'n',
-        interop_pb2.Odlc.NORTHEAST: 'ne',
-        interop_pb2.Odlc.EAST: 'e',
-        interop_pb2.Odlc.SOUTHEAST: 'se',
-        interop_pb2.Odlc.SOUTH: 's',
-        interop_pb2.Odlc.SOUTHWEST: 'sw',
-        interop_pb2.Odlc.WEST: 'w',
-        interop_pb2.Odlc.NORTHWEST: 'nw'
+        Odlc.NORTH: 'n',
+        Odlc.NORTHEAST: 'ne',
+        Odlc.EAST: 'e',
+        Odlc.SOUTHEAST: 'se',
+        Odlc.SOUTH: 's',
+        Odlc.SOUTHWEST: 'sw',
+        Odlc.WEST: 'w',
+        Odlc.NORTHWEST: 'nw'
     }
 
     return orientation_map.get(orientation)
 
 
 def _convert_shape(shape):
-    if shape == interop_pb2.Odlc.UNKNOWN_SHAPE:
+    if shape == Odlc.UNKNOWN_SHAPE:
         return None
     else:
-        return interop_pb2.Odlc.Shape(shape).lower()
+        return Odlc.Shape(shape).lower()
 
 
 def _convert_color(color):
-    if color == interop_pb2.Odlc.UNKNOWN_COLOR:
+    if color == Odlc.UNKNOWN_COLOR:
         return None
     else:
-        return interop_pb2.Odlc.Color(color).lower()
+        return Odlc.Color(color).lower()

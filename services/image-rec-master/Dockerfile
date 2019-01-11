@@ -22,8 +22,7 @@ COPY common/messages/imagery.proto \
     common/messages/telemetry.proto \
     messages/
 
-RUN mkdir -p dist/messages && protoc -I=messages/ --python_out=dist/messages \
-    messages/*.proto
+RUN mkdir dist && protoc --python_out=dist messages/*.proto
 
 # Making the actual image now.
 FROM ${BASE}
@@ -33,9 +32,9 @@ WORKDIR /app
 # Copy the pip requirements and protobuf messages from above.
 COPY --from=builder /usr/local/lib/python3.7/site-packages \
                     /usr/local/lib/python3.7/site-packages
-COPY --from=builder /builder/dist/messages .
+COPY --from=builder /builder/dist/messages messages
 
-COPY common/python service/common
+COPY common/python common
 COPY image-rec-master/service service
 
 ENV PORT='8082' \

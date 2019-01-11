@@ -12,7 +12,7 @@
 
 syntax = "proto3";
 
-import "telemetry.proto";
+import "messages/telemetry.proto";
 
 package imagery;
 
