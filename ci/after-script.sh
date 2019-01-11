@@ -15,7 +15,7 @@ if [ -n "$SERVICE_TEST" ]; then
   fi
 
   if [ -f "$PY_COV" ]; then
-    sed -i "s:/test/:services/$SERVICE_TEST/," "$PY_COV"
+    sed -i "s,/test/,services/$SERVICE_TEST/," "$PY_COV"
     cd services/$SERVICE_TEST
     pip install coveralls
     coveralls
