@@ -5,19 +5,27 @@
 # relative to the root directory of the test container (and should
 # start with "/test/..."), we have to replace this with the path of
 # the service.
-if [ -n "$SERVICE_TEST" ]; then
+
+handle_nodejs() {
   NODEJS_LCOV=services/"$SERVICE_TEST"/coverage/lcov.info
-  PY_COV=services/"$SERVICE_TEST"/coverage/.coverage
 
   if [ -f "$NODEJS_LCOV" ]; then
     sed "s,SF:/test/,SF:services/$SERVICE_TEST/," "$NODEJS_LCOV" |
       npx coveralls
   fi
 
-  if [ -f "$PY_COV" ]; then
-    sed -i "s,/test/,services/$SERVICE_TEST/," "$PY_COV"
+handle_python() {
+  PYTHON_COV=services/"$SERVICE_TEST"/coverage/.coverage
+
+  if [ -f "$PYTHON_COV" ]; then
+    sed -i "s,/test/,services/$SERVICE_TEST/," "$PYTHON_COV"
     cd services/$SERVICE_TEST
     pip install coveralls
     coveralls
   fi
+}
+
+if [ -n "$SERVICE_TEST" ]; then
+  [ -n "$TRAVIS_NODE_VERSION" ] && handle_nodejs
+  [ -n "$TRAVIS_PYTHON_VERSION" ] && handle_python
 fi
