@@ -7,9 +7,17 @@
 # the service.
 if [ -n "$SERVICE_TEST" ]; then
   NODEJS_LCOV=services/"$SERVICE_TEST"/coverage/lcov.info
+  PY_COV=services/"$SERVICE_TEST"/coverage/.coverage
 
   if [ -f "$NODEJS_LCOV" ]; then
     sed "s,SF:/test/,SF:services/$SERVICE_TEST/," "$NODEJS_LCOV" |
       npx coveralls
+  fi
+
+  if [ -f "$PY_COV" ]; then
+    sed -i "s:/test/:services/$SERVICE_TEST/," "$PY_COV"
+    cd services/$SERVICE_TEST
+    pip install coveralls
+    coveralls
   fi
 fi

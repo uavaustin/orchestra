@@ -17,11 +17,15 @@ jobs:
     - env: SERVICE=forward-interop
     - env: SERVICE=imagery
     - env: SERVICE=dashboard
+    - env: SERVICE=image-rec-master
     - stage: test
       env: SERVICE_TEST=telemetry
     - env: SERVICE_TEST=interop-proxy
     - env: SERVICE_TEST=pong
     - env: SERVICE_TEST=forward-interop
+    - env: SERVICE_TEST=image-rec-master
+      language: python
+      python: '3.7'
 notifications:
   email: false
   webhooks:
