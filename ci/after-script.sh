@@ -17,12 +17,13 @@ handle_nodejs() {
 
 handle_python() {
   PYTHON_COV=services/"$SERVICE_TEST"/coverage/.coverage
+  COV_CONFIG=services/"$SERVICE_TEST"/setup.cfg
 
   if [ -f "$PYTHON_COV" ]; then
-    sudo sed -i "s,/test/,$PWD/services/$SERVICE_TEST/," "$PYTHON_COV"
-    cd services/"$SERVICE_TEST"
+    sudo sed -i "s,/test/,services/$SERVICE_TEST/,g" "$PYTHON_COV"
+    sudo sed -i "s,coverage/.coverage,$PYTHON_COV," "$COV_CONFIG"
     pip install coveralls
-    coveralls
+    coveralls --rcfile="$COV_CONFIG"
   fi
 }
 
