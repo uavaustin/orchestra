@@ -20,7 +20,7 @@ handle_python() {
   COV_CONFIG=services/"$SERVICE_TEST"/setup.cfg
 
   if [ -f "$PYTHON_COV" ]; then
-    sudo sed -i "s,/test/,services/$SERVICE_TEST/,g" "$PYTHON_COV"
+    sudo sed -i "s,/test/,$PWD/services/$SERVICE_TEST/,g" "$PYTHON_COV"
     sudo sed -i "s,coverage/.coverage,$PYTHON_COV," "$COV_CONFIG"
     pip install coveralls
     coveralls --rcfile="$COV_CONFIG"
