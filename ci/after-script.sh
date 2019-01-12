@@ -19,7 +19,7 @@ handle_python() {
   PYTHON_COV=services/"$SERVICE_TEST"/coverage/.coverage
 
   if [ -f "$PYTHON_COV" ]; then
-    sudo sed -i "s,/test/,services/$SERVICE_TEST/," "$PYTHON_COV"
+    sudo sed -i "s,/test/,$PWD/services/$SERVICE_TEST/," "$PYTHON_COV"
     cd services/"$SERVICE_TEST"
     pip install coveralls
     coveralls
