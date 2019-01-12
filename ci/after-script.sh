@@ -13,6 +13,7 @@ handle_nodejs() {
     sed "s,SF:/test/,SF:services/$SERVICE_TEST/," "$NODEJS_LCOV" |
       npx coveralls
   fi
+}
 
 handle_python() {
   PYTHON_COV=services/"$SERVICE_TEST"/coverage/.coverage
