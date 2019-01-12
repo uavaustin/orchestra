@@ -11,9 +11,7 @@ defmodule InteropProxy.Sanitize do
 
   # Aliasing the nested messages.
   alias InteropProxy.Message.Interop.InteropMission.FlyZone
-  alias InteropProxy.Message.Interop.Obstacles.{
-    StationaryObstacle, MovingObstacle
-  }
+  alias InteropProxy.Message.Interop.Obstacles.StationaryObstacle
 
   def sanitize_mission(nil) do
     %InteropMission{
@@ -51,9 +49,7 @@ defmodule InteropProxy.Sanitize do
     %Obstacles{
       time: time(),
       stationary: obstacles["stationary_obstacles"]
-                  |> sanitize_stationary_obstacles,    
-      moving: obstacles["moving_obstacles"]
-              |> sanitize_moving_obstacles
+                  |> sanitize_stationary_obstacles
     }
   end
 
@@ -64,16 +60,6 @@ defmodule InteropProxy.Sanitize do
         pos: obs |> sanitize_position,
         height: obs["cylinder_height"] |> meters,
         radius: obs["cylinder_radius"] |> meters
-      }
-    end)
-  end
-
-  defp sanitize_moving_obstacles(moving) do
-    moving
-    |> Enum.map(fn obs ->
-      %MovingObstacle{
-        pos: obs |> sanitize_aerial_position,
-        radius: obs["sphere_radius"] |> meters
       }
     end)
   end

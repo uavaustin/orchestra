@@ -17,7 +17,13 @@ const service = new Service({
         port: parseInt(split[1].split(':')[1]) || 80,
         endpoint: split[2] || '/api/alive'
       };
-    })
+    }),
+  pingDevices: process.env.PING_DEVICES.split(' ')
+    .map((line) => {
+      const split = line.split(',');
+
+      return { name: split[0], host: split[1] };
+    }),
 });
 
 service.start();

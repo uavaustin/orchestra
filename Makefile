@@ -6,7 +6,7 @@ all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard \
 
 .PHONY: test
 test: telemetry-test interop-proxy-test pong-test forward-interop-test \
-	image-rec-master-test
+	imagery-test image-rec-master-test
 
 .PHONY: mavproxy
 mavproxy:
@@ -47,6 +47,10 @@ forward-interop-test:
 .PHONY: imagery
 imagery:
 	$(MAKE) -C services/imagery
+
+.PHONY: imagery-test
+imagery-test:
+	$(MAKE) -C services/imagery test
 
 .PHONY: dashboard
 dashboard:

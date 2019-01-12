@@ -1,108 +1,93 @@
-import request from 'request-promise-native';
+import request from 'superagent';
+import addProtobuf from 'superagent-protobuf';
 
-import { wait } from '../util';
-
+import logger from '../common/logger';
+import { createTimeoutTask } from '../common/task';
 import { imagery } from '../messages';
 
+addProtobuf(request);
+
 export default class SyncBackend {
-    /**
-     * Backend which pulls data from another imagery service.
-     *
-     * This is useful for mirroring imagery data on another machine
-     * from where the imagery originates from.
-     *
-     * Telemetry data is simply gathered from the original image.
-     */
+  /**
+   * Backend which pulls data from another imagery service.
+   *
+   * This is useful for mirroring imagery data on another machine
+   * from where the imagery originates from.
+   *
+   * Telemetry data is simply gathered from the original image.
+   */
 
-    /** Create a new sync backend. */
-    constructor(imageStore, syncUrl) {
-        this._imageStore = imageStore;
-        this._syncUrl = syncUrl;
-        this._active = false;
-    }
+  /** Create a new sync backend. */
+  constructor(imageStore, syncUrl) {
+    this._imageStore = imageStore;
+    this._syncUrl = syncUrl;
+    this._active = false;
+  }
 
-    async _runLoop() {
-        // The last image number we've fetched.
-        let lastId = this._imageStore.getCount() - 1;
+  /** Start the sync loop in the background. */
+  async start() {
+    this._active = true;
+    this._runLoop();
+  }
 
-        while (this._active) {
-            try {
-                // First we'll just see what the latest id number is.
-                let latestId = await this._getLatestId();
+  async stop() {
+    await this._task.stop();
+  }
 
-                // Throw an error if the id number went down.
-                if (latestId < lastId)
-                    throw Error('Unexpected latest id number');
+  async _runLoop() {
+    // The last image number we've fetched.
+    let lastId = this._imageStore.getCount() - 1;
 
-                // Getting the images we don't have.
-                for (let id = lastId + 1; id <= latestId; id++) {
-                    console.log('Fetching image: ' + id);
+    this._task = createTimeoutTask(async () => {
+      try {
+        // First we'll just see what the latest id number is.
+        const latestId = await this._getLatestId();
 
-                    let msg = await this._getImage(id);
+        // Throw an error if the id number went down.
+        if (latestId < lastId)
+          throw Error('Unexpected latest id number');
 
-                    // Getting the image data from the message.
-                    let image = msg.image;
+        // Getting the images we don't have.
+        for (let id = lastId + 1; id <= latestId; id++) {
+          logger.debug('Fetching image: ' + id);
 
-                    // Clearing the image data so only metadata is
-                    // left.
-                    msg.image = null;
+          const msg = await this._getImage(id);
 
-                    // Adding it to the image store.
-                    await this._imageStore.addImage(image, msg);
-                }
+          // Getting the image data from the message.
+          const image = msg.image;
 
-                lastId = latestId;
-            } catch (err) {
-                let message = err.name + ': ' + err.message;
-                console.error('Encountered an error in sync loop: ' + message);
-            }
+          // Clearing the image data so only metadata is left.
+          msg.image = null;
 
-            // Wait 250 ms to continue.
-            await wait(250);
+          // Adding it to the image store.
+          await this._imageStore.addImage(image, msg);
+
+          lastId = id;
         }
-    }
+      } catch (err) {
+        const message = err.name + ': ' + err.message;
+        logger.error('Encountered an error in sync loop: ' + message);
+      }
+    }, 250).start();
+  }
 
-    /** Get the latest id number the sync url has. */
-    async _getLatestId() {
-        let msg = await request({
-            uri: `http://${this._syncUrl}/api/count`,
-            encoding: null,
-            transform: buffer => imagery.ImageCount.decode(buffer),
-            transform2xxOnly: true,
-            timeout: 5000
-        });
+  /** Get the latest id number the sync url has. */
+  async _getLatestId() {
+    const { body: msg } =
+      await request.get(this._syncUrl + '/api/count')
+        .proto(imagery.ImageCount)
+        .timeout(5000);
 
-        return msg.count - 1;
-    }
+    return msg.count - 1;
+  }
 
-    /** Get an image from the sync url by id. */
-    async _getImage(id) {
-        return await request({
-            uri: `http://${this._syncUrl}/api/image/${id}`,
-            qs: {
-                // Making sure we have both the image and warped
-                // image if it's available.
-                original: 'true',
-                warped: 'true'
-            },
-            encoding: null,
-            transform: buffer => imagery.Image.decode(buffer),
-            transform2xxOnly: true,
-            timeout: 5000
-        });
-    }
+  /** Get an image from the sync url by id. */
+  async _getImage(id) {
+    const { body: image } =
+      await request.get(this._syncUrl + '/api/image/' + id)
+        .proto(imagery.Image)
+        .timeout(5000);
 
-    /** Start the sync loop in the background. */
-    async start() {
-        this._active = true;
-        this._runLoop();
-    }
-
-    /** Set a flag to kill the sync loop. */
-    async stop() {
-        // FIXME: There's technically a problem here if the loop is
-        // stopped and immedatiately started again. Two loops would
-        // be created in this case.
-        this._active = false;
-    }
+    return image;
+  }
 }

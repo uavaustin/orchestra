@@ -1,44 +1,44 @@
 {
-    "name": "imagery",
-    "main": "lib/main.js",
-    "private": true,
-    "license": "MIT",
-    "scripts": {
-        "start": "node .",
-        "build": "babel src --out-dir lib",
-        "build-msg": "mkdir -p lib && pbjs -t static-module -w commonjs --keep-case -o lib/messages.js src/messages/*.proto"
-    },
-    "dependencies": {
-        "chokidar": "^2.0.2",
-        "express": "^4.16.2",
-        "fs-extra": "^5.0.0",
-        "gm": "^1.23.1",
-        "gphoto2": "^0.2.0",
-        "protobufjs": "~6.8.6",
-        "request": "^2.83.0",
-        "request-promise-native": "^1.0.5",
-        "source-map-support": "^0.5.6",
-        "sprintf-js": "^1.1.1"
-    },
-    "devDependencies": {
-        "babel-cli": "^6.26.0",
-        "babel-plugin-source-map-support": "^2.0.1",
-        "babel-preset-env": "^1.6.1"
-    },
-    "babel": {
-        "sourceMaps": "inline",
-        "plugins": [
-            "source-map-support"
-        ],
-        "presets": [
-            [
-                "env",
-                {
-                    "targets": {
-                        "node": "current"
-                    }
-                }
-            ]
-        ]
-    }
+  "name": "imagery",
+  "version": "0.1.0",
+  "main": "lib/service.js",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./bin/start-service",
+    "build": "babel src --out-dir lib",
+    "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
+    "test": "jest",
+    "lint": "eslint src test --ignore-pattern src/messages.js"
+  },
+  "dependencies": {
+    "chokidar": "^2.0.2",
+    "common-nodejs": "file:src/common",
+    "fs-extra": "^5.0.0",
+    "gm": "^1.23.1",
+    "gphoto2": "^0.2.0",
+    "koa": "^2.5.1",
+    "koa-protobuf": "^0.1.0",
+    "koa-router": "^7.4.0",
+    "lodash": "^4.17.10",
+    "mavlink": "^1.0.1",
+    "protobufjs": "~6.8.6",
+    "source-map-support": "^0.5.6",
+    "sprintf-js": "^1.1.1",
+    "superagent": "^3.8.3",
+    "superagent-protobuf": "^0.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-source-map-support": "^2.0.1",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^5.3.0",
+    "eslint-plugin-jest": "^21.20.2",
+    "file-type": "^10.4.0",
+    "jest": "^23.3.0",
+    "lolex": "^2.7.1",
+    "nock": "^10.0.2",
+    "supertest": "^3.1.0"
+  }
 }

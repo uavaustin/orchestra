@@ -1,26 +1,27 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
 
-IMAGERY_IMAGE := uavaustin/imagery
+IMAGERY_IMAGE      := uavaustin/imagery
+IMAGERY_TEST_IMAGE := uavaustin/imagery-test
 
 current_dir := $(shell pwd)
 
 .PHONY: all
 all: image
 
-.PHONY:  message-src
-message-src: src/messages/telemetry.proto src/messages/imagery.proto \
-		src/messages/stats.proto
-
-src/messages/%.proto: ../common/messages/%.proto
-	mkdir -p src/messages
-	cp ../common/messages/$(notdir $@) src/messages/
-
 .PHONY: image
-image: message-src
+image:
 	docker build -t $(IMAGERY_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
+
+.PHONY: test
+test:
+	docker build -t $(IMAGERY_TEST_IMAGE) \
+		-f Dockerfile.test $(DOCKERFLAGS) ..
+	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+		$(IMAGERY_TEST_IMAGE)
 
 .PHONY: clean
 clean:
 	rm -rf node_modules lib package-lock.json
 	docker rmi -f $(IMAGERY_IMAGE)
+	docker rmi -f $(IMAGERY_TEST_IMAGE)
