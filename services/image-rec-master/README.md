@@ -35,7 +35,7 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   On successful response: `200` status code with `image_rec::PipelineState`
   Protobuf message.
 
-- `GET /api/pipeline/targets/:id
+- `GET /api/pipeline/targets/:id`
 
   Return a target by id in the pipeline.
 
