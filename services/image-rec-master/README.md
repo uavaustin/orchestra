@@ -1,7 +1,7 @@
 # Image Rec Master
 
 Service that queues images and submits targets for the image recognition
-and target pipelines on Redis.
+pipeline on Redis.
 
 See [`tasks.py`](service/tasks.py) for a description of how the images and
 targets flow throught the pipeline in this service and through other image
@@ -30,7 +30,7 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
 - `GET /api/pipeline`
 
-  Return the current image recognition and target pipeline state.
+  Return the current image recognition pipeline state.
 
   On successful response: `200` status code with `image_rec::PipelineState`
   Protobuf message.
@@ -39,7 +39,7 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
   Return a target by id in the pipeline.
 
-  `id` must be a positive integer. Note that this is not the same as
+  `id` must be a nonnegative integer. Note that this is not the same as
   the _Odlc_ `id` given by the Interop Server.
 
   On successful response: `200` status code with `image_rec::Target` Protobuf
