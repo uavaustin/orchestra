@@ -7,8 +7,8 @@ from .app import create_app
 
 
 class Service:
-    def __init__(self, port, imagery_host, imagery_port, redis_host,
-                 interop_host, interop_port, redis_port):
+    def __init__(self, port, imagery_host, imagery_port, interop_host,
+                 interop_port, redis_host, redis_port):
         """Create a new image-rec-master service."""
         self._port = port
 
