@@ -127,7 +127,8 @@ async def handle_get_pipeline_archive(request):
 
     if archive:
         return web.Response(body=archive, headers={
-            'Content-Disposition': 'attachment; filename="targets.zip"'
+            'Content-Disposition': 'attachment; filename="targets.zip"',
+            'Content-Type': 'application/zip'
         })
     else:
         return web.Response(status=204)
