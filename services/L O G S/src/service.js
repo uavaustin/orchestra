@@ -2,6 +2,8 @@ import Koa from 'koa';
 import request from 'superagent';
 import Influx from 'influx';
 
+import { stats } from './messages';
+
 export default class Service {
   /**
    * Create a new forward-interop service.
@@ -34,10 +36,10 @@ export default class Service {
 
     const influx = new Influx.InfluxDB({
     host: 'localhost',
-    database: 'sojuwu',
+    database: 'lumberjack',
     schema: [
       {
-        measurement: 'Ping',
+        measurement: 'ping',
         fields: {
          name: Influx.FieldType.STRING,
          host: Influx.FieldType.STRING,
@@ -70,8 +72,7 @@ export default class Service {
 
     await Promise.all([
       this._server.closeAsync(),
-      //Promise.all(this._serviceTasks.map(t => t.stop())),
-      //Promise.all(this._deviceTasks.map(t => t.stop()))
+      Promise.all(this._forwardTasks.map(t => t.stop()))
     ]);
 
     logger.debug('Service stopped.');
@@ -81,7 +82,7 @@ export default class Service {
   async _createApi() {
     const app = new Koa();
 
-    //app.context.pingStore = pingStore; 
+    app.context.database = database;
 
     app.use(koaLogger());
 
@@ -103,8 +104,8 @@ export default class Service {
     //Check if database exists and create one if not
     influx.getDatabaseNames()
       .then(names => {
-      if (!names.includes('sojuwu')) {
-        return influx.createDatabase('sojuwu');
+      if (!names.includes('lumberjack')) {
+        return influx.createDatabase('lumberjack');
       }
     })
     .catch(err => {
@@ -124,30 +125,34 @@ export default class Service {
   async _pinglogging() {
     logger.debug('Fetching telemetry.');
 
-    let { body: serviceping } =
+    let { name, host, port, online, ms } =
       await request.get(this._serviceurl + '/api/ping')
-        .proto(stats.PingTimes)
+        .proto(stats.PingTimes.ServicePing)
         .timeout(1000);
+    try {
+      await influx.writePoints([
+        {
+          measurement: 'Ping',
+          fields: { name, host, port, ping: ms },
+          tags: {}
+      }])
+    } catch (err) {
+      console.error('rip');
+    }
 
-    await influx.writePoints([
-      {
-        measurement: 'Ping',
-        fields: { name: this.name, host: this.host, 
-          port: this.port, ping: serviceeping },
-        tags: {}
-      }]).catch(error => {
-        console.error('Error saving data to InfluxDB');
-      })
-
-    //get telemtry rate
-
-    await influx.writePoints([
-      {
-        measurement: 'telemetry',
-        fields: { t1: , t5:, f1:, f5 }, //input telemtry upload rates
-        tags: {}
-      }]).catch(error => {
-        console.error('Error saving data to InfluxDB');
-      })
+    let { time, total_1, fresh_1, total_5, fresh_5 } =
+      await request.get(this._serviceurl + '/api/upload-rate')
+        .proto(stats.InteropUploadRate)
+        .timeout(1000);
+    try {
+      await influx.writePoints([
+        {
+          measurement: 'telemetry',
+          fields: { t1: total_1, t5: total_5, f1: fresh_1, f5: fresh_5 }, 
+          tags: {}
+        }])
+    } catch (err) {
+      console.error('rip');
+    }
   }
 }
