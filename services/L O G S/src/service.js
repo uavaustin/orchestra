@@ -7,27 +7,22 @@ import { stats } from './messages';
 export default class Service {
   /**
    * Create a new forward-interop service.
-   * @param {Object}   options
-   * @param {number}   options.port
-   * @param {string}   options.name
-   * @param {string}   options.host
-   * @param {number}   options.port
-   * @param {number}   options.t1
-   * @param {number}   options.t5
-   * @param {number}   options.f1
-   * @param {number}   options.f5
+   * @param {Object}  options
+   * @param {string}  pinghost
+   * @param {number}  pingport
+   * @param {string}  telemhost
+   * @param {number}  telemport
+   * @param {string}  influxhost
+   * @param {number}  influxport
    */
 
-  constructor(options) {      
-    this._name = options.name;
+  constructor(options) {
+    this._pinghost = options.pinghost;
+    this._pingport = options.pingport;
+    this._telemhost = options.telemhost;
+    this._telemport = options.telemport; 
     this._host = options.host;
     this._port = options.port;
-    this._ping = 0;
-
-    this._t1 = options.t1; //consolidate all telemetry into an object??
-    this._t5 = options.t5;
-    this._f1 = options.f1;
-    this._f5 = options.f5;
   }
 
   /** Start the service. */
@@ -35,13 +30,13 @@ export default class Service {
     logger.debug('Starting service.');
 
     const influx = new Influx.InfluxDB({
-    host: 'localhost',
+    host: _influxhost,
+    port: _influxport,
     database: 'lumberjack',
     schema: [
       {
         measurement: 'ping',
         fields: {
-         name: Influx.FieldType.STRING,
          host: Influx.FieldType.STRING,
          port: Influx.FieldType.INTEGER,
          ping: Influx.FieldType.INTEGER
@@ -53,6 +48,8 @@ export default class Service {
       {
         measurement: 'telemetry',
         fields: {
+          host: Influx.FieldType.STRING,
+          port: Influx.FieldType.INTEGER,
           t1: Influx.FieldType.INTEGER,
           t5: Influx.FieldType.INTEGER,
           f1: Influx.FieldType.INTEGER,
@@ -116,7 +113,7 @@ export default class Service {
 
   _startTask() {
     this._forwardTask =
-      createTimeoutTask(this._pinglogging.bind(this), 200)
+      createTimeoutTask(this._pinglogging.bind(this), 2000)
         .on('error', logger.error)
         .start();
   }
@@ -125,15 +122,15 @@ export default class Service {
   async _pinglogging() {
     logger.debug('Fetching telemetry.');
 
-    let { name, host, port, online, ms } =
-      await request.get(this._serviceurl + '/api/ping')
+    let { host, port } =
+      await request.get('http://' + s.host + ':' + s.port + '/api/ping')
         .proto(stats.PingTimes.ServicePing)
         .timeout(1000);
     try {
       await influx.writePoints([
         {
-          measurement: 'Ping',
-          fields: { name, host, port, ping: ms },
+          measurement: 'ping',
+          fields: { ping: ms },
           tags: {}
       }])
     } catch (err) {
@@ -141,7 +138,7 @@ export default class Service {
     }
 
     let { time, total_1, fresh_1, total_5, fresh_5 } =
-      await request.get(this._serviceurl + '/api/upload-rate')
+      await request.get('http://' + s.host + ':' + s.port + '/api/upload-rate')
         .proto(stats.InteropUploadRate)
         .timeout(1000);
     try {
