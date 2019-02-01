@@ -21,8 +21,8 @@ export default class Service {
     this._pingport = options.pingport;
     this._telemhost = options.telemhost;
     this._telemport = options.telemport; 
-    this._host = options.host;
-    this._port = options.port;
+    this._influxhost = options.influxhost;
+    this._influxport = options.influxport;
   }
 
   /** Start the service. */
@@ -56,11 +56,13 @@ export default class Service {
           f5: Influx.FieldType.INTEGER
         },
         tags: {
-          'telem-data'
+          'name'
         }
       }
      ]
     })
+    this._startTasks();
+    logger.debug('Service started');
   }
 
   /** Stop the service. */
@@ -111,14 +113,14 @@ export default class Service {
     }
   }
 
-  _startTask() {
+  _startTasks() {
     this._forwardTask =
       createTimeoutTask(this._pinglogging.bind(this), 2000)
         .on('error', logger.error)
         .start();
   }
 
-  // Get the latest telemetry and send it to the interop server.
+  // Get telemetry and ping data and send to database
   async _pinglogging() {
     logger.debug('Fetching telemetry.');
 
@@ -134,7 +136,7 @@ export default class Service {
           tags: {}
       }])
     } catch (err) {
-      console.error('rip');
+      console.error('Unable to send ping data');
     }
 
     let { time, total_1, fresh_1, total_5, fresh_5 } =
@@ -149,7 +151,7 @@ export default class Service {
           tags: {}
         }])
     } catch (err) {
-      console.error('rip');
+      console.error('Unable to send telem data');
     }
   }
 }
