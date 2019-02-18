@@ -1,0 +1,37 @@
+{
+  "name": "lumberjack",
+  "version": "0.1.0",
+  "main": "lib/service.js",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./bin/start-service",
+    "build": "babel src --out-dir lib",
+    "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
+    "test": "jest",
+    "lint": "eslint src test --ignore-pattern src/messages.js"
+  },
+  "dependencies": {
+    "common-nodejs": "file:src/common",
+    "dockerode": "^2.5.7",
+    "influx": "^5.0.7",
+    "koa": "^2.6.2",
+    "koa-protobuf": "^0.1.0",
+    "koa-router": "^7.4.0",
+    "protobufjs": "~6.8.6",
+    "source-map-support": "^0.5.6",
+    "superagent-protobuf": "^0.1.0",
+    "superagent": "^3.8.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-source-map-support": "^2.0.1",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^5.3.0",
+    "eslint-plugin-jest": "^21.20.2",
+    "jest": "^23.3.0",
+    "nock": "^9.5.0",
+    "supertest": "^3.1.0"
+  }
+}

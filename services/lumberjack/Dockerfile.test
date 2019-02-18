@@ -1,0 +1,28 @@
+ARG BASE=node:8-alpine
+
+FROM ${BASE}
+
+ENV NODE_ENV=test
+
+WORKDIR /test
+
+# We need packages to install the net-ping node dependency.
+RUN apk --no-cache add \
+    make \
+    g++ \
+    python-dev
+
+COPY common/nodejs/package.json src/common/
+COPY lumberjack/package.json .
+
+RUN npm install
+
+COPY common/messages/stats.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
+COPY lumberjack .
+
+CMD npm run lint && npm test
