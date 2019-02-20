@@ -1,4 +1,5 @@
 coverage
+docker
 pycodestyle
 pytest
 pytest-aiohttp
