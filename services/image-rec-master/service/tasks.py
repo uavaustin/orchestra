@@ -114,7 +114,7 @@ def _create_task(app, coro, interval):
                                                'exception in task'))
                 await asyncio.sleep(0.5)
 
-    return app.loop.create_task(wrapped(app))
+    return asyncio.create_task(wrapped(app))
 
 
 # Queue new images into the all-images, unprocessed-auto, and
