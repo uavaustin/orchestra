@@ -1,13 +1,15 @@
+from aiohttp import web
 import pytest
 
 from messages.image_rec_pb2 import PipelineState, Target
 
-from service.app import create_app
+from service.app import routes
 
 
 @pytest.fixture
 async def app_client(aiohttp_client, redis):
-    app = create_app()
+    app = web.Application()
+    app.router.add_routes(routes)
     app['redis'] = redis
     return await aiohttp_client(app)
 
