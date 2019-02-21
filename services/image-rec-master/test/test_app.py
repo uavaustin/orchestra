@@ -59,6 +59,11 @@ async def test_get_pipeline_target_by_id(app_client, redis):
     assert msg.removed is False
 
 
+async def test_get_pipeline_no_target(app_client, redis):
+    resp = await app_client.get('/api/pipeline/targets/111')
+    assert resp.status == 404
+
+
 async def test_reset_pipeline(app_client, redis):
     await redis.sadd('all-images', 1)
 
