@@ -87,11 +87,11 @@ def _convert_shape(shape):
     if shape == Odlc.UNKNOWN_SHAPE:
         return None
     else:
-        return Odlc.Shape(shape).lower()
+        return Odlc.Shape.Name(shape).lower()
 
 
 def _convert_color(color):
     if color == Odlc.UNKNOWN_COLOR:
         return None
     else:
-        return Odlc.Color(color).lower()
+        return Odlc.Color.Name(color).lower()
