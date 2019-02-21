@@ -1,3 +1,7 @@
+import io
+import json
+import zipfile
+
 from aiohttp import web
 import pytest
 
@@ -71,3 +75,43 @@ async def test_reset_pipeline(app_client, redis):
     assert resp.status == 204
 
     assert await redis.smembers('all-images') == []
+
+
+async def test_get_pipeline_archive(app_client, redis):
+    # Add a target for the archive.
+    odlc = Odlc()
+    odlc.id = 7
+    odlc.pos.lat = 12.0
+    odlc.pos.lon = -13.5
+    odlc.shape = Odlc.SQUARE
+    odlc.background_color = Odlc.RED
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 1, 'errored', 0, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    resp = await app_client.get('/api/pipeline/archive')
+    assert resp.status == 200
+
+    b = io.BytesIO(await resp.read())
+
+    with zipfile.ZipFile(b) as backup:
+        with backup.open('1.json') as meta_file:
+            meta = json.loads(meta_file.read())
+
+            assert meta['type'] == 'standard'
+            assert 'id' not in meta
+            assert meta['latitude'] == 12.0
+            assert meta['longitude'] == -13.5
+            assert meta['shape'] == 'square'
+            assert meta['background_color'] == 'red'
+
+        with backup.open('1.jpg') as image_file:
+            assert image_file.read() == b'test-image'
+
+
+async def test_get_pipeline_empty_archive(app_client, redis):
+    resp = await app_client.get('/api/pipeline/archive')
+    assert resp.status == 204
