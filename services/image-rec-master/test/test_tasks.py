@@ -93,3 +93,124 @@ async def test_queue_new_images_with_images_existing(app, redis, http_mock):
     assert await get_int_set(redis, 'all-images') == [1, 2]
     assert await get_int_list(redis, 'unprocessed-auto') == [1, 2]
     assert await get_int_list(redis, 'unprocessed-manual') == [1, 2]
+
+
+async def test_requeue_auto_images_no_error(app, redis):
+    # Add image 2, and let it process without error, also add image
+    # 3 later which shouldn't affect.
+
+    await redis.lpush('processing-auto', 2)
+
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == []
+    assert await get_int_list(redis, 'processing-auto') == [2]
+    assert await get_int_set(redis, 'processed-auto') == []
+    assert await get_int_set(redis, 'retrying-auto') == []
+    assert await get_int_set(redis, 'errored-auto') == []
+
+    await redis.lrem('processing-auto', 0, 2)
+    await redis.sadd('processed-auto', 2)
+    await redis.lpush('processing-auto', 3)
+
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == []
+    assert await get_int_list(redis, 'processing-auto') == [3]
+    assert await get_int_set(redis, 'processed-auto') == [2]
+    assert await get_int_set(redis, 'retrying-auto') == []
+    assert await get_int_set(redis, 'errored-auto') == []
+
+
+async def test_requeue_auto_images_error_once_immediate(app, redis):
+    # Add image 2, and let it stall, also add 3 which does not stall
+    # and doesn't interfere. Image 2 works the second time.
+
+    await redis.lpush('processing-auto', 2)
+
+    await service.tasks.requeue_auto_images(app)
+
+    await redis.lpush('processing-auto', 3)
+
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == [2]
+    assert await get_int_list(redis, 'processing-auto') == [3]
+    assert await get_int_set(redis, 'processed-auto') == []
+    assert await get_int_set(redis, 'retrying-auto') == [2]
+    assert await get_int_set(redis, 'errored-auto') == []
+
+    await redis.lrem('unprocessed-auto', 0, 2)
+    await redis.lpush('processing-auto', 2)
+    await redis.lrem('processing-auto', 0, 3)
+    await redis.sadd('processed-auto', 3)
+
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == []
+    assert await get_int_list(redis, 'processing-auto') == [2]
+    assert await get_int_set(redis, 'processed-auto') == [3]
+    assert await get_int_set(redis, 'retrying-auto') == [2]
+    assert await get_int_set(redis, 'errored-auto') == []
+
+    await redis.lrem('processing-auto', 0, 2)
+    await redis.sadd('processed-auto', 2)
+
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == []
+    assert await get_int_list(redis, 'processing-auto') == []
+    assert await get_int_set(redis, 'processed-auto') == [2, 3]
+    assert await get_int_set(redis, 'retrying-auto') == [2]
+    assert await get_int_set(redis, 'errored-auto') == []
+
+
+async def test_requeue_auto_images_error_once_delay(app, redis):
+    # Add image 2, and let it stall. Run a couple iterations before
+    # processing 2 again.
+
+    await redis.lpush('processing-auto', 2)
+
+    await service.tasks.requeue_auto_images(app)
+    await service.tasks.requeue_auto_images(app)
+    await service.tasks.requeue_auto_images(app)
+
+    await redis.lrem('unprocessed-auto', 0, 2)
+    await redis.lpush('processing-auto', 2)
+
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == []
+    assert await get_int_list(redis, 'processing-auto') == [2]
+    assert await get_int_set(redis, 'processed-auto') == []
+    assert await get_int_set(redis, 'retrying-auto') == [2]
+    assert await get_int_set(redis, 'errored-auto') == []
+
+    await service.tasks.requeue_auto_images(app)
+
+
+async def test_requeue_auto_images_error_twice(app, redis):
+    # Add image 2, and let it stall, also add 3 which does not stall
+    # and doesn't interfere. Image 2 fails the second time.
+
+    await redis.lpush('processing-auto', 2)
+
+    await service.tasks.requeue_auto_images(app)
+
+    await redis.lpush('processing-auto', 3)
+
+    await service.tasks.requeue_auto_images(app)
+
+    await redis.lrem('unprocessed-auto', 0, 2)
+    await redis.lpush('processing-auto', 2)
+    await redis.lrem('processing-auto', 0, 3)
+    await redis.sadd('processed-auto', 3)
+
+    await service.tasks.requeue_auto_images(app)
+    await service.tasks.requeue_auto_images(app)
+
+    assert await get_int_list(redis, 'unprocessed-auto') == []
+    assert await get_int_list(redis, 'processing-auto') == []
+    assert await get_int_set(redis, 'processed-auto') == [3]
+    assert await get_int_set(redis, 'retrying-auto') == []
+    assert await get_int_set(redis, 'errored-auto') == [2]
