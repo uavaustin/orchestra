@@ -5,7 +5,7 @@ import docker
 import pytest
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def redis_container():
     """Starts up and stops a Redis instance.
 
