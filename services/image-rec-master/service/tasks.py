@@ -76,50 +76,9 @@ from messages.interop_pb2 import Odlc
 from .util import get_int_list, get_int_set
 
 
-async def start_tasks(app):
-    # For checking for errored auto workers.
-    app['prev_processing_auto'] = []
-
-    tasks = []
-    tasks.append(_create_task(app, _queue_new_images, 0.5))
-    tasks.append(_create_task(app, _requeue_auto_images, 15.0))
-    tasks.append(_create_task(app, _submit_targets, 0.0))
-    tasks.append(_create_task(app, _remove_targets, 0.0))
-
-    app['tasks'] = tasks
-
-
-async def stop_tasks(app):
-    for task in app['tasks']:
-        task.cancel()
-
-
-def _create_task(app, coro, interval):
-    async def wrapped(app):
-        while True:
-            try:
-                await coro(app)
-                await asyncio.sleep(interval)
-            except aioredis.MultiExecError:
-                # Another instance updated the watched keys before a
-                # transaction could complete. Short timeout.
-                await asyncio.sleep(0.1)
-            except aioredis.RedisError as e:
-                logging.error(format_error('redis error', str(e)))
-                await asyncio.sleep(0.5)
-            except asyncio.CancelledError as e:
-                raise e
-            except Exception as e:
-                logging.exception(format_error('unexpected error',
-                                               'exception in task'))
-                await asyncio.sleep(0.5)
-
-    return asyncio.create_task(wrapped(app))
-
-
 # Queue new images into the all-images, unprocessed-auto, and
 # unprocessed-manual queues. (skipping not implemented).
-async def _queue_new_images(app):
+async def queue_new_images(app):
     try:
         url = app['imagery_url'] + '/api/available'
         msg = AvailableImages()
@@ -159,10 +118,10 @@ async def _queue_new_images(app):
 # Place an errored auto image back into the auto queue when it errors
 # for the first time, otherwise on the second time marked it as
 # permanently errored. Runs on a slow 15s interval.
-async def _requeue_auto_images(app):
+async def requeue_auto_images(app):
     async with _watch_keys(app, 'processing-auto') as r:
         processing = await get_int_list(r, 'processing-auto')
-        prev = app['prev_processing_auto']
+        prev = app.get('prev_processing_auto', [])
         stale_ids = sorted(set(processing).intersection(set(prev)))
 
         if len(stale_ids) > 0:
@@ -190,7 +149,7 @@ async def _requeue_auto_images(app):
 # Send new targets to interop-proxy as they come in. If the targets
 # are in the removal process then cancel. This process will keep
 # trying until the target is submitted.
-async def _submit_targets(app):
+async def submit_targets(app):
     # Acquire a connection to prevent blocking other tasks and get
     # the next target id when it comes up.
     with await app['redis'] as r:
@@ -295,7 +254,7 @@ async def _post_odlc(app, odlc):
 
 # Remove targets from interop-proxy as they come in. Note that some
 # might be removed in the submission task as well.
-async def _remove_targets(app):
+async def remove_targets(app):
     # Acquire a connection to prevent blocking other tasks and get
     # the next target id when it comes up.
     with await app['redis'] as r:

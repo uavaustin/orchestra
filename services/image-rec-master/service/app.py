@@ -1,12 +1,14 @@
+import asyncio
 from time import time
 
 from aiohttp import web
+import aioredis
 from google.protobuf.json_format import MessageToJson
 
 from messages.image_rec_pb2 import PipelineState, Target
 
 from .backup import create_archive
-from .tasks import start_tasks, stop_tasks
+from . import tasks
 from .util import get_int_set
 
 
@@ -166,8 +168,46 @@ def _proto_response(request, msg):
 def create_app():
     """Create an aiohttp web application."""
     app = web.Application()
-    app.on_startup.append(start_tasks)
-    app.on_shutdown.append(stop_tasks)
+    app.on_startup.append(_start_tasks)
+    app.on_shutdown.append(_stop_tasks)
     app.router.add_routes(routes)
 
     return app
+
+
+async def _start_tasks(app):
+    app_tasks = []
+    app_tasks.append(_schedule_task(app, tasks.queue_new_images, 0.5))
+    app_tasks.append(_schedule_task(app, tasks.requeue_auto_images, 15.0))
+    app_tasks.append(_schedule_task(app, tasks.submit_targets, 0.0))
+    app_tasks.append(_schedule_task(app, tasks.remove_targets, 0.0))
+
+    app['tasks'] = app_tasks
+
+
+async def _stop_tasks(app):
+    for app_task in app['tasks']:
+        app_task.cancel()
+
+
+def _schedule_task(app, coro, interval):
+    async def wrapped(app):
+        while True:
+            try:
+                await coro(app)
+                await asyncio.sleep(interval)
+            except aioredis.MultiExecError:
+                # Another instance updated the watched keys before a
+                # transaction could complete. Short timeout.
+                await asyncio.sleep(0.1)
+            except aioredis.RedisError as e:
+                logging.error(format_error('redis error', str(e)))
+                await asyncio.sleep(0.5)
+            except asyncio.CancelledError as e:
+                raise e
+            except Exception as e:
+                logging.exception(format_error('unexpected error',
+                                               'exception in task'))
+                await asyncio.sleep(0.5)
+
+    return asyncio.create_task(wrapped(app))
