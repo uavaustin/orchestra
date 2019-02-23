@@ -42,7 +42,7 @@ Target pipeline:
     'submitting-targets' to indicate that they are being submitted.
     Upon successful submission, they are moved into
     'submitted-targets'. Otherwise, on submission failure, they are
-    placed into 'errored-targets'. Submission failures are not do
+    placed into 'errored-targets'. Submission failures are not due
     to API unavailability, but instead invalid submission data
     (`400`s).
 
