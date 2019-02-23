@@ -141,6 +141,10 @@ async def requeue_auto_images(app):
                     tr.sadd('errored-auto', image_id)
                     logging.info(f'image {image_id} errored twice')
 
+                # Don't let this get marked as already processing
+                # previously when task is run next.
+                processing.remove(image_id)
+
             await tr.execute()
 
         app['prev_processing_auto'] = processing
