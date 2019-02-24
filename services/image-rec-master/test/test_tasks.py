@@ -1,8 +1,9 @@
 from aiohttp import ClientSession, web
-from aioresponses import aioresponses
+from aioresponses import CallbackResult, aioresponses
 import pytest
 
 from messages.imagery_pb2 import AvailableImages
+from messages.interop_pb2 import Odlc
 
 import service.tasks
 from service.util import get_int_list, get_int_set
@@ -214,3 +215,136 @@ async def test_requeue_auto_images_error_twice(app, redis):
     assert await get_int_set(redis, 'processed-auto') == [3]
     assert await get_int_set(redis, 'retrying-auto') == []
     assert await get_int_set(redis, 'errored-auto') == [2]
+
+
+async def test_submit_targets(app, redis, http_mock):
+    odlc = Odlc()
+    odlc.type = Odlc.EMERGENT
+    odlc.pos.lat = 12.01
+    odlc.pos.lon = -13.51
+    odlc.description = 'test test'
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 0, 'errored', 0, 'removed', 0)
+
+    post_odlc = Odlc()
+    post_odlc.type = Odlc.EMERGENT
+    post_odlc.id = 2
+    post_odlc.pos.lat = 12.01
+    post_odlc.pos.lon = -13.51
+    post_odlc.description = 'test test'
+
+    await redis.sadd('all-targets', 5)
+    await redis.lpush('unsubmitted-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    def post_cb(url, data, **kwargs):
+        assert data == odlc.SerializeToString()
+        return CallbackResult(
+            status=201, body=post_odlc.SerializeToString(),
+            headers={'Content-Type': 'application/x-protobuf'}
+        )
+
+    http_mock.post('http://interop-proxy:1234/api/odlcs', callback=post_cb)
+
+    await service.tasks.submit_targets(app)
+
+    end_odlc = Odlc()
+    end_odlc.type = Odlc.EMERGENT
+    end_odlc.id = 2
+    end_odlc.pos.lat = 12.01
+    end_odlc.pos.lon = -13.51
+    end_odlc.description = 'test test'
+    end_odlc.image = b'test-image'
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == [5]
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == []
+    assert await get_int_list(redis, 'unsubmitted-targets') == []
+    assert await get_int_list(redis, 'submitting-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': end_odlc.SerializeToString(),
+        b'submitted': b'1', b'errored': b'0', b'removed': b'0'
+    }
+
+
+async def test_submit_targets_server_error_once(app, redis, http_mock):
+    odlc = Odlc()
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 0, 'errored', 0, 'removed', 0)
+
+    post_odlc = Odlc()
+    post_odlc.id = 2
+
+    await redis.sadd('all-targets', 5)
+    await redis.lpush('unsubmitted-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    http_mock.post('http://interop-proxy:1234/api/odlcs', status=500)
+    http_mock.post('http://interop-proxy:1234/api/odlcs',
+                   body=post_odlc.SerializeToString(),
+                   headers={'Content-Type': 'application/x-protobuf'})
+
+    await service.tasks.submit_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == [5]
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == []
+    assert await get_int_list(redis, 'unsubmitted-targets') == []
+    assert await get_int_list(redis, 'submitting-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': post_odlc.SerializeToString(),
+        b'submitted': b'1', b'errored': b'0', b'removed': b'0'
+    }
+
+
+async def test_submit_targets_client_error(app, redis, http_mock):
+    odlc = Odlc()
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 0, 'errored', 0, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.lpush('unsubmitted-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    http_mock.post('http://interop-proxy:1234/api/odlcs', status=400)
+
+    await service.tasks.submit_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == []
+    assert await get_int_set(redis, 'errored-targets') == [5]
+    assert await get_int_set(redis, 'removed-targets') == []
+    assert await get_int_list(redis, 'unsubmitted-targets') == []
+    assert await get_int_list(redis, 'submitting-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'0', b'errored': b'1', b'removed': b'0'
+    }
+
+
+async def test_submit_targets_cancelled(app, redis, http_mock):
+    odlc = Odlc()
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 0, 'errored', 0, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.lpush('unsubmitted-targets', 5)
+    await redis.lpush('unremoved-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    await service.tasks.submit_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == []
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == [5]
+    assert await get_int_list(redis, 'unsubmitted-targets') == []
+    assert await get_int_list(redis, 'unremoved-targets') == []
+    assert await get_int_list(redis, 'submitting-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'0', b'errored': b'0', b'removed': b'1'
+    }
