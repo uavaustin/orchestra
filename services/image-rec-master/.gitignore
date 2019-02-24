@@ -1,0 +1,13 @@
+# Python defaults
+__pycache__/
+*.py[cod]
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# pytest
+.pytest_cache/
+coverage
