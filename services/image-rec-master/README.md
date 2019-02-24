@@ -4,8 +4,8 @@ Service that queues images and submits targets for the image recognition
 pipeline on Redis.
 
 See [`tasks.py`](service/tasks.py) for a description of how the images and
-targets flow throught the pipeline in this service and through other image
-pipeline services.
+targets flow throughout the pipeline in this service and through other image
+recognition pipeline services.
 
 ## Environment Variables
 
