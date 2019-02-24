@@ -1,10 +1,11 @@
-language: node_js
-node_js: '8'
+language: minimal
+dist: xenial
 sudo: required
 env:
   - COVERALLS_PARALLEL=true
 services:
   - docker
+install: true  # disabled
 script: ./ci/script.sh
 after_script: ./ci/after-script.sh
 jobs:
@@ -19,9 +20,20 @@ jobs:
     - env: SERVICE=dashboard
     - stage: test
       env: SERVICE_TEST=telemetry
+      language: node_js
+      node_js: '8'
     - env: SERVICE_TEST=interop-proxy
+      language: elixir
+      elixir: '1.6'
     - env: SERVICE_TEST=pong
+      language: node_js
+      node_js: '8'
     - env: SERVICE_TEST=forward-interop
+      language: node_js
+      node_js: '8'
+    - env: SERVICE_TEST=imagery
+      language: node_js
+      node_js: '8'
 notifications:
   email: false
   webhooks:

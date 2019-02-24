@@ -22,6 +22,48 @@ let m2 = interop.InteropMessage.encode({
 test('telemetry data is forwarded to interop-proxy', async () => {
   let service = new Service({
     port: 4000,
+    uploadInterval: 200,
+    telemetryHost: 'telemetry-test',
+    telemetryPort: 5000,
+    interopProxyHost: 'interop-proxy-test',
+    interopProxyPort: 8000
+  });
+
+  let telemetryApi = nock('http://telemetry-test:5000')
+    .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
+    .get('/api/interop-telem')
+    .reply(200, t1)
+    .get('/api/interop-telem')
+    .reply(200, t2);
+
+  let interopProxyApi = nock('http://interop-proxy-test:8000')
+    .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
+    .post('/api/telemetry', t1)
+    .reply(200, m1)
+    .post('/api/telemetry', t2)
+    .reply(200, m2);
+
+  try {
+    await service.start();
+
+    logger.transports[0].silent = true;
+
+    // Give enough time for two forward operations.
+    await new Promise(resolve => setTimeout(resolve, 399));
+
+    logger.transports[0].silent = false;
+
+    telemetryApi.done();
+    interopProxyApi.done();
+  } finally {
+    await service.stop();
+  }
+});
+
+test('telemetry data is forwarded with smaller upload interval', async () => {
+  let service = new Service({
+    port: 4000,
+    uploadInterval: 75, //this interval works consistently, can go a bit lower
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -46,7 +88,8 @@ test('telemetry data is forwarded to interop-proxy', async () => {
     await service.start();
 
     // Give enough time for two forward operations.
-    await new Promise(resolve => setTimeout(resolve, 399));
+    await new Promise(resolve =>
+      setTimeout(resolve, service._uploadInterval*2-1));
 
     telemetryApi.done();
     interopProxyApi.done();
@@ -58,6 +101,7 @@ test('telemetry data is forwarded to interop-proxy', async () => {
 test('forward failures are recovered from', async () => {
   let service = new Service({
     port: 4000,
+    uploadInterval: 200,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',
@@ -96,6 +140,7 @@ test('forward failures are recovered from', async () => {
 test('last telemetry is uploaded when service is stopped', async () => {
   let service = new Service({
     port: 4000,
+    uploadInterval: 200,
     telemetryHost: 'telemetry-test',
     telemetryPort: 5000,
     interopProxyHost: 'interop-proxy-test',

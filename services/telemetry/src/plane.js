@@ -41,12 +41,26 @@ export default class Plane {
       speed: {},
       battery: {}
     });
+
     // Will be assigned on each GLOBAL_POSITION_INT message.
     this._interopTelem = null;
     this._cameraTelem = telemetry.CameraTelem.create({});
+
     // Will be assigned after mission current or first mission is
     // received.
     this._missionCurrent = null;
+
+    // Will be non-null if there is a mission download request
+    // already in the queue (within a write barrier).
+    // This also serves as a cache.
+    this._getMissionPromise = null;
+
+    // When the last operation on the task queue is done,
+    // remove the promise so as to not keep the mission cached
+    // for a very long time.
+    this._taskQueue.drain = () => {
+      this._getMissionPromise = null;
+    };
 
     this._bindMessages();
   }
@@ -89,15 +103,19 @@ export default class Plane {
    * @returns {Promise<telemetry.RawMission>}
    */
   async getRawMission() {
-    return await this._execTransaction(async () => {
-      this._cxnState = ConnectionState.READING;
+    if (this._getMissionPromise === null) {
+      this._getMissionPromise = this._execTransaction(async () => {
+        this._cxnState = ConnectionState.READING;
 
-      try {
-        return await receiveMission(this._mav);
-      } finally {
-        this._cxnState = ConnectionState.IDLE;
-      }
-    });
+        try {
+          return await receiveMission(this._mav);
+        } finally {
+          this._cxnState = ConnectionState.IDLE;
+        }
+      });
+    }
+
+    return await this._getMissionPromise;
   }
 
   /**
@@ -107,6 +125,11 @@ export default class Plane {
    * @returns {Promise}
    */
   async setRawMission(mission) {
+    // Write barrier - we can't reuse the getRawMission promise
+    // past the write if we want to guarantee that getting the
+    // mission after setting a mission will return the new mission.
+    this._getMissionPromise = null;
+
     await this._execTransaction(async () => {
       this._cxnState = ConnectionState.WRITING;
 
@@ -153,6 +176,9 @@ export default class Plane {
    * @returns {Promise}
    */
   async setMissionCurrent(missionCurrent) {
+    // Write barrier.
+    this._getMissionPromise = null;
+
     await this._execTransaction(async () => {
       this._cxnState = ConnectionState.WRITING;
 

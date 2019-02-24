@@ -22,7 +22,7 @@ services:
         ipv4_address: 172.16.238.10
 
   interop-server:
-    image: auvsisuas/interop-server:2018.09
+    image: auvsisuas/interop-server:2018.12
     ports:
       - '8080:80'
     networks:
@@ -62,6 +62,7 @@ services:
                       pong,172.16.238.14:7000
                       forward-interop,172.16.238.15:4000
                       imagery,172.16.238.50:8081
+      - PING_DEVICES=localhost-pong,127.0.0.1
     ports:
       - '7000:7000'
     networks:

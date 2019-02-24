@@ -1,6 +1,6 @@
 # Imagery
 
-Service that hosts either gathers images or repeats imagery data.
+Services that takes photos and repeats imagery data.
 
 The service has three backends which can be used:
 
@@ -12,57 +12,40 @@ The service has three backends which can be used:
   no camera, or two or more cameras are found, an error will be thrown.
 
   By default, the capture rate is set to take a photo every two seconds. To set
-  a different interval, set the `CAPTURE_INTERVAL` environment variable.
+  a different interval, set the `CAPTURE_INTERVAL` environment variable. The
+  interval is in milliseconds.
 
-  To add telemetry to images, set the `TELEMETRY_URL` environment variable.
+  To specify the telemetry service for tagging images, you can specify the
+  `TELEMETRY_HOST` and `TELEMETRY_PORT` environment variables. These both
+  default to `telemetry` and `5000`.
 
 - `file`
 
-  Monitors a file and watches for new PNG files to be added.
+  Monitors a file and watches for new JPG or PNG files to be added. You should
+  mount the directory which new images are expected to go to (in the container
+  this is `/opt/new-images`). *Make sure to move files into this direcotory
+  instead of copying them.* If copying, it's possible that the backend will
+  read the file before it is finished being written to.
 
 - `sync`
 
   Syncs images from another imagery service. Note that the image id numbers may
-  not line up with the other service if the syncing service is started with
-  existing images.
-
-If mounting an existing imagery folder onto the container, the service will use
-the images in that folder.
-
-Note that no telemetry data is gathered for images at the current time.
-
-## Running the Image
-
-The `BACKEND` environment variable should be set to one of `gphoto2`, `file`,
-or `sync`.
-
-If using `gphoto2`, the `CAPTURE_INTERVAL` environment variable can be set to
-set the rate at which images are taken in seconds. This defaults to every two
-seconds. To add telemetry to images, set the `TELEMETRY_URL` environment
-variable. Without this, the image metadata will not contain any camera
-telemetry.
-
-If using `sync`, the `IMAGERY_SYNC_URL` should be set to the imagery service to
-be synced from.
-
-If using `file`, you should mount the directory which new images are expected
-to go to (`/opt/new-images`).
+  not completely line up with the other service. The `IMAGERY_SYNC_HOST` should
+  be set to specify the imagery service to be synced from.
 
 To see and access the images registered, you can mount the the imagery
-directory on the host (`/opt/imagery`).
+directory on the host (`/opt/imagery`). If mounting an existing imagery folder
+onto the container, the service will use the images in that folder.
 
-Here's an example of using the `gphoto2` backend (camera required to use) and
-mounting the imagery directory on the host computer:
+## Environment Variables
 
-```
-$ docker run -it -p 8081:8081 \
-    --privileged
-    -e BACKEND=gphoto2
-    -e CAPTURE_INTERVAL=2.5
-    -e TELEMETRY_URL=192.168.0.4:5000
-    -v '$HOME/Desktop/imagery:/opt/imagery'
-    uavaustin/forward-interop
-```
+- `PORT` - defaults to `8081`.
+- `BACKEND` - defaults to `gphoto2`.
+- `IMAGERY_SYNC_HOST` - required when using the `sync` backend.
+- `IMAGERY_SYNC_PORT` - defaults to `8081`.
+- `TELEMETRY_HOST` - used with the `gphoto2` backend, defaults to `telemetry`.
+- `TELEMETRY_PORT` - defaults to `5000`.
+- `CAPTURE_INTERVAL` - used with the `gphoto2` backend, defaults to `2000` ms.
 
 ## Endpoints
 

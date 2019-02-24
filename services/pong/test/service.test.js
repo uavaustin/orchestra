@@ -92,7 +92,57 @@ beforeAll(async () => {
 
 }, 10000);
 
-test('check the protobuf response', async () => {
+test('check the service ping response', async () => {
+  let res = await request('http://127.0.0.1:7000')
+    .get('/api/ping')
+    .proto(stats.PingTimes);
+
+  expect(res.status).toEqual(200);
+
+  let service_pings = res.body.service_pings;
+
+  expect(service_pings).toEqual(res.body.list);
+
+  expect(service_pings[0].name).toEqual('meta');
+  expect(service_pings[0].host).toEqual('127.0.0.1');
+  expect(service_pings[0].port).toEqual('7000');
+  expect(service_pings[0].online).toEqual(true);
+  expect(service_pings[0].ms).toBeGreaterThan(0);
+  expect(service_pings[0].ms).toBeLessThan(1000);
+
+  expect(service_pings[1].name).toEqual('no-endpoint');
+  expect(service_pings[1].host).toEqual('no-endpoint-service');
+  expect(service_pings[1].port).toEqual('7003');
+  expect(service_pings[1].online).toEqual(false);
+  expect(service_pings[1].ms).toEqual(0);
+
+  expect(service_pings[2].name).toEqual('non-existent');
+  expect(service_pings[2].host).toEqual('non-existent-service');
+  expect(service_pings[2].port).toEqual('12345');
+  expect(service_pings[2].online).toEqual(false);
+  expect(service_pings[2].ms).toEqual(0);
+
+  expect(service_pings[3].name).toEqual('test1');
+  expect(service_pings[3].host).toEqual('test1-service');
+  expect(service_pings[3].port).toEqual('7001');
+  expect(service_pings[3].online).toEqual(true);
+  expect(service_pings[3].ms).toBeGreaterThan(0);
+  expect(service_pings[3].ms).toBeLessThan(1000);
+
+  expect(service_pings[4].name).toEqual('test2');
+  expect(service_pings[4].host).toEqual('test2-service');
+  expect(service_pings[4].port).toEqual('7002');
+  expect(service_pings[4].online).toEqual(true);
+  expect(service_pings[4].ms).toBeGreaterThan(0);
+  expect(service_pings[4].ms).toBeLessThan(1000);
+});
+
+test('check the device ping response', async () => {
+  /*
+  Mock pingDevice
+  Call the pingDevice function with some devices and
+  Check that device_pings is good
+  */
   let res = await request('http://127.0.0.1:7000')
     .get('/api/ping')
     .proto(stats.PingTimes);
@@ -146,11 +196,10 @@ test('check the ICMP response', async () => {
     .proto(stats.PingTimes);
 
   expect(res.status).toEqual(200);
-
   let device_pings = res.body.device_pings;
 
   expect(device_pings[0].name).toEqual('device1');
-  expect(device_pings[0].host).toEqual('172.17.0.3');
+  expect(device_pings[0].host).toEqual(deviceIP);
   expect(device_pings[0].online).toEqual(true);
   expect(device_pings[0].ms).toBeGreaterThan(0);
   expect(device_pings[0].ms).toBeLessThan(1000);
@@ -175,5 +224,4 @@ test('mock apis were hit correctly', () => {
 
 afterAll(async () => {
   await service.stop();
-  await device.remove({ force: true});
 }, 10000);
