@@ -348,3 +348,148 @@ async def test_submit_targets_cancelled(app, redis, http_mock):
         b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
         b'submitted': b'0', b'errored': b'0', b'removed': b'1'
     }
+
+
+async def test_remove_targets(app, redis, http_mock):
+    odlc = Odlc()
+    odlc.id = 2
+    odlc.type = Odlc.OFF_AXIS
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 1, 'errored', 0, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.sadd('submitted-targets', 5)
+    await redis.lpush('unremoved-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    http_mock.delete('http://interop-proxy:1234/api/odlcs/2')
+
+    await service.tasks.remove_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == [5]
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == [5]
+    assert await get_int_list(redis, 'unremoved-targets') == []
+    assert await get_int_list(redis, 'removing-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'1', b'errored': b'0', b'removed': b'1'
+    }
+
+
+async def test_remove_targets_already_removed(app, redis, http_mock):
+    odlc = Odlc()
+    odlc.id = 2
+    odlc.type = Odlc.OFF_AXIS
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 1, 'errored', 0, 'removed', 1)
+
+    await redis.sadd('all-targets', 5)
+    await redis.sadd('submitted-targets', 5)
+    await redis.sadd('removed-targets', 5)
+    await redis.lpush('unremoved-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    http_mock.delete('http://interop-proxy:1234/api/odlcs/2')
+
+    await service.tasks.remove_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == [5]
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == [5]
+    assert await get_int_list(redis, 'unremoved-targets') == []
+    assert await get_int_list(redis, 'removing-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'1', b'errored': b'0', b'removed': b'1'
+    }
+
+
+async def test_remove_targets_no_exist(app, redis, http_mock):
+    # If something doesn't exist it shouldn't be removed.
+    odlc = Odlc()
+    odlc.id = 2
+    odlc.type = Odlc.OFF_AXIS
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 0, 'errored', 1, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.sadd('errored-targets', 5)
+    await redis.lpush('unremoved-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    http_mock.delete('http://interop-proxy:1234/api/odlcs/2', status=404)
+
+    await service.tasks.remove_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == []
+    assert await get_int_set(redis, 'errored-targets') == [5]
+    assert await get_int_set(redis, 'removed-targets') == []
+    assert await get_int_list(redis, 'unremoved-targets') == []
+    assert await get_int_list(redis, 'removing-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'0', b'errored': b'1', b'removed': b'0'
+    }
+
+
+async def test_remove_targets_server_error(app, redis, http_mock):
+    odlc = Odlc()
+    odlc.id = 2
+    odlc.type = Odlc.OFF_AXIS
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 1, 'errored', 0, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.sadd('submitted-targets', 5)
+    await redis.lpush('unremoved-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    http_mock.delete('http://interop-proxy:1234/api/odlcs/2', status=500)
+    http_mock.delete('http://interop-proxy:1234/api/odlcs/2')
+
+    await service.tasks.remove_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == [5]
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == [5]
+    assert await get_int_list(redis, 'unremoved-targets') == []
+    assert await get_int_list(redis, 'removing-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'1', b'errored': b'0', b'removed': b'1'
+    }
+
+
+async def test_remove_targets_unsubmitted(app, redis, http_mock):
+    odlc = Odlc()
+    odlc.type = Odlc.OFF_AXIS
+    odlc.image = b'test-image'
+    target = ('id', 5, 'image_id', 6, 'odlc', odlc.SerializeToString(),
+              'submitted', 0, 'errored', 0, 'removed', 0)
+
+    await redis.sadd('all-targets', 5)
+    await redis.lpush('unsubmitted-targets', 5)
+    await redis.lpush('unremoved-targets', 5)
+    await redis.hmset('target:5', *target)
+
+    await service.tasks.remove_targets(app)
+
+    assert await get_int_set(redis, 'all-targets') == [5]
+    assert await get_int_set(redis, 'submitted-targets') == []
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == [5]
+    assert await get_int_list(redis, 'unremoved-targets') == []
+    assert await get_int_list(redis, 'removing-targets') == []
+    assert await redis.hgetall('target:5') == {
+        b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
+        b'submitted': b'0', b'errored': b'0', b'removed': b'1'
+    }
