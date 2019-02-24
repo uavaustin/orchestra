@@ -25,10 +25,10 @@ export default class Service {
    */
 
   constructor(options) {
-    this._pingHost = '10.148.67.123';
+    this._pingHost = 'pong';
     this._pingPort = 7000;
-    this._telemHost = '10.148.67.123';
-    this._telemPort = 5000; 
+    this._forwardInteropHost = 'forward-interop';
+    this._forwardInteropPort = 4000;
     this._influxHost = options.influxHost;
     this._influxPort = options.influxPort;
     this._influx = null;
@@ -39,35 +39,36 @@ export default class Service {
     logger.debug('Starting service.');
 
     this._influx = new Influx.InfluxDB({
-    host: '10.148.67.123', //env variable localhost
-    port: 8086, //env variable 8086
-    database: 'lumberjack',
-    schema: [
-      {
-        measurement: 'ping',
-        fields: {
-         ping: Influx.FieldType.FLOAT
-        },
-        tags: [
-          'host',
-          'port'
-        ]
-      },
-      {
-        measurement: 'telemetry',
-        fields: {
-          t1: Influx.FieldType.INTEGER,
-          t5: Influx.FieldType.INTEGER,
-          f1: Influx.FieldType.INTEGER,
-          f5: Influx.FieldType.INTEGER
-        },
-        tags: [
-          'host',
-          'port'
+      host: '10.146.229.103', //env variable
+      port: 8086, //env variable 8086
+      database: 'lumberjack',
+      schema: [
+        {
+          measurement: 'ping',
+          fields: {
+            ping: Influx.FieldType.INTEGER
+          },
+          tags: [
+            'host',
+            'port',
+            'name'
           ]
-      }
-    ]
-  })
+        },
+        {
+          measurement: 'telemetry',
+          fields: {
+            t1: Influx.FieldType.INTEGER,
+            t5: Influx.FieldType.INTEGER,
+            f1: Influx.FieldType.INTEGER,
+            f5: Influx.FieldType.INTEGER
+          },
+          tags: [
+            'host',
+            'port'
+          ]
+        }
+      ]
+    });
 
     /*this._influx.getDatabaseNames()
     .then(names => {
@@ -109,88 +110,62 @@ export default class Service {
 
     // Start and wait until the server is up and then return it.
     return await new Promise((resolve, reject) => {
-      const server = app.listen(6000, (err) => { 
+      const server = app.listen(6000, (err) => {
         if (err) {
           reject(err);
-          console.log(err);
         }
         else {
-          console.log('lmaoooo');
           resolve(server);
         }
-    });
+      });
 
-    server.closeAsync = () => new Promise((resolve) => {
+      server.closeAsync = () => new Promise((resolve) => {
         server.close(() => resolve());
       });
     });
   }
 
-  
-
   _startTasks() {
     this._forwardTask =
-      createTimeoutTask(this._logging.bind(this), 500)
-        .on('error', () => {
-          console.log('muppet');
-        })
+      createTimeoutTask(this._logging.bind(this), 1000)
+        .on('error', logger.error)
         .start();
   }
 
   // Get telemetry and ping data and send to database
   async _logging() {
     logger.debug('');
-    let ping = Math.random()*100+1;
 
-    try {
-      let { body: ping } =
-        await request.get('http://' + this._pingHost + ':' + this._pingPort + '/api/ping')
-          .proto(stats.PingTimes)
-          .timeout(1000);
-    } catch (err) {
-        console.log(err); 
-    }
-    //console.log(ping);
+    let ping =
+      (await request.get('http://' + this._pingHost + ':' +
+        this._pingPort + '/api/ping')
+        .proto(stats.PingTimes)
+        .timeout(1000)).body;
 
-    try {
+    for (let endpoint of ping.api_pings) {
+      let { host, port, name } = endpoint;
       this._influx.writeMeasurement('ping', [
         {
-          fields: { ping: ping },
-          tags: { host: this._pingHost, port: this._pingPort }
-      }], {
+          fields: { ping: endpoint.ms },
+          tags: { host, port, name }
+        }], {
         database: 'lumberjack'
       });
-    } catch (err) {
-      console.log(err);
     }
 
-    try {
-    let { body: total_1, fresh_1, total_5, fresh_5 } =
-      await request.get('http://' + this._telemHost + ':' + this._telemPort + '/api/upload-rate')
+    let rate =
+      (await request.get('http://' + this._forwardInteropHost + ':' +
+        this._forwardInteropPort + '/api/upload-rate')
         .proto(stats.InteropUploadRate)
-        .timeout(1000);
-      } catch (err) {
-        console.log(err);
-      }
-    let total_1 = Math.random()*100+1; 
-    let total_5 = Math.random()*100+1;
-    let fresh_1 = Math.random()*100+1;
-    let fresh_5 = Math.random()*100+1;
+        .timeout(1000)).body;
 
-    //console.log(total_1);    
-    //console.log(total_5);
-    //console.log(fresh_1);   
-    //console.log(fresh_5);
+    console.log(rate); //eslint-disable-line
 
-    try {
-      this._influx.writePoints([
-        {
-          measurement: 'telemetry',
-          fields: { t1: total_1, t5: total_5, f1: fresh_1, f5: fresh_5 }, 
-          tags: { host: this._telemHost, port: this._telemPort }
-        }])
-    } catch (err) {
-      console.error(err);
-    }
+    this._influx.writeMeasurement('telemetry', [
+      {
+        fields: { t1: rate.total_1, t5: rate.total_5,
+          f1: rate.fresh_1, f5: rate.fresh_5 },
+        tags: { host: this._forwardInteropHost, port: this._forwardInteropPort }
+      }]);
   }
 }
