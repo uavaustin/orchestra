@@ -1,0 +1,78 @@
+/*
+ * Image recognition message definitions.
+ */
+
+syntax = "proto3";
+
+import "messages/interop.proto";
+
+package image_rec;
+
+message PipelineState {
+    double time = 1;
+    // List of all registered images.
+    repeated uint32 all_images = 2;
+    // Current state of auto image rec images.
+    //
+    // Images are stored by their id number from the imagery service.
+    //
+    // - Unprocessed images are queued for processing.
+    // - Processing images are currently in processing.
+    // - Processed images were successfully processed.
+    // - Retrying images have failed once and are requeued.
+    // - Errored images have failed twice and are not requeued.
+    // - Skipped images were intentionally not queued for processing.
+    repeated uint32 unprocessed_auto = 3;
+    repeated uint32 processing_auto = 4;
+    repeated uint32 processed_auto = 5;
+    repeated uint32 retrying_auto = 6;
+    repeated uint32 errored_auto = 7;
+    repeated uint32 skipped_auto = 8;
+    // Current state of manual image rec images.
+    //
+    // Similar to the above, except that there is no processing
+    // window for manual image rec.
+    repeated uint32 unprocessed_manual = 9;
+    repeated uint32 processed_manual = 10;
+    repeated uint32 skipped_manual = 11;
+    // Current state of targets.
+    //
+    // Targets are stored by id numbers starting at 0 and don't
+    // necessarily correspond to interop target ids.
+    //
+    // - All targets contains all created at any point.
+    // - Unsubmitted targets are in the submission backlog.
+    // - Submitting targets are currently being submitted.
+    // - Submitted targets were successfully submitted.
+    // - Errored targets have failed to submit and are abandoned.
+    // - Unremoved targets are in the removal backlog.
+    // - Removing targets are currently being removed.
+    // - Removed targets were sucessfully removed.
+    repeated uint32 all_targets = 12;
+    repeated uint32 unsubmitted_targets = 13;
+    repeated uint32 submitting_targets = 14;
+    repeated uint32 submitted_targets = 15;
+    repeated uint32 errored_targets = 16;
+    repeated uint32 unremoved_targets = 17;
+    repeated uint32 removing_targets = 18;
+    repeated uint32 removed_targets = 19;
+}
+
+message Target {
+    // Time last updated.
+    double time = 1;
+    // Target id number given by the image rec pipeline.
+    uint32 id = 2;
+    // Odlc submitted to the server. After submission, this is
+    // overrided with the response which fills in the interop id
+    // number.
+    interop.Odlc odlc = 3;
+    // The image that this target originates from.
+    uint32 image_id = 4;
+    // If the target has even been successfully submitted.
+    bool submitted = 5;
+    // If the target couldn't be submitted.
+    bool errored = 6;
+    // If the target has been removed.
+    bool removed = 7;
+}
