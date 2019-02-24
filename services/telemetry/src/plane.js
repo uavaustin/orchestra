@@ -1,7 +1,7 @@
 import queue from 'async/queue';
 
 import { interop, telemetry } from './messages';
-
+import logger from './common/logger';
 import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission, sendMissionCurrent } from './mission';
 import { degrees, modDegrees360, modDegrees180 } from './util';
@@ -239,13 +239,27 @@ export default class Plane {
   // Attach listeners below to update the state on incomming
   // messages.
   _bindMessages() {
-    this._mav
-      .on('ATTITUDE', this._onAttitude.bind(this))
-      .on('GLOBAL_POSITION_INT', this._onGlobalPositionInt.bind(this))
-      .on('MISSION_CURRENT', this._onMissionCurrent.bind(this))
-      .on('MISSION_ITEM', this._onMissionItem.bind(this))
-      .on('VFR_HUD', this._onVfrHud.bind(this))
-      .on('SYS_STATUS', this._onSysStatus.bind(this));
+    let messageHandler = {
+      'ATTITUDE' : this._onAttitude.bind(this),
+      'GLOBAL_POSITION_INT' : this._onGlobalPositionInt.bind(this),
+      'MISSION_CURRENT': this._onMissionCurrent.bind(this),
+      'MISSION_ITEM': this._onMissionItem.bind(this),
+      'VFR_HUD': this._onVfrHud.bind(this),
+      'SYS_STATUS': this._onSysStatus.bind(this)
+    };
+
+    // Make every message definition .on
+    for (let message in messageHandler) {
+      this._mav.on(message, messageHandler[message]);
+    }
+
+    // If the message type is not part
+    // of the message handler, print debug message
+    this._mav.on('message', (type) => {
+      if (!(type in messageHandler)) {
+        logger.debug(`Ignoring message ${type}`);
+      }
+    });
   }
 
   async _onAttitude(fields) {
