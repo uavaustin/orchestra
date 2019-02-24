@@ -27,13 +27,8 @@ message PingTimes {
     }
 
     double time = 1;
-    // Use service_pings instead, will remove.
     repeated ServicePing list = 2;
-<<<<<<< HEAD
-    repeated ServicePing api_pings = 3;
-=======
     repeated ServicePing service_pings = 3;
->>>>>>> 38889d36b69f200c7824fbd134a63f0d06b74c39
     repeated DevicePing device_pings = 4;
 }
 

@@ -101,11 +101,6 @@ export default class Service {
         .on('error', logger.error)
         .start();
     });
-    this._deviceTasks = this._pingDevices.map((s) => {
-      return createTimeoutTask(() => this._pingDevice(s.name, s.host), 3000)
-        .on('error', logger.error)
-        .start();
-    });
   }
 
   // Hit a service and record how long the request takes round-trip.
@@ -132,40 +127,23 @@ export default class Service {
     this._pingStore.updateServicePing(service, online, ms);
   }
 
-<<<<<<< HEAD
   //Ping device and update how long the request takes
   async _pingDevice(device, host) {
-    const ping = require('net-ping');
-=======
-  // Ping device and update how long the request takes.
-  async _pingDevice(device, host) {
->>>>>>> 38889d36b69f200c7824fbd134a63f0d06b74c39
     const session = ping.createSession();
     let online;
     let ms;
 
     try {
       ms = await new Promise((resolve, reject) => {
-<<<<<<< HEAD
         session.pingHost(host, (err, target, sent, rcvd) => {
-=======
-        session.pingHost(host, (err, _target, sent, rcvd) => {
->>>>>>> 38889d36b69f200c7824fbd134a63f0d06b74c39
           if (err) reject(err);
           else resolve(rcvd - sent);
         });
       });
-<<<<<<< HEAD
-      online = true;
-    } catch (e) {
-=======
-
       if (ms < 1) ms = 1;
-
       online = true;
     } catch (_err) {
       ms = 0;
->>>>>>> 38889d36b69f200c7824fbd134a63f0d06b74c39
       online = false;
     }
 
