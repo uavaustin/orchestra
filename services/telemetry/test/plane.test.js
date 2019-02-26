@@ -10,16 +10,16 @@ beforeAll(() => {
 test('log unknown message', async () => {
   const msgName = 'HIGH_LATENCY';
   const originalLoggerDebug = logger.debug;
-  let onUnknownMessage = jest.fn().mockImplementation(() => {});
-  const spy = jest.spyOn(logger, 'debug').mockImplementation((msg) => {
-    if (msg.includes(msgName))
-      onUnknownMessage();
-    originalLoggerDebug(msg);
-  });
 
-  plane._mav.emit('message', { type: msgName });
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  expect(onUnknownMessage).toHaveBeenCalled();
+  let spy;
+  await new Promise((resolve) => {
+    spy = jest.spyOn(logger, 'debug').mockImplementation((msg) => {
+      if (msg.includes(msgName))
+        resolve();
+      originalLoggerDebug(msg);
+    });
+    plane._mav.emit('message', msgName);
+  });
 
   spy.mockRestore();
 });
