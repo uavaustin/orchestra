@@ -57,7 +57,7 @@ test('get available images with GET /api/available', async () => {
   app.use(router.allowedMethods());
 
   app.context.imageStore = {
-    getCount: jest.fn().mockReturnValue(6)
+    getAvailable: jest.fn().mockReturnValue([0, 1, 2, 3, 4, 5])
   };
 
   const server = app.listen();

@@ -20,7 +20,7 @@ router.get('/api/count', async (ctx) => {
 });
 
 router.get('/api/available', async (ctx) => {
-  const id_list = await ctx.imageStore.getCount();
+  const id_list = await ctx.imageStore.getAvailable();
   ctx.proto = imagery.AvailableImages.create({
     time: Date.now() / 1000,
     count: id_list.length,

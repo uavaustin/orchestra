@@ -21,21 +21,24 @@ export default class SyncBackend {
   constructor(imageStore, syncUrl) {
     this._imageStore = imageStore;
     this._syncUrl = syncUrl;
-    this._active = false;
+    this._task = null;
   }
 
   /** Start the sync loop in the background. */
   async start() {
-    this._active = true;
-    this._runLoop();
+    await this._runLoop();
   }
 
   async stop() {
+    if (!this._task)
+      throw Error('backend is not running');
+
     await this._task.stop();
+    this._task = null;
   }
 
   async _runLoop() {
-    // The last image number we've fetched.
+    // The images we've fetched so far.
     // Making it into a set allows constant-time lookup.
     let stored = new Set(await this._imageStore.getAvailable());
 
@@ -78,10 +81,10 @@ export default class SyncBackend {
   async _getAvailable() {
     const { body: msg } =
       await request.get(this._syncUrl + '/api/available')
-        .proto(imagery.ImageCount)
+        .proto(imagery.AvailableImages)
         .timeout(5000);
 
-    return msg.count;
+    return msg.id_list;
   }
 
   /** Get an image from the sync url by id. */
