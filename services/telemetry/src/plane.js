@@ -255,10 +255,8 @@ export default class Plane {
 
     // If the message type is not part
     // of the message handler, print debug message
-    this._mav.on('message', (type) => {
-      if (!(type in messageHandler)) {
-        logger.debug(`Ignoring message ${type}`);
-      }
+    this._mav.on('ignored', (type) => {
+      logger.debug(`Ignoring message ${type}`);
     });
   }
 

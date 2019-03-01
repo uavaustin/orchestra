@@ -18,7 +18,7 @@ test('log unknown message', async () => {
         resolve();
       originalLoggerDebug(msg);
     });
-    plane._mav.emit('message', msgName);
+    plane._mav.emit('ignored', msgName);
   });
 
   spy.mockRestore();
