@@ -40,7 +40,8 @@ ENV NODE_ENV=production
 # We need both libgphoto2 and graphicsmagick at runtime.
 RUN apk --no-cache add \
     libgphoto2-dev \
-    graphicsmagick
+    graphicsmagick \
+    exiv2
 
 # Copying over gphoto2 since we don't have to build it again.
 COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2

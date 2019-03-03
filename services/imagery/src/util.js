@@ -1,7 +1,8 @@
 import { promisify } from 'util';
+import { exec } from 'child_process';
+import fs from 'fs-extra';
 
 import gm from 'gm';
-
 /** Wait for an amount of time. */
 export async function wait(milliseconds) {
   return await new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -14,7 +15,12 @@ export async function convertPng(image) {
 
 /** Take EXIF data off of an image. */
 export async function removeExif(image) {
-  return await imageToBuffer(gm(image, 'image.jpg').noProfile());
+  await fs.writeFile('/tmp/temp.jpg', image);
+  await promisify(exec)('exiv2 -M "del Exif.Image.Orientation" '
+    + 'modify /tmp/temp.jpg');
+  let newImage = await fs.readFile('/tmp/temp.jpg');
+  await fs.unlink('/tmp/temp.jpg');
+  return newImage;
 }
 
 async function imageToBuffer(gmImage) {
