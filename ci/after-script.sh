@@ -15,6 +15,19 @@ handle_nodejs() {
   fi
 }
 
+handle_python() {
+  PYTHON_COV=services/"$SERVICE_TEST"/coverage/.coverage
+  COV_CONFIG=services/"$SERVICE_TEST"/setup.cfg
+
+  if [ -f "$PYTHON_COV" ]; then
+    sudo sed -i "s,/test/,$PWD/services/$SERVICE_TEST/,g" "$PYTHON_COV"
+    sudo sed -i "s,coverage/.coverage,$PYTHON_COV," "$COV_CONFIG"
+    pip install coveralls
+    coveralls --rcfile="$COV_CONFIG"
+  fi
+}
+
 if [ -n "$SERVICE_TEST" ]; then
   [ -n "$TRAVIS_NODE_VERSION" ] && handle_nodejs
+  [ -n "$TRAVIS_PYTHON_VERSION" ] && handle_python
 fi

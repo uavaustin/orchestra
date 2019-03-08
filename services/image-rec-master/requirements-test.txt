@@ -1,0 +1,7 @@
+aioresponses
+coverage
+docker
+pycodestyle
+pytest
+pytest-aiohttp
+pytest-cov
