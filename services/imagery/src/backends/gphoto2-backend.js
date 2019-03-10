@@ -7,7 +7,7 @@ import addProtobuf from 'superagent-protobuf';
 import logger from '../common/logger';
 import { imagery, telemetry } from '../messages';
 
-import { removeExif, wait } from '../util';
+import { removeOrientation, wait } from '../util';
 
 addProtobuf(request);
 
@@ -134,7 +134,7 @@ export default class GPhoto2Backend {
 
     // Taking off EXIF data to prevent image preview applications
     // from rotating it.
-    return await removeExif(photo);
+    return await removeOrientation(photo);
   }
 
   /** Get the camera gphoto2 object. */

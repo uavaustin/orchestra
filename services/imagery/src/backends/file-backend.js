@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import logger from '../common/logger';
 import { imagery } from '../messages';
 
-import { convertPng, removeExif } from '../util';
+import { convertPng, removeOrientation } from '../util';
 
 const WATCH_FOLDER_NAME = '/opt/new-images';
 
@@ -64,7 +64,7 @@ export default class FileBackend {
 
     // Taking off EXIF data to prevent image preview applications
     // from rotating it.
-    data = await removeExif(data);
+    data = await removeOrientation(data);
 
     // The only metadata here is the timestamp.
     const metadata = imagery.Image.create({
