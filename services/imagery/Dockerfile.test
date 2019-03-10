@@ -12,7 +12,8 @@ RUN apk --no-cache add \
     git \
     python-dev \
     libgphoto2-dev \
-    graphicsmagick
+    graphicsmagick \
+    exiv2
 
 COPY common/nodejs/package.json src/common/
 COPY imagery/package.json .

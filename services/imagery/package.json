@@ -26,7 +26,9 @@
     "source-map-support": "^0.5.6",
     "sprintf-js": "^1.1.1",
     "superagent": "^3.8.3",
-    "superagent-protobuf": "^0.1.0"
+    "superagent-protobuf": "^0.1.0",
+    "tmp": "0.0.33",
+    "tmp-promise": "^1.0.5"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
