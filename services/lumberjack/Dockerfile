@@ -17,6 +17,7 @@ COPY lumberjack/package.json .
 RUN npm install
 
 COPY common/messages/stats.proto \
+	 common/messages/telemetry.proto \
     src/messages/
 
 RUN npm run build-msg

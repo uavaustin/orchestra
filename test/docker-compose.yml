@@ -63,6 +63,8 @@ services:
                       forward-interop,172.16.238.15:4000
                       imagery,172.16.238.50:8081
       - PING_DEVICES=localhost-pong,127.0.0.1
+                     bradley,10.148.116.231
+                     remus,10.146.52.235
     ports:
       - '7000:7000'
     networks:

@@ -1,9 +1,10 @@
 import Koa from 'koa';
 import request from 'superagent';
-const Influx = require('influx');
+const Influx = require('influx'); //fix
 import addProtobuf from 'superagent-protobuf';
 
 import { stats } from './messages';
+import { telemetry } from './messages';
 import { createTimeoutTask } from './common/task';
 import koaLogger from './common/koa-logger';
 import logger from './common/logger';
@@ -25,10 +26,12 @@ export default class Service {
    */
 
   constructor(options) {
-    this._pingHost = 'pong';
-    this._pingPort = 7000;
-    this._forwardInteropHost = 'forward-interop';
-    this._forwardInteropPort = 4000;
+    this._pingHost = 'pong'; //fix
+    this._pingPort = 7000; //fix
+    this._forwardInteropHost = 'forward-interop'; //fix
+    this._forwardInteropPort = 4000; //fix
+    this._telemetryHost = 'telemetry';
+    this._telemetryPort = 5000;
     this._influxHost = options.influxHost;
     this._influxPort = options.influxPort;
     this._influx = null;
@@ -39,14 +42,15 @@ export default class Service {
     logger.debug('Starting service.');
 
     this._influx = new Influx.InfluxDB({
-      host: '10.146.229.103', //env variable
-      port: 8086, //env variable 8086
+      host: '10.146.67.244', //fix
+      port: 8086, //fix
       database: 'lumberjack',
       schema: [
         {
           measurement: 'ping',
           fields: {
-            ping: Influx.FieldType.INTEGER
+            apiPing: Influx.FieldType.INTEGER,
+            devicePing: Influx.FieldType.INTEGER
           },
           tags: [
             'host',
@@ -55,12 +59,23 @@ export default class Service {
           ]
         },
         {
-          measurement: 'telemetry',
+          measurement: 'upload-rate',
           fields: {
             t1: Influx.FieldType.INTEGER,
             t5: Influx.FieldType.INTEGER,
             f1: Influx.FieldType.INTEGER,
             f5: Influx.FieldType.INTEGER
+          },
+          tags: [
+            'host',
+            'port'
+          ]
+        },
+        {
+          measurement: 'telemetry',
+          fields: {
+            ptimes: Influx.FieldType.FLOAT,
+            gtimes: Influx.FieldType.FLOAT
           },
           tags: [
             'host',
@@ -79,7 +94,7 @@ export default class Service {
     .catch(err => {
       logger.debug('Failed to create database');
     })*/
-    this._influx.createDatabase('lumberjack');
+    this._influx.createDatabase('lumberjack'); //fix
 
     this._startTasks();
     this.server = await this._createApi();
@@ -126,14 +141,22 @@ export default class Service {
   }
 
   _startTasks() {
-    this._forwardTask =
-      createTimeoutTask(this._logging.bind(this), 1000)
+    this._pingTask =
+      createTimeoutTask(this._pingTask.bind(this), 1000)
+        .on('error', logger.error)
+        .start();
+    this._uploadRateTask = 
+      createTimeoutTask(this._uploadRate.bind(this), 1000)
+        .on('error', logger.error)
+        .start();
+    this._telemetryTask =
+      createTimeoutTask(this._telemetryOverview.bind(this), 1000)
         .on('error', logger.error)
         .start();
   }
 
-  // Get telemetry and ping data and send to database
-  async _logging() {
+  // Get service ping data and write it to the database
+  async _pingTask() {
     logger.debug('');
 
     let ping =
@@ -142,30 +165,59 @@ export default class Service {
         .proto(stats.PingTimes)
         .timeout(1000)).body;
 
-    for (let endpoint of ping.api_pings) {
+    //write data for services
+    for (let endpoint of ping.service_pings) {
       let { host, port, name } = endpoint;
-      this._influx.writeMeasurement('ping', [
+      await this._influx.writeMeasurement('ping', [
         {
-          fields: { ping: endpoint.ms },
+          fields: { apiPing: endpoint.ms },
           tags: { host, port, name }
         }], {
         database: 'lumberjack'
       });
     }
 
+    //write data for devices
+    for (let endpoint of ping.device_pings) {
+      let { host, port, name} = endpoint;
+      await this._influx.writeMeasurement('ping', [
+        {
+          fields: { devicePing: endpoint.ms },
+          tags: { host, port, name}
+        }], {
+          database: 'lumberjack'
+      });
+    }
+  }
+
+  // Get telemetry upload rate data and write it to the database
+  async _uploadRate() {
     let rate =
       (await request.get('http://' + this._forwardInteropHost + ':' +
         this._forwardInteropPort + '/api/upload-rate')
         .proto(stats.InteropUploadRate)
         .timeout(1000)).body;
 
-    console.log(rate); //eslint-disable-line
-
-    this._influx.writeMeasurement('telemetry', [
+    await this._influx.writeMeasurement('upload-rate', [
       {
         fields: { t1: rate.total_1, t5: rate.total_5,
           f1: rate.fresh_1, f5: rate.fresh_5 },
         tags: { host: this._forwardInteropHost, port: this._forwardInteropPort }
+      }]);
+  }
+
+  //Get time from plane
+  async _telemetryOverview() {
+    let overview = 
+      (await request.get('http://' + this._telemetryHost + ':' + 
+        this._telemetryPort + '/api/overview')
+        .proto(telemetry.Overview)
+        .timeout(1000)).body;
+
+    await this._influx.writeMeasurement('telemetry', [
+      {
+        fields: { ptimes: overview.time, gtimes: overview.time },
+        tags: { host: this._telemetryHost, port: this._telemetryPort }
       }]);
   }
 }
