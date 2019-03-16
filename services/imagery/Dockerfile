@@ -66,7 +66,7 @@ ENV PORT=8081 \
     TELEMETRY_HOST='telemetry' \
     TELEMETRY_HOST='5000' \
     # Interval to trigger gphoto2 images at in the gphoto2 backend.
-    # Defaults to 2 seconds.
+    # Defaults to 2000 ms.
     CAPTURE_INTERVAL='2000' \
     # Maximum number of images that can be stored at a time in the
     # store. Old images will be pruned after the limit is reached.

@@ -46,6 +46,7 @@ onto the container, the service will use the images in that folder.
 - `TELEMETRY_HOST` - used with the `gphoto2` backend, defaults to `telemetry`.
 - `TELEMETRY_PORT` - defaults to `5000`.
 - `CAPTURE_INTERVAL` - used with the `gphoto2` backend, defaults to `2000` ms.
+- `MAX_IMAGES` - defaults to `0` (no limit).
 
 ## Endpoints
 
