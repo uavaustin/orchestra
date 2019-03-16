@@ -23,6 +23,7 @@ test('create an empty image store', async () => {
   await imageStore.setup();
 
   expect(await imageStore.getCount()).toEqual(0);
+  expect(await imageStore.exists(1)).toEqual(false);
 });
 
 test('images can be added to the image store', async () => {
@@ -106,6 +107,8 @@ test('image store deletes old images', async () => {
 
   expect(await imageStore.getCount()).toEqual(2);
   expect(await imageStore.getAvailable()).toEqual(lastIds);
+  expect(await imageStore.exists(ids[0])).toEqual(true);
+  expect(await imageStore.deleted(ids[0])).toEqual(true);
 });
 
 test('image store deletes any existing image', async () => {
@@ -124,4 +127,21 @@ test('image store deletes any existing image', async () => {
 
   expect(await imageStore.getCount()).toEqual(2);
   expect(await imageStore.getAvailable()).toEqual(lastIds);
+  expect(await imageStore.exists(ids[0])).toEqual(true);
+  expect(await imageStore.deleted(ids[0])).toEqual(true);
+});
+
+test('image store gets latest ID', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  await imageStore.addImage(
+    shapes[0], imagery.Image.create({ time: 4 })
+  );
+
+  const latestId = await imageStore.addImage(
+    shapes[1], imagery.Image.create({ time: 5 })
+  );
+
+  expect(await imageStore.getLatestId()).toEqual(latestId);
 });

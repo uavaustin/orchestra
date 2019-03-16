@@ -129,7 +129,7 @@ export default class ImageStore extends EventEmitter {
   /** Get the ID of the last image stored. */
   async getLatestId() {
     return (await this._withDb(async (db) => await db.get(
-      'SELECT id FROM images WHERE NOT deleted SORT BY id DESC'
+      'SELECT id FROM images WHERE NOT deleted ORDER BY id DESC LIMIT 1'
     )))['id'];
   }
 
@@ -138,16 +138,27 @@ export default class ImageStore extends EventEmitter {
    * whether or not it was deleted).
    */
   async exists(id) {
+    // Please watch out if future versions of sqlite
+    // change the return value to null, which is a more
+    // correct return type than undefined. To defend
+    // myself from this, I have used a `!=` instead of
+    // a `!==`.
     return (await this._withDb(async (db) => await db.get(
       'SELECT id FROM images WHERE id = ?', id
-    ))) !== null;
+    ))) != undefined;
   }
 
   /** Return whether or not an image is marked as deleted. */
   async deleted(id) {
-    return (await this._withDb(async (db) => await db.get(
+    const row = await this._withDb(async (db) => await db.get(
       'SELECT deleted FROM images WHERE id = ?', id
-    ))) === 1;
+    ));
+
+    if (row === null) {
+      throw Error(`image ${id} does not exist`);
+    }
+
+    return row['deleted'] === 1;
   }
 
   /**
