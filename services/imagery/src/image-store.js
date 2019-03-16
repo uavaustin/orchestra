@@ -8,6 +8,7 @@ import sqlite from 'sqlite';
 import genericPool from 'generic-pool';
 
 import { imagery } from './messages';
+import logger from './common/logger';
 
 const FOLDER_NAME = '/opt/imagery';
 const DB_FILE = path.join(FOLDER_NAME, 'images.sqlite3');
@@ -46,7 +47,7 @@ export default class ImageStore extends EventEmitter {
 
   /** Creates an empty directory for the image store if needed. */
   async setup() {
-    if (this._clearExisting === true) {
+    if (this._clearExisting) {
       await fs.emptyDir(FOLDER_NAME);
     }
 
@@ -59,53 +60,94 @@ export default class ImageStore extends EventEmitter {
     // connections will wait on each others' transactions to finish
     // before proceeding execution or starting another transaction.
     this._dbPool = genericPool.createPool({
-      create: () => sqlite.open(DB_FILE),
+      create: async () => {
+        const db = await sqlite.open(DB_FILE);
+        db.configure('busyTimeout', 3000);
+        return db;
+      },
       destroy: (db) => db.close()
     }, { max: 5, min: 0 });
 
-    let db = await this._dbPool.acquire();
-    await db.run('CREATE TABLE IF NOT EXISTS ' +
-      'images(id INTEGER PRIMARY KEY AUTOINCREMENT)');
-    this._dbPool.release(db);
+    await this._withDb(async (db) => {
+      await db.run('CREATE TABLE IF NOT EXISTS ' +
+        'images(id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
+               'deleted BOOLEAN DEFAULT FALSE)');
+    });
+  }
+
+  /**
+   * Allows operations on the image store database, automatically
+   * acquiring and releasing a database connection, and optionally
+   * wrapping it with a transaction such that it automatically
+   * aborts on any unhandled exception.
+   * @param {function(db)} fn Function that contains a database
+   * connection
+   * @param {boolean} transaction Whether or not database operations
+   * should be wrapped in a transaction
+   */
+  async _withDb(fn, transaction = false) {
+    const db = await this._dbPool.acquire();
+
+    // This should only error if the busy timeout is exceeded.
+    if (transaction) {
+      await db.exec('BEGIN IMMEDIATE TRANSACTION');
+    }
+
+    try {
+      const retval = await fn(db);
+
+      if (transaction) {
+        await db.exec('COMMIT');
+      }
+
+      return retval;
+    } catch (e) {
+      if (transaction) {
+        await db.exec('ROLLBACK');
+      }
+
+      throw e;
+    } finally {
+      this._dbPool.release(db);
+    }
   }
 
   /** Get the number of images stored. */
   async getCount() {
-    let db = await this._dbPool.acquire();
-    const count = (await db.get('SELECT COUNT(id) FROM images'))['COUNT(id)'];
-    this._dbPool.release(db);
-
-    return count;
+    return (await this._withDb(async (db) => await db.get(
+      'SELECT COUNT(id) FROM images WHERE NOT deleted'
+    )))['COUNT(id)'];
   }
 
   /** Get a list of image IDs available for retrieval. */
   async getAvailable() {
-    let db = await this._dbPool.acquire();
-    const available = (await db.all('SELECT id FROM images ORDER BY id ASC'))
-      .map(row => row.id);
-    this._dbPool.release(db);
-
-    return available;
+    return (await this._withDb(async (db) => await db.all(
+      'SELECT id FROM images WHERE NOT deleted ORDER BY id ASC'
+    ))).map(row => row.id);
   }
 
   /** Get the ID of the last image stored. */
   async getLatestId() {
-    let db = await this._dbPool.acquire();
-    const latest = (await db.get(
-      'SELECT id FROM images SORT BY id DESC'))['id'];
-    this._dbPool.release(db);
-
-    return latest;
+    return (await this._withDb(async (db) => await db.get(
+      'SELECT id FROM images WHERE NOT deleted SORT BY id DESC'
+    )))['id'];
   }
 
-  /** Return whether or not an image exists. */
+  /**
+   * Return whether or not an image ID exists (regardless of
+   * whether or not it was deleted).
+   */
   async exists(id) {
-    let db = await this._dbPool.acquire();
-    const exists = await db.get('SELECT id FROM images WHERE id = ?', id)
-      !== null;
-    this._dbPool.release(db);
+    return (await this._withDb(async (db) => await db.get(
+      'SELECT id FROM images WHERE id = ?', id
+    ))) !== null;
+  }
 
-    return exists;
+  /** Return whether or not an image is marked as deleted. */
+  async deleted(id) {
+    return (await this._withDb(async (db) => await db.get(
+      'SELECT deleted FROM images WHERE id = ?', id
+    ))) === 1;
   }
 
   /**
@@ -122,12 +164,9 @@ export default class ImageStore extends EventEmitter {
    * @return {Promise.<number>} The id number for the image.
    */
   async addImage(image, metadata, id = undefined) {
-    let db = await this._dbPool.acquire();
-
-    // Allow only one image at a time to be added to the database.
-    await db.run('BEGIN IMMEDIATE TRANSACTION');
-
-    try {
+    // This is a transaction, so it only allows one image at a time
+    // to be added to the database.
+    await this._withDb(async (db) => {
       if (id === undefined) {
         id = (await db.run('INSERT INTO images DEFAULT VALUES')).lastID;
       } else {
@@ -145,18 +184,39 @@ export default class ImageStore extends EventEmitter {
 
       // Broadcast the new image id.
       this.emit('image', id);
-
-      await db.exec('COMMIT');
-    } catch (e) {
-      await db.exec('ROLLBACK');
-      throw e;
-    } finally {
-      this._dbPool.release(db);
-    }
+    }, true);
 
     await this.purgeImages();
 
     return id;
+  }
+
+  /**
+   * Delete a single image from the image store and mark it as
+   * deleted.
+   * @param {number} id
+   * @param {sqlite.Database} transaction Database connection that
+   * is currently undergoing a transaction
+   */
+  async deleteImage(id, transaction = undefined) {
+    const markDeleted = async (db) => {
+      await db.run('UPDATE images SET deleted = TRUE WHERE id = ?', id);
+    };
+
+    if (transaction)
+      markDeleted(transaction);
+    else
+      await this._withDb(markDeleted, true);
+
+    try {
+      await this.removeImage(id);
+      await this.removeMetadata(id);
+    } catch (e) {
+      // FS errors should not stop the whole transaction, especially
+      // if someone decided to monkey around and accidentally delete
+      // an image.
+      logger.warn(`Problem deleting image ${id} from file system:`, e);
+    }
   }
 
   /** Remove old images such that the image store is no longer
@@ -164,33 +224,22 @@ export default class ImageStore extends EventEmitter {
   async purgeImages() {
     if (!this._maxImages) return;
 
-    let db = await this._dbPool.acquire();
+    await this._withDb(async (db) => {
+      // We cannot use this.getCount because it uses a new connection
+      // from the connection pool, so it will not work while we are
+      // performing a transaction.
+      let getCount = async () => (await db.get(
+        'SELECT COUNT(id) FROM images WHERE NOT DELETED'
+      ))['COUNT(id)'];
 
-    await db.exec('BEGIN IMMEDIATE TRANSACTION');
-
-    // We cannot use this.getCount because it uses a new connection
-    // from the connection pool, so it will not work while we are
-    // performing a transaction.
-    let getCount = async () => (await db.get(
-      'SELECT COUNT(id) FROM images'
-    ))['COUNT(id)'];
-
-    try {
       while (await getCount() > this._maxImages) {
-        let id = (await db.get('SELECT id FROM images ORDER BY id ASC'))['id'];
-        await db.run('DELETE FROM images WHERE id = ?', id);
+        let id = (await db.get(
+          'SELECT id FROM images WHERE NOT DELETED ORDER BY id ASC'
+        ))['id'];
 
-        await this.removeImage(id);
-        await this.removeMetadata(id);
+        this.deleteImage(id, db);
       }
-
-      await db.exec('COMMIT');
-    } catch (e) {
-      await db.exec('ROLLBACK');
-      throw e;
-    } finally {
-      this._dbPool.release(db);
-    }
+    }, true);
   }
 
   /** Return the image for the id. */

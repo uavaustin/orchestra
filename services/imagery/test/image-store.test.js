@@ -107,3 +107,21 @@ test('image store deletes old images', async () => {
   expect(await imageStore.getCount()).toEqual(2);
   expect(await imageStore.getAvailable()).toEqual(lastIds);
 });
+
+test('image store deletes any existing image', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  const ids = [];
+  for (let i = 0; i < 3; i++) {
+    ids[i] = await imageStore.addImage(
+      shapes[i],
+      imagery.Image.create({ time: i })
+    );
+  }
+  await imageStore.deleteImage(ids[0]);
+  const lastIds = [ids[ids.length - 2], ids[ids.length - 1]];
+
+  expect(await imageStore.getCount()).toEqual(2);
+  expect(await imageStore.getAvailable()).toEqual(lastIds);
+});

@@ -61,11 +61,27 @@ router.get('/api/image/next', async (ctx) => {
 router.get('/api/image/:id', async (ctx) => {
   const id = parseInt(ctx.params.id);
 
-  // 404 if this image doesn't exist.
+  // 404 if this image doesn't exist. 410 if it was deleted.
   if (Number.isNaN(id) || !await ctx.imageStore.exists(id)) {
     ctx.status = 404;
+  } else if (await ctx.imageStore.deleted(id)) {
+    ctx.status = 410;
   } else {
     ctx.proto = await getImageMessage(ctx.imageStore, id);
+  }
+});
+
+router.delete('/api/image/:id', async (ctx) => {
+  const id = parseInt(ctx.params.id);
+
+  // 404 if this image doesn't exist. 410 if it was deleted.
+  if (Number.isNaN(id) || !await ctx.imageStore.exists(id)) {
+    ctx.status = 404;
+  } else if (await ctx.imageStore.deleted(id)) {
+    ctx.status = 410;
+  } else {
+    await ctx.imageStore.deleteImage(id);
+    ctx.status = 200;
   }
 });
 
