@@ -43,8 +43,9 @@ RUN apk --no-cache add \
     graphicsmagick \
     exiv2
 
-# Copying over gphoto2 since we don't have to build it again.
+# Copying over gphoto2 and sqlite so that we don't have to build it again.
 COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2
+COPY --from=builder /builder/node_modules/sqlite3 node_modules/sqlite3
 
 COPY common/nodejs/package.json src/common/
 COPY imagery/package.json .
