@@ -43,8 +43,9 @@ RUN apk --no-cache add \
     graphicsmagick \
     exiv2
 
-# Copying over gphoto2 since we don't have to build it again.
+# Copying over gphoto2 and sqlite so that we don't have to build it again.
 COPY --from=builder /builder/node_modules/gphoto2 node_modules/gphoto2
+COPY --from=builder /builder/node_modules/sqlite3 node_modules/sqlite3
 
 COPY common/nodejs/package.json src/common/
 COPY imagery/package.json .
@@ -66,8 +67,12 @@ ENV PORT=8081 \
     TELEMETRY_HOST='telemetry' \
     TELEMETRY_HOST='5000' \
     # Interval to trigger gphoto2 images at in the gphoto2 backend.
-    # Defaults to 2 seconds.
-    CAPTURE_INTERVAL='2000'
+    # Defaults to 2000 ms.
+    CAPTURE_INTERVAL='2000' \
+    # Maximum number of images that can be stored at a time in the
+    # store. Old images will be pruned after the limit is reached.
+    # Set this to 0 to disable.
+    MAX_IMAGES='200'
 
 EXPOSE 8081
 

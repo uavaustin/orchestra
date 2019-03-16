@@ -21,34 +21,40 @@ export default class SyncBackend {
   constructor(imageStore, syncUrl) {
     this._imageStore = imageStore;
     this._syncUrl = syncUrl;
-    this._active = false;
+    this._task = null;
   }
 
   /** Start the sync loop in the background. */
   async start() {
-    this._active = true;
-    this._runLoop();
+    await this._runLoop();
   }
 
   async stop() {
+    if (!this._task)
+      throw Error('backend is not running');
+
     await this._task.stop();
+    this._task = null;
   }
 
   async _runLoop() {
-    // The last image number we've fetched.
-    let lastId = this._imageStore.getCount() - 1;
+    // The images we've fetched so far.
+    // Making it into a set allows constant-time lookup.
+    let stored = new Set(await this._imageStore.getAvailable());
 
     this._task = createTimeoutTask(async () => {
       try {
         // First we'll just see what the latest id number is.
-        const latestId = await this._getLatestId();
+        const remoteAvailable = await this._getAvailable();
 
-        // Throw an error if the id number went down.
-        if (latestId < lastId)
-          throw Error('Unexpected latest id number');
+        // Filter the available images by the ones that our local
+        // store currently doesn't have.
+        let missing = remoteAvailable.filter(id => !stored.has(id));
 
         // Getting the images we don't have.
-        for (let id = lastId + 1; id <= latestId; id++) {
+        // This must be sequential rather than parallel
+        // to keep the `next` endpoint's behavior consistent.
+        for (const id of missing) {
           logger.debug('Fetching image: ' + id);
 
           const msg = await this._getImage(id);
@@ -60,9 +66,9 @@ export default class SyncBackend {
           msg.image = null;
 
           // Adding it to the image store.
-          await this._imageStore.addImage(image, msg);
+          await this._imageStore.addImage(image, msg, id);
 
-          lastId = id;
+          stored.add(id);
         }
       } catch (err) {
         const message = err.name + ': ' + err.message;
@@ -71,14 +77,14 @@ export default class SyncBackend {
     }, 250).start();
   }
 
-  /** Get the latest id number the sync url has. */
-  async _getLatestId() {
+  /** Get the list of downloadable images from the remote service. */
+  async _getAvailable() {
     const { body: msg } =
-      await request.get(this._syncUrl + '/api/count')
-        .proto(imagery.ImageCount)
+      await request.get(this._syncUrl + '/api/available')
+        .proto(imagery.AvailableImages)
         .timeout(5000);
 
-    return msg.count - 1;
+    return msg.id_list;
   }
 
   /** Get an image from the sync url by id. */

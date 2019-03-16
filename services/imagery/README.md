@@ -46,6 +46,7 @@ onto the container, the service will use the images in that folder.
 - `TELEMETRY_HOST` - used with the `gphoto2` backend, defaults to `telemetry`.
 - `TELEMETRY_PORT` - defaults to `5000`.
 - `CAPTURE_INTERVAL` - used with the `gphoto2` backend, defaults to `2000` ms.
+- `MAX_IMAGES` - defaults to `0` (no limit).
 
 ## Endpoints
 
@@ -82,7 +83,6 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   On successful response: `200` status code with `stats::ImageCaptureRate`
   Protobuf message.
 
-
 - `GET /api/image/latest`
 
   Get the latest image registered.
@@ -104,10 +104,21 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
 - `GET /api/image/:id`
 
-  Get an image by an id.
+  Get an image by ID.
 
-  Id numbers start at zero. See `GET /api/count` to see how many images there
+  ID numbers start at one. See `GET /api/count` to see how many images there
   are before requesting.
 
   On successful response: `200` status code with `imagery::Image` Protobuf
   message.
+
+  If the image once existed but was deleted (purged), `410 Gone` will be
+  returned instead. If the image never existed, `404` will be returned.
+
+- `DELETE /api/image/:id`
+
+  Delete an image by ID.
+
+  This has the same behavior as `GET`, except that on successful response,
+  only `200` will be returned with no data.
+
