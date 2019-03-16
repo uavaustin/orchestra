@@ -181,7 +181,7 @@ export default class ImageStore extends EventEmitter {
       if (id === undefined) {
         id = (await db.run('INSERT INTO images DEFAULT VALUES')).lastID;
       } else {
-        await db.run('INSERT INTO images VALUES (?)', id);
+        await db.run('INSERT INTO images(id) VALUES (?)', id);
       }
 
       // Set the id number in the metadata.
