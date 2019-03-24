@@ -11,8 +11,8 @@ COPY image-rec-manual-ui/package.json .
 
 RUN npm install
 
-COPY common/messages/image-rec.proto \
-    common/messages/imagery.proto \
+COPY common/messages/imagery.proto \
+    common/messages/image_rec.proto \
     common/messages/interop.proto \
     common/messages/telemetry.proto \
     src/messages/
