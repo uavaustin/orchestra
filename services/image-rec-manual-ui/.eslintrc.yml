@@ -1,0 +1,42 @@
+parser: babel-eslint
+env:
+  es6: true
+  browser: true
+  node: true
+plugins:
+  - babel
+  - react
+  - jest
+extends:
+  - 'eslint:recommended'
+  - 'plugin:react/recommended'
+  - 'plugin:jest/recommended'
+parserOptions:
+  ecmaVersion: 2017
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
+settings:
+  react:
+    version: detect
+rules:
+  max-len:
+    - error
+    - code: 79
+    - comments: 69
+  no-trailing-spaces:
+    - error
+  eol-last:
+    - error
+  no-multiple-empty-lines:
+    - error
+    - max: 1
+  indent:
+    - error
+    - 2
+  quotes:
+    - error
+    - single
+  semi:
+    - error
+    - always

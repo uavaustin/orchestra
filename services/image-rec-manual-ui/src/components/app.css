@@ -1,0 +1,26 @@
+/* Styling for main page layout. */
+
+.page-wrapper {
+  display: flex;
+  flex-direction: row;
+}
+
+#page-menu {
+  position: fixed;
+  flex: 0 0 auto;
+  width: 250px;
+}
+
+main {
+  flex: 1 1 auto;
+  margin-left: 250px;
+}
+
+/* Overriding the default margins for Semantic UI containers. */
+#page {
+  margin: 2em 3em !important;
+}
+
+#page > h1 {
+  margin-bottom: 1.5em;
+}

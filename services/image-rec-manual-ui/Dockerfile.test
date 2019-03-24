@@ -1,0 +1,25 @@
+ARG BASE=node:8-alpine
+
+FROM ${BASE}
+
+ENV NODE_ENV=test
+
+WORKDIR /test
+
+COPY common/nodejs/package.json src/common/
+COPY image-rec-manual-ui/package.json .
+
+RUN npm install
+
+COPY common/messages/image-rec.proto \
+    common/messages/imagery.proto \
+    common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
+COPY image-rec-manual-ui .
+
+CMD npm run lint
