@@ -71,12 +71,12 @@ beforeAll(async () => {
         host: 'google.com'
       },
       {
-        name: 'test' ,
-        host: '1.1.1.1'
-      },
-      {
         name: 'non-existent-device',
         host: 'no-host'
+      },
+      {
+        name: 'test' ,
+        host: '1.1.1.1'
       },
     ]
   });
@@ -157,8 +157,6 @@ test('check the device ping response', async () => {
 
   let device_pings = res.body.device_pings;
 
-  console.log(device_pings); //eslint-disable-line
-
   expect(device_pings[0].name).toEqual('device1');
   expect(device_pings[0].host).toEqual(deviceIP);
   expect(device_pings[0].online).toEqual(true);
@@ -171,22 +169,23 @@ test('check the device ping response', async () => {
   expect(device_pings[1].ms).toBeGreaterThan(0);
   expect(device_pings[1].ms).toBeLessThan(1000);
 
-  expect(device_pings[4].name).toEqual('non-existent-device');
-  expect(device_pings[4].host).toEqual('no-host');
-  expect(device_pings[4].online).toEqual(false);
-  expect(device_pings[4].ms).toEqual(0);
-
   expect(device_pings[2].name).toEqual('google');
   expect(device_pings[2].host).toEqual('google.com');
   expect(device_pings[2].online).toEqual(true);
   expect(device_pings[2].ms).toBeGreaterThan(0);
   expect(device_pings[2].ms).toBeLessThan(1000);
 
-  expect(device_pings[3].name).toEqual('test');
-  expect(device_pings[3].host).toEqual('1.1.1.1');
-  expect(device_pings[3].online).toEqual(true);
-  expect(device_pings[3].ms).toBeGreaterThan(0);
-  expect(device_pings[3].ms).toBeLessThan(1000);
+  expect(device_pings[3].name).toEqual('non-existent-device');
+  expect(device_pings[3].host).toEqual('no-host');
+  expect(device_pings[3].online).toEqual(false);
+  expect(device_pings[3].ms).toEqual(0);
+
+  expect(device_pings[4].name).toEqual('test');
+  expect(device_pings[4].host).toEqual('1.1.1.1');
+  expect(device_pings[4].online).toEqual(true);
+  expect(device_pings[4].ms).toBeGreaterThan(0);
+  expect(device_pings[4].ms).toBeLessThan(1000);
+
 });
 
 test('mock apis were hit correctly', () => {
