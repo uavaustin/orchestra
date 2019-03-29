@@ -11,6 +11,7 @@ import logger from './common/logger';
 import router from './router';
 
 addProtobuf(request);
+let telemTimes = 0;
 
 export default class Service {
   /**
@@ -22,7 +23,7 @@ export default class Service {
    * @param {number}  telemport
    * @param {string}  influxhost
    * @param {number}  influxport
-   * @param {???} influxDB
+   * @param {???} influx
    */
 
   constructor(options) {
@@ -32,6 +33,8 @@ export default class Service {
     this._forwardInteropPort = 4000; //fix
     this._telemetryHost = 'telemetry';
     this._telemetryPort = 5000;
+    this._planeTelemHost = options.planeTelemHost;
+    this._planeTelemPort = options.planeTelemPort;
     this._influxHost = options.influxHost;
     this._influxPort = options.influxPort;
     this._influx = null;
@@ -42,7 +45,7 @@ export default class Service {
     logger.debug('Starting service.');
 
     this._influx = new Influx.InfluxDB({
-      host: '10.146.67.244', //fix
+      host: '10.146.79.190', //fix
       port: 8086, //fix
       database: 'lumberjack',
       schema: [
@@ -74,8 +77,9 @@ export default class Service {
         {
           measurement: 'telemetry',
           fields: {
-            ptimes: Influx.FieldType.FLOAT,
-            gtimes: Influx.FieldType.FLOAT
+            ptimes: Influx.FieldType.FLOAT, //might not need
+            gtimes: Influx.FieldType.FLOAT, //might not need
+            status: Influx.FieldType.INTEGER
           },
           tags: [
             'host',
@@ -85,16 +89,8 @@ export default class Service {
       ]
     });
 
-    /*this._influx.getDatabaseNames()
-    .then(names => {
-      if (!names.includes('lumberjack')) {
-        return this._influx.createDatabase('lumberjack');
-      }
-    })
-    .catch(err => {
-      logger.debug('Failed to create database');
-    })*/
-    this._influx.createDatabase('lumberjack'); //fix
+    //create database if it doesn't exist
+    this._influx.createDatabase('lumberjack'); 
 
     this._startTasks();
     this.server = await this._createApi();
@@ -142,15 +138,15 @@ export default class Service {
 
   _startTasks() {
     this._pingTask =
-      createTimeoutTask(this._pingTask.bind(this), 1000)
+      createTimeoutTask(this._pingTask.bind(this), 5000)
         .on('error', logger.error)
         .start();
     this._uploadRateTask = 
-      createTimeoutTask(this._uploadRate.bind(this), 1000)
+      createTimeoutTask(this._uploadRate.bind(this), 5000)
         .on('error', logger.error)
         .start();
     this._telemetryTask =
-      createTimeoutTask(this._telemetryOverview.bind(this), 1000)
+      createTimeoutTask(this._telemetryOverview.bind(this), 5000)
         .on('error', logger.error)
         .start();
   }
@@ -206,17 +202,32 @@ export default class Service {
       }]);
   }
 
-  //Get time from plane
+  //Get ground telemetry and plane telemetry
   async _telemetryOverview() {
-    let overview = 
+    let status;
+    let groundTelem = 
       (await request.get('http://' + this._telemetryHost + ':' + 
         this._telemetryPort + '/api/overview')
         .proto(telemetry.Overview)
         .timeout(1000)).body;
 
+    let planeTelem = 
+      (await request.get('http://' + this._planeTelemHost + ':' +
+        this._planeTelemPort + '/endpoint') //is there an endpoint?
+        .proto(what) //protobuf?
+        .timeout(1000)).body;
+
+    //check if current time is the same as the previous timestate
+    if (groundTelem.time == telemTimes) {
+      status = 0;
+    } else
+      status = 1;
+
+    telemTimes = groundTelem.time;
+
     await this._influx.writeMeasurement('telemetry', [
       {
-        fields: { ptimes: overview.time, gtimes: overview.time },
+        fields: { ptimes: groundTelem.time, gtimes: groundTelem.time, status: status },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
       }]);
   }

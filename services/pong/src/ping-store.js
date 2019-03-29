@@ -42,10 +42,10 @@ export default class PingStore {
 
     const index = this._ping.service_pings.findIndex(s => s.name === name);
 
-    this._ping.service_pings[index].online = online;
-    this._ping.service_pings[index].ms = ms;
     this._ping.list[index].online = online;
     this._ping.list[index].ms = ms;
+    this._ping.service_pings[index].online = online;
+    this._ping.service_pings[index].ms = ms;
   }
 
   updateDevicePing(name, online, ms) {
@@ -78,7 +78,7 @@ export default class PingStore {
     };
   }
 
-  _parseDevice(device){
+  _parseDevice(device) {
     return {
       name: device.name,
       host: device.host,
