@@ -1,6 +1,4 @@
-ARG BASE=python:2-alpine
-
-FROM ${BASE}
+FROM python:2-alpine
 
 RUN apk --no-cache add \
    	py-lxml \

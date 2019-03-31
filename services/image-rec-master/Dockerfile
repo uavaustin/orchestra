@@ -1,7 +1,5 @@
-ARG BASE=python:3.7-alpine
-
 # Compile the proto files and fetch pip dependencies.
-FROM ${BASE} AS builder
+FROM python:3.7-alpine AS builder
 
 WORKDIR /builder
 
@@ -25,7 +23,7 @@ COPY common/messages/imagery.proto \
 RUN mkdir dist && protoc --python_out=dist messages/*.proto
 
 # Making the actual image now.
-FROM ${BASE}
+FROM python:3.7-alpine
 
 WORKDIR /app
 
