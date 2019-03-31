@@ -1,0 +1,5 @@
+aiohttp
+aiohttp_cors
+aioredis
+protobuf>=3.6.1
+python-socketio>=3.1.1
