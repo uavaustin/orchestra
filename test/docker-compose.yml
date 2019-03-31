@@ -128,6 +128,31 @@ services:
       test_net:
         ipv4_address: 172.16.238.52
 
+  image-rec-manual-api:
+    image: uavaustin/image-rec-manual-api
+    environment:
+      - REDIS_HOST=image-rec-redis
+    ports:
+      - '8083:8083'
+    depends_on:
+      - interop-proxy
+      - imagery
+      - image-rec-redis
+      - image-rec-master
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.53
+
+  image-rec-manual-ui:
+    image: uavaustin/image-rec-manual-ui
+    ports:
+      - '8084:8084'
+    depends_on:
+      - image-rec-manual-api
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.54
+
 networks:
   test_net:
     driver: bridge
