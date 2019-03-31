@@ -1,4 +1,4 @@
-ARG BASE=node:8-slim
+ARG BASE=node:10-slim
 
 # Compile our js source
 FROM ${BASE} AS builder

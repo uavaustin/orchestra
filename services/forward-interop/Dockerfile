@@ -1,4 +1,4 @@
-ARG BASE=node:8-alpine
+ARG BASE=node:10-alpine
 
 # Compile our js source.
 FROM ${BASE} AS builder

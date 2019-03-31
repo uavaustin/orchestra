@@ -22,19 +22,19 @@ jobs:
     - stage: test
       env: SERVICE_TEST=telemetry
       language: node_js
-      node_js: '8'
+      node_js: '10'
     - env: SERVICE_TEST=interop-proxy
       language: elixir
       elixir: '1.6'
     - env: SERVICE_TEST=pong
       language: node_js
-      node_js: '8'
+      node_js: '10'
     - env: SERVICE_TEST=forward-interop
       language: node_js
-      node_js: '8'
+      node_js: '10'
     - env: SERVICE_TEST=imagery
       language: node_js
-      node_js: '8'
+      node_js: '10'
     - env: SERVICE_TEST=image-rec-master
       language: python
       python: '3.7'
