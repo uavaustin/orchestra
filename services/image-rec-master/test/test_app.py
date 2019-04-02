@@ -5,7 +5,7 @@ import zipfile
 from aiohttp import web
 import pytest
 
-from messages.image_rec_pb2 import PipelineState, Target
+from messages.image_rec_pb2 import PipelineState, PipelineTarget
 from messages.interop_pb2 import Odlc
 
 from service.app import routes
@@ -55,7 +55,7 @@ async def test_get_pipeline_target_by_id(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/4')
     assert resp.status == 200
 
-    msg = Target.FromString(await resp.read())
+    msg = PipelineTarget.FromString(await resp.read())
     assert msg.id == 4
     assert msg.image_id == 5
     assert msg.odlc.id == 6
@@ -72,7 +72,7 @@ async def test_get_pipeline_no_target(app_client, redis):
 async def test_post_manual_targets(app_client, redis):
     # Add two identical manual targets, both should post and not be
     # filtered by uniqueness.
-    target = Target()
+    target = PipelineTarget()
     target.image_id = 2
     target.odlc.shape = Odlc.SQUARE
     target.odlc.autonomous = False
@@ -81,7 +81,7 @@ async def test_post_manual_targets(app_client, redis):
                                  data=target.SerializeToString())
     assert resp.status == 201
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 1
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -94,7 +94,7 @@ async def test_post_manual_targets(app_client, redis):
                                  data=target.SerializeToString())
     assert resp.status == 201
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 2
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -107,7 +107,7 @@ async def test_post_manual_targets(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/1')
     assert resp.status == 200
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 1
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -119,7 +119,7 @@ async def test_post_manual_targets(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/2')
     assert resp.status == 200
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 2
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -135,7 +135,7 @@ async def test_post_manual_targets(app_client, redis):
 async def test_post_auto_targets(app_client, redis):
     # Add two identical auto targets, one should post and not be
     # filtered by uniqueness.
-    target = Target()
+    target = PipelineTarget()
     target.image_id = 2
     target.odlc.shape = Odlc.SQUARE
     target.odlc.autonomous = True
@@ -144,7 +144,7 @@ async def test_post_auto_targets(app_client, redis):
                                  data=target.SerializeToString())
     assert resp.status == 201
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 1
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -163,7 +163,7 @@ async def test_post_auto_targets(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/1')
     assert resp.status == 200
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 1
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -178,13 +178,13 @@ async def test_post_auto_targets(app_client, redis):
 
 async def test_post_auto_targets_unique(app_client, redis):
     # Add two different auto targets, both should post
-    target_1 = Target()
+    target_1 = PipelineTarget()
     target_1.image_id = 2
     target_1.odlc.shape = Odlc.SQUARE
     target_1.odlc.background_color = Odlc.RED
     target_1.odlc.autonomous = True
 
-    target_2 = Target()
+    target_2 = PipelineTarget()
     target_2.image_id = 2
     target_2.odlc.shape = Odlc.CIRCLE
     target_2.odlc.alphanumeric = 'Z'
@@ -194,7 +194,7 @@ async def test_post_auto_targets_unique(app_client, redis):
                                  data=target_1.SerializeToString())
     assert resp.status == 201
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 1
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -208,7 +208,7 @@ async def test_post_auto_targets_unique(app_client, redis):
                                  data=target_2.SerializeToString())
     assert resp.status == 201
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 2
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.CIRCLE
@@ -222,7 +222,7 @@ async def test_post_auto_targets_unique(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/1')
     assert resp.status == 200
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 1
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.SQUARE
@@ -235,7 +235,7 @@ async def test_post_auto_targets_unique(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/2')
     assert resp.status == 200
 
-    ret_target = Target.FromString(await resp.read())
+    ret_target = PipelineTarget.FromString(await resp.read())
     assert ret_target.id == 2
     assert ret_target.image_id == 2
     assert ret_target.odlc.shape == Odlc.CIRCLE
@@ -252,7 +252,7 @@ async def test_post_auto_targets_unique(app_client, redis):
 async def test_queue_target_removal(app_client, redis):
     # Queue a target for removal, and then try again to make it 409.
     resp = await app_client.post('/api/pipeline/targets',
-                                 data=Target().SerializeToString())
+                                 data=PipelineTarget().SerializeToString())
     assert resp.status == 201
 
     resp = await app_client.post('/api/pipeline/targets/1/queue-removal')

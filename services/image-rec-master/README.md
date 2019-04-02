@@ -42,8 +42,8 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   `id` must be a nonnegative integer. Note that this is not the same as
   the _Odlc_ `id` given by the Interop Server.
 
-  On successful response: `200` status code with `image_rec::Target` Protobuf
-  message.
+  On successful response: `200` status code with `image_rec::PipelineTarget`
+  Protobuf message.
 
 - `POST /api/pipeline/targets`
 

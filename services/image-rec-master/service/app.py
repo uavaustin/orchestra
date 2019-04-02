@@ -5,7 +5,7 @@ from aiohttp import web
 import aioredis
 import google.protobuf.json_format
 
-from messages.image_rec_pb2 import PipelineState, Target
+from messages.image_rec_pb2 import PipelineState, PipelineTarget
 from messages.interop_pb2 import Odlc
 
 from .backup import create_archive
@@ -111,7 +111,7 @@ async def handle_post_pipeline_target(request):
     """Create a target from an odlc."""
     # Reading submitted target, we only care about the odlc and
     # source image.
-    target = await _parse_body(request, Target)
+    target = await _parse_body(request, PipelineTarget)
     odlc = target.odlc
     image_id = target.image_id
 
@@ -188,7 +188,7 @@ async def handle_post_pipeline_target(request):
     # fields manually instead of using incoming target in case
     # the caller added fields. Submitted / errored / removed
     # default to `False`.
-    ret_target = Target()
+    ret_target = PipelineTarget()
     ret_target.time = time()
     ret_target.id = target_id
     ret_target.odlc.CopyFrom(target.odlc)
@@ -280,7 +280,7 @@ async def _get_target(request, target_id):
     target_hash = await request.app['redis'].hgetall(f'target:{target_id}')
 
     if target_hash:
-        msg = Target()
+        msg = PipelineTarget()
         msg.time = time()
 
         msg.id = int(target_hash.get(b'id', b'0'))
