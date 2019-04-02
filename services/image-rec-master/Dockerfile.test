@@ -35,4 +35,5 @@ COPY image-rec-master/setup.cfg .
 
 ENV PYTHONUNBUFFERED=TRUE
 
-CMD pycodestyle service test && python -m pytest --cov=service test
+CMD pycodestyle service test && python -m pytest --cov=service test && \
+    coverage html -d coverage/html
