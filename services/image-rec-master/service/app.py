@@ -102,14 +102,14 @@ async def handle_get_pipeline_target_by_id(request):
     if target:
         return _proto_response(request, target)
     else:
-        return web.Response(status=404)
+        return web.HTTPNotFound()
 
 
 @routes.post('/api/pipeline/reset')
 async def handle_reset_pipeline(request):
     """Empty out the current Redis database to reset the pipeline."""
     await request.app['redis'].flushdb()
-    return web.Response(status=204)
+    return web.HTTPNoContent()
 
 
 @routes.get('/api/pipeline/archive')
@@ -133,7 +133,7 @@ async def handle_get_pipeline_archive(request):
             'Content-Type': 'application/zip'
         })
     else:
-        return web.Response(status=204)
+        return web.HTTPNoContent()
 
 
 async def _get_target(request, target_id):
