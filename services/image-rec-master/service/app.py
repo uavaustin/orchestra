@@ -5,12 +5,12 @@ from aiohttp import web
 import aioredis
 import google.protobuf.json_format
 
-from messages.image_rec_pb2 import PipelineState, PipelineTarget
+from messages.image_rec_pb2 import PipelineImage, PipelineState, PipelineTarget
 from messages.interop_pb2 import Odlc
 
 from .backup import create_archive
 from . import tasks
-from .util import get_int_set, watch_keys
+from .util import get_int_list, get_int_set, watch_keys
 
 
 routes = web.RouteTableDef()
@@ -92,6 +92,85 @@ async def handle_get_pipeline(request):
         field.sort()
 
     return _proto_response(request, msg)
+
+
+@routes.get(r'/api/pipeline/images/{id:\d+}')
+async def handle_get_pipeline_image_by_id(request):
+    """Return an image by id in the pipeline."""
+    image_id = int(request.match_info['id'])
+    image = await _get_image(request, image_id)
+
+    if image:
+        return _proto_response(request, image)
+    else:
+        return web.HTTPNotFound()
+
+
+@routes.post('/api/pipeline/images/start-processing-next-auto')
+async def handle_process_next_auto_pipeline_image(request):
+    """Start the processing window for the next auto image."""
+    id_str = await request.app['redis'].rpoplpush('unprocessed-auto',
+                                                  'processing-auto')
+
+    if id_str:
+        image_id = int(id_str)
+        image = await _get_image(request, image_id)
+        return _proto_response(request, image)
+    else:
+        return web.HTTPConflict()
+
+
+@routes.post(r'/api/pipeline/images/{id:\d+}/finish-processing-auto')
+async def handle_processed_auto_pipeline_image(request):
+    """Mark the auto processing as finished for an image."""
+    image_id = int(request.match_info['id'])
+
+    while True:
+        try:
+            # Needing to move an item from a list to a set.
+            async with watch_keys(request.app, 'processing-auto') as r:
+                all_images = await get_int_set(r, 'all-images')
+                processing = await get_int_list(r, 'processing-auto')
+
+                if image_id not in all_images:
+                    return web.HTTPNotFound()
+
+                if image_id not in processing:
+                    return web.HTTPConflict()
+
+                tr = r.multi_exec()
+                tr.lrem('processing-auto', 0, image_id)
+                tr.sadd('processed-auto', image_id)
+                await tr.execute()
+        except aioredis.MultiExecError:
+            # A target was removed from the processing list.
+            await asyncio.sleep(0.1)
+        else:
+            break
+
+    image = await _get_image(request, image_id)
+    return _proto_response(request, image)
+
+
+@routes.post('/api/pipeline/images/process-next-manual')
+async def handle_process_next_auto_pipeline_image(request):
+    """Mark the next manual image as processed."""
+    # Needing to move an item from a list to a set.
+    async with watch_keys(request.app, 'unprocessed-manual') as r:
+        id_str = await r.lindex('unprocessed-manual', -1)
+
+        if not id_str:
+            return web.HTTPConflict()
+
+        image_id = int(id_str)
+
+        tr = r.multi_exec()
+        tr.rpop('unprocessed-manual')
+        tr.sadd('processed-manual', image_id)
+        await tr.execute()
+
+    image = await _get_image(request, image_id)
+    return _proto_response(request, image)
 
 
 @routes.get(r'/api/pipeline/targets/{id:\d+}')
@@ -274,6 +353,35 @@ async def handle_get_pipeline_archive(request):
         })
     else:
         return web.HTTPNoContent()
+
+
+async def _get_image(request, image_id):
+    tr = request.app['redis'].multi_exec()
+
+    tr.smembers('all-images')
+    tr.smembers('processed-auto')
+    tr.smembers('errored-auto')
+    tr.smembers('skipped-auto')
+    tr.smembers('processed-manual')
+    tr.smembers('skipped-manual')
+
+    str_sets = await tr.execute()
+    sets = [[int(id_str) for id_str in str_set] for str_set in str_sets]
+
+    if image_id in sets[0]:
+        msg = PipelineImage()
+        msg.time = time()
+
+        msg.id = image_id
+        msg.processed_auto = image_id in sets[1]
+        msg.errored_auto = image_id in sets[2]
+        msg.skipped_auto = image_id in sets[3]
+        msg.processed_manual = image_id in sets[4]
+        msg.skipped_manual = image_id in sets[5]
+
+        return msg
+    else:
+        return None
 
 
 async def _get_target(request, target_id):

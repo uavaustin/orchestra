@@ -58,6 +58,20 @@ message PipelineState {
     repeated uint32 removed_targets = 19;
 }
 
+message PipelineImage {
+    // Time last updated.
+    double time = 1;
+    // Image id from imagery service.
+    uint32 id = 2;
+    // See PipelineState above for fields below. Not including
+    // processing lists.
+    bool processed_auto = 3;
+    bool errored_auto = 4;
+    bool skipped_auto = 5;
+    bool processed_manual = 6;
+    bool skipped_manual = 7;
+}
+
 message PipelineTarget {
     // Time last updated.
     double time = 1;

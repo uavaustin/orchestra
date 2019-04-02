@@ -5,7 +5,7 @@ import zipfile
 from aiohttp import web
 import pytest
 
-from messages.image_rec_pb2 import PipelineState, PipelineTarget
+from messages.image_rec_pb2 import PipelineImage, PipelineState, PipelineTarget
 from messages.interop_pb2 import Odlc
 
 from service.app import routes
@@ -40,6 +40,96 @@ async def test_get_pipeline(app_client, redis):
     assert msg.unprocessed_auto == [6]
     assert msg.processed_auto == []
     assert msg.all_targets == []
+
+
+async def test_get_pipeline_image_by_id(app_client, redis):
+    # Add a image to fetch.
+    await redis.sadd('all-images', 4)
+    await redis.sadd('errored-auto', 4)
+    await redis.sadd('processed-manual', 4)
+
+    resp = await app_client.get('/api/pipeline/images/4')
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 4
+    assert ret_image.processed_auto is False
+    assert ret_image.errored_auto is True
+    assert ret_image.skipped_auto is False
+    assert ret_image.processed_manual is True
+    assert ret_image.skipped_manual is False
+
+
+async def test_get_pipeline_no_image(app_client):
+    resp = await app_client.get('/api/pipeline/images/111')
+    assert resp.status == 404
+
+
+async def test_pipeline_process_auto(app_client, redis):
+    # Start the processsing and then finish it.
+    await redis.sadd('all-images', 3)
+    await redis.lpush('unprocessed-auto', 3)
+
+    resp = await app_client.post(
+        '/api/pipeline/images/start-processing-next-auto'
+    )
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 3
+    assert ret_image.processed_auto is False
+
+    resp = await app_client.post(
+        '/api/pipeline/images/3/finish-processing-auto'
+    )
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 3
+    assert ret_image.processed_auto is True
+
+    # We can't mark it as processed again.
+    resp = await app_client.post(
+        '/api/pipeline/images/3/finish-processing-auto'
+    )
+    assert resp.status == 409
+
+
+async def test_pipeline_process_auto_no_image(app_client):
+    # No image to process.
+    resp = await app_client.post(
+        '/api/pipeline/images/start-processing-next-auto'
+    )
+    assert resp.status == 409
+
+
+async def test_pipeline_finish_process_auto_no_image(app_client):
+    # No image to finish.
+    resp = await app_client.post(
+        '/api/pipeline/images/111/finish-processing-auto'
+    )
+    assert resp.status == 404
+
+
+async def test_pipeline_process_manual(app_client, redis):
+    # Start the processsing and then finish it.
+    await redis.sadd('all-images', 3)
+    await redis.lpush('unprocessed-manual', 3)
+
+    resp = await app_client.post(
+        '/api/pipeline/images/process-next-manual'
+    )
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 3
+    assert ret_image.processed_manual is True
+
+
+async def test_pipeline_process_manual_no_image(app_client):
+    # No image to process.
+    resp = await app_client.post('/api/pipeline/images/process-next-manual')
+    assert resp.status == 409
 
 
 async def test_get_pipeline_target_by_id(app_client, redis):

@@ -35,6 +35,51 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   On successful response: `200` status code with `image_rec::PipelineState`
   Protobuf message.
 
+- `GET /api/pipeline/images/:id`
+
+  Return an image by id in the pipeline.
+
+  `id` must be a valid integer id from the imagery service.
+
+  On successful response: `200` status code with `image_rec::PipelineImage`
+  Protobuf message.
+
+- `POST /api/pipeline/images/start-processing-next-auto`
+
+  Start the processing window for the next auto image.
+
+  The image is returned. Note that the processing must be finished or else the
+  image will be treated as errored after enough time as passed.
+
+  On successful response: `200` status code with `image_rec::PipelineImage`
+  Protobuf message.
+
+  If no image is available: `409` status code.
+
+- `POST /api/pipeline/images/:id/finish-processing-auto`
+
+  Mark the auto processing as finished for an image.
+
+  `id` must be a valid integer id of an image being processed. The image is
+  returned.
+
+  On successful response: `200` status code with `image_rec::PipelineImage`
+  Protobuf message.
+
+  If the image is not being processed: `409` status code.
+
+- `POST /api/pipeline/images/process-next-manual`
+
+  Process the next manual image.
+
+  The image is returned. Note that the processing is finished immediately and
+  will be shown in the image returned.
+
+  On successful response: `200` status code with `image_rec::PipelineImage`
+  Protobuf message.
+
+  If no image is available: `409` status code.
+
 - `GET /api/pipeline/targets/:id`
 
   Return a target by id in the pipeline.
