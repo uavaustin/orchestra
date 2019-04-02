@@ -45,6 +45,39 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   On successful response: `200` status code with `image_rec::Target` Protobuf
   message.
 
+- `POST /api/pipeline/targets`
+
+  Create a new target in the pipeline.
+
+  Note that the target will be queued for submission and will not be submitted
+  instantly. Only the `odlc` and `image_id` fields will be read from the body.
+
+  If an autonomous standard target is submitted which is similar to an existing
+  autonomous standard target, the target will not post and the request will
+  redirect.
+
+  Body should be an `image_rec::Target` Protobuf Message.
+
+  On successful response: `201` status code with `image_rec::Target` Protobuf
+  message.
+
+  On non-unique autonomous standard target: `303` status code with reference to
+  matching target.
+
+- `POST /api/pipeline/targets/:id/queue-removal`
+
+  Create a target for removal.
+
+  Note that the target will be queued for removal and will not be removed
+  instantly. If the image is already in the removal pipeline, it will return
+  a conflict. Once removed, the target will still exist for this service, but
+  will only be removed from the interop server.
+
+  On successful response: `204` status code with `image_rec::Target` Protobuf
+  message.
+
+  On conflict: `409` status code.
+
 - `POST /api/pipeline/reset`
 
   Completely reset the pipeline.

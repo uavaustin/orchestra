@@ -3,13 +3,14 @@ from time import time
 
 from aiohttp import web
 import aioredis
-from google.protobuf.json_format import MessageToJson
+import google.protobuf.json_format
 
 from messages.image_rec_pb2 import PipelineState, Target
+from messages.interop_pb2 import Odlc
 
 from .backup import create_archive
 from . import tasks
-from .util import get_int_set
+from .util import get_int_set, watch_keys
 
 
 routes = web.RouteTableDef()
@@ -105,6 +106,145 @@ async def handle_get_pipeline_target_by_id(request):
         return web.HTTPNotFound()
 
 
+@routes.post('/api/pipeline/targets')
+async def handle_post_pipeline_target(request):
+    """Create a target from an odlc."""
+    # Reading submitted target, we only care about the odlc and
+    # source image.
+    target = await _parse_body(request, Target)
+    odlc = target.odlc
+    image_id = target.image_id
+
+    # Have to wrap this in the case another target is submitted at
+    # the same time. Note that if during the process, a target is
+    # found to not be unique, a HTTP 303 request will be returned
+    # with the similar target.
+    while True:
+        try:
+            # Operation repeats if something is being submitted or
+            # removed, so the target count is correct, or if a target
+            # does not need to be referenced for uniqueness.
+            async with watch_keys(request.app, 'all-targets',
+                                  'unremoved-targets') as r:
+                # Check for uniqueness
+                if odlc.autonomous and odlc.type == Odlc.STANDARD:
+                    # Reference target ids.
+                    ref_ids = await get_int_set(r, 'auto-standard-targets')
+
+                    # Reference targets (using separate transaction).
+                    tr = request.app['redis'].multi_exec()
+
+                    for ref_id in ref_ids:
+                        tr.hgetall(f'auto-standard-targets:{ref_id}')
+
+                    # If there are two or three similarities between
+                    # shape, background color, and alphanumeric,
+                    # then the target is not unique.
+                    for ref in await tr.execute():
+                        ref_id = int(ref.get(b'id', b'0'))
+                        ref_shape = int(ref.get(b'shape', b'0'))
+                        ref_color = int(ref.get(b'color', b'0'))
+                        ref_alpha = str(ref.get(b'alpha', b''))
+
+                        if sum([odlc.shape == ref_shape,
+                                odlc.background_color == ref_color,
+                                odlc.alphanumeric == ref_alpha]) >= 2:
+                            # Redirect with the similar target.
+                            return web.HTTPSeeOther(
+                                f'/api/pipeline/targets/{ref_id}'
+                            )
+
+                # Id is 1 if no target exists. Increments after.
+                target_id = int(await r.get('target-count') or 0) + 1
+
+                redis_target = ('id', target_id, 'image_id', image_id, 'odlc',
+                                odlc.SerializeToString(), 'submitted', 0,
+                                'errored', 0, 'removed', 0)
+
+                tr = r.multi_exec()
+
+                tr.incr('target-count')
+                tr.sadd('all-targets', target_id)
+                tr.lpush('unsubmitted-targets', target_id)
+                tr.hmset(f'target:{target_id}', *redis_target)
+
+                # For checking for uniqueness.
+                if odlc.autonomous and odlc.type == Odlc.STANDARD:
+                    # Target characteristics
+                    chars = ('id', target_id, 'shape', odlc.shape, 'color',
+                             odlc.background_color, 'alpha', odlc.alphanumeric)
+
+                    tr.sadd('auto-standard-targets', target_id)
+                    tr.hmset(f'auto-standard-targets:{target_id}', *chars)
+
+                await tr.execute()
+        except aioredis.MultiExecError:
+            # The amount of targets changed.
+            await asyncio.sleep(0.1)
+        else:
+            break
+
+    # Update the target to return back to the caller. Settings
+    # fields manually instead of using incoming target in case
+    # the caller added fields. Submitted / errored / removed
+    # default to `False`.
+    ret_target = Target()
+    ret_target.time = time()
+    ret_target.id = target_id
+    ret_target.odlc.CopyFrom(target.odlc)
+    ret_target.image_id = target.image_id
+
+    return _proto_response(request, ret_target, status=201)
+
+
+@routes.post(r'/api/pipeline/targets/{id:\d+}/queue-removal')
+async def handle_queue_pipeline_target_removal(request):
+    """Queue a target to be removed."""
+    target_id = int(request.match_info['id'])
+
+    # Have to wrap this in the case another target is removed at
+    # the same time. If the target doesn't exist, 404, if the target
+    # can't be removed, 409.
+    while True:
+        try:
+            # Operation repeats if something is being submitted or
+            # removed, just in case the target no longer can be
+            # removed.
+            async with watch_keys(request.app, 'all-targets',
+                                  'unremoved-targets') as r:
+                all_targets = await get_int_set(r, 'all-targets')
+
+                if target_id not in all_targets:
+                    return web.HTTPNotFound()
+
+                # New transaction for checking if the target is in
+                # one of the removal lists. The watch won't apply to
+                # this one.
+                tr = request.app['redis'].multi_exec()
+                tr.lrange('unremoved-targets', 0, -1)
+                tr.lrange('removing-targets', 0, -1)
+                tr.smembers('removed-targets')
+                lists = await tr.execute()
+
+                # All targets in any removal list.
+                remove_ids = [int(id_str) for list in lists for id_str in list]
+
+                if target_id in remove_ids:
+                    return web.HTTPConflict()
+
+                # Transaction with the watch. Queue the removal.
+                tr = r.multi_exec()
+                tr.lpush('unremoved-targets', target_id)
+                await tr.execute()
+        except aioredis.MultiExecError:
+            # The amount of targets changed.
+            await asyncio.sleep(0.1)
+        else:
+            break
+
+    return web.HTTPNoContent()
+
+
 @routes.post('/api/pipeline/reset')
 async def handle_reset_pipeline(request):
     """Empty out the current Redis database to reset the pipeline."""
@@ -155,14 +295,28 @@ async def _get_target(request, target_id):
         return None
 
 
-def _proto_response(request, msg):
+def _proto_response(request, msg, status=200):
     """Return a protobuf wire or JSON response."""
     if not request.headers.getone('accept', '').startswith('application/json'):
         body = msg.SerializeToString()
-        return web.Response(body=body, content_type='application/x-protobuf')
+        return web.Response(body=body, status=status,
+                            content_type='application/x-protobuf')
     else:
-        body = MessageToJson(msg)
+        body = google.protobuf.json_format.MessageToJson(msg)
         return web.json_response(body=body)
+
+
+async def _parse_body(request, msg_type):
+    """Parse a protobuf wire or JSON body."""
+    body = await request.content.read(-1)
+
+    if not request.headers.getone('content-type', '') \
+            .startswith('application/json'):
+        return msg_type.FromString(body)
+    else:
+        msg = msg_type()
+        google.protobuf.json_format.Parse(body, msg)
+        return msg
 
 
 def create_app():
