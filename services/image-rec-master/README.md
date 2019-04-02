@@ -101,10 +101,10 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   autonomous standard target, the target will not post and the request will
   redirect.
 
-  Body should be an `image_rec::Target` Protobuf Message.
+  Body should be an `image_rec::PipelineTarget` Protobuf Message.
 
-  On successful response: `201` status code with `image_rec::Target` Protobuf
-  message.
+  On successful response: `201` status code with `image_rec::PipelineTarget`
+  Protobuf message.
 
   On non-unique autonomous standard target: `303` status code with reference to
   matching target.
@@ -118,8 +118,8 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
   a conflict. Once removed, the target will still exist for this service, but
   will only be removed from the interop server.
 
-  On successful response: `204` status code with `image_rec::Target` Protobuf
-  message.
+  On successful response: `204` status code with `image_rec::PipelineTarget`
+  Protobuf message.
 
   On conflict: `409` status code.
 
