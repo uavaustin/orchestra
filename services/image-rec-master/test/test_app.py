@@ -5,10 +5,11 @@ import zipfile
 from aiohttp import web
 import pytest
 
-from messages.image_rec_pb2 import PipelineState, Target
+from messages.image_rec_pb2 import PipelineImage, PipelineState, PipelineTarget
 from messages.interop_pb2 import Odlc
 
 from service.app import routes
+from service.util import get_int_list, get_int_set
 
 
 @pytest.fixture
@@ -41,6 +42,96 @@ async def test_get_pipeline(app_client, redis):
     assert msg.all_targets == []
 
 
+async def test_get_pipeline_image_by_id(app_client, redis):
+    # Add a image to fetch.
+    await redis.sadd('all-images', 4)
+    await redis.sadd('errored-auto', 4)
+    await redis.sadd('processed-manual', 4)
+
+    resp = await app_client.get('/api/pipeline/images/4')
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 4
+    assert ret_image.processed_auto is False
+    assert ret_image.errored_auto is True
+    assert ret_image.skipped_auto is False
+    assert ret_image.processed_manual is True
+    assert ret_image.skipped_manual is False
+
+
+async def test_get_pipeline_no_image(app_client):
+    resp = await app_client.get('/api/pipeline/images/111')
+    assert resp.status == 404
+
+
+async def test_pipeline_process_auto(app_client, redis):
+    # Start the processsing and then finish it.
+    await redis.sadd('all-images', 3)
+    await redis.lpush('unprocessed-auto', 3)
+
+    resp = await app_client.post(
+        '/api/pipeline/images/start-processing-next-auto'
+    )
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 3
+    assert ret_image.processed_auto is False
+
+    resp = await app_client.post(
+        '/api/pipeline/images/3/finish-processing-auto'
+    )
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 3
+    assert ret_image.processed_auto is True
+
+    # We can't mark it as processed again.
+    resp = await app_client.post(
+        '/api/pipeline/images/3/finish-processing-auto'
+    )
+    assert resp.status == 409
+
+
+async def test_pipeline_process_auto_no_image(app_client):
+    # No image to process.
+    resp = await app_client.post(
+        '/api/pipeline/images/start-processing-next-auto'
+    )
+    assert resp.status == 409
+
+
+async def test_pipeline_finish_process_auto_no_image(app_client):
+    # No image to finish.
+    resp = await app_client.post(
+        '/api/pipeline/images/111/finish-processing-auto'
+    )
+    assert resp.status == 404
+
+
+async def test_pipeline_process_manual(app_client, redis):
+    # Start the processsing and then finish it.
+    await redis.sadd('all-images', 3)
+    await redis.lpush('unprocessed-manual', 3)
+
+    resp = await app_client.post(
+        '/api/pipeline/images/process-next-manual'
+    )
+    assert resp.status == 200
+
+    ret_image = PipelineImage.FromString(await resp.read())
+    assert ret_image.id == 3
+    assert ret_image.processed_manual is True
+
+
+async def test_pipeline_process_manual_no_image(app_client):
+    # No image to process.
+    resp = await app_client.post('/api/pipeline/images/process-next-manual')
+    assert resp.status == 409
+
+
 async def test_get_pipeline_target_by_id(app_client, redis):
     # Add a target to fetch.
     odlc = Odlc()
@@ -54,7 +145,7 @@ async def test_get_pipeline_target_by_id(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/4')
     assert resp.status == 200
 
-    msg = Target.FromString(await resp.read())
+    msg = PipelineTarget.FromString(await resp.read())
     assert msg.id == 4
     assert msg.image_id == 5
     assert msg.odlc.id == 6
@@ -65,6 +156,205 @@ async def test_get_pipeline_target_by_id(app_client, redis):
 
 async def test_get_pipeline_no_target(app_client, redis):
     resp = await app_client.get('/api/pipeline/targets/111')
+    assert resp.status == 404
+
+
+async def test_post_manual_targets(app_client, redis):
+    # Add two identical manual targets, both should post and not be
+    # filtered by uniqueness.
+    target = PipelineTarget()
+    target.image_id = 2
+    target.odlc.shape = Odlc.SQUARE
+    target.odlc.autonomous = False
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=target.SerializeToString())
+    assert resp.status == 201
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 1
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.autonomous is False
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=target.SerializeToString())
+    assert resp.status == 201
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 2
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.autonomous is False
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    # Getting the targets back as well to check.
+    resp = await app_client.get('/api/pipeline/targets/1')
+    assert resp.status == 200
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 1
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.autonomous is False
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    resp = await app_client.get('/api/pipeline/targets/2')
+    assert resp.status == 200
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 2
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.autonomous is False
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    assert await get_int_set(redis, 'all-targets') == [1, 2]
+    assert await get_int_list(redis, 'unsubmitted-targets') == [2, 1]
+
+
+async def test_post_auto_targets(app_client, redis):
+    # Add two identical auto targets, one should post and not be
+    # filtered by uniqueness.
+    target = PipelineTarget()
+    target.image_id = 2
+    target.odlc.shape = Odlc.SQUARE
+    target.odlc.autonomous = True
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=target.SerializeToString())
+    assert resp.status == 201
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 1
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.autonomous is True
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=target.SerializeToString(),
+                                 allow_redirects=False)
+    assert resp.status == 303
+    assert resp.headers['Location'] == '/api/pipeline/targets/1'
+
+    # Getting the target back as well to check.
+    resp = await app_client.get('/api/pipeline/targets/1')
+    assert resp.status == 200
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 1
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.autonomous is True
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    assert await get_int_set(redis, 'all-targets') == [1]
+    assert await get_int_list(redis, 'unsubmitted-targets') == [1]
+
+
+async def test_post_auto_targets_unique(app_client, redis):
+    # Add two different auto targets, both should post
+    target_1 = PipelineTarget()
+    target_1.image_id = 2
+    target_1.odlc.shape = Odlc.SQUARE
+    target_1.odlc.background_color = Odlc.RED
+    target_1.odlc.autonomous = True
+
+    target_2 = PipelineTarget()
+    target_2.image_id = 2
+    target_2.odlc.shape = Odlc.CIRCLE
+    target_2.odlc.alphanumeric = 'Z'
+    target_2.odlc.autonomous = True
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=target_1.SerializeToString())
+    assert resp.status == 201
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 1
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.background_color == Odlc.RED
+    assert ret_target.odlc.autonomous is True
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=target_2.SerializeToString())
+    assert resp.status == 201
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 2
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.CIRCLE
+    assert ret_target.odlc.alphanumeric == 'Z'
+    assert ret_target.odlc.autonomous is True
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    # Getting the targets back as well to check.
+    resp = await app_client.get('/api/pipeline/targets/1')
+    assert resp.status == 200
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 1
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.SQUARE
+    assert ret_target.odlc.background_color == Odlc.RED
+    assert ret_target.odlc.autonomous is True
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    resp = await app_client.get('/api/pipeline/targets/2')
+    assert resp.status == 200
+
+    ret_target = PipelineTarget.FromString(await resp.read())
+    assert ret_target.id == 2
+    assert ret_target.image_id == 2
+    assert ret_target.odlc.shape == Odlc.CIRCLE
+    assert ret_target.odlc.alphanumeric == 'Z'
+    assert ret_target.odlc.autonomous is True
+    assert ret_target.submitted is False
+    assert ret_target.errored is False
+    assert ret_target.removed is False
+
+    assert await get_int_set(redis, 'all-targets') == [1, 2]
+    assert await get_int_list(redis, 'unsubmitted-targets') == [2, 1]
+
+
+async def test_queue_target_removal(app_client, redis):
+    # Queue a target for removal, and then try again to make it 409.
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=PipelineTarget().SerializeToString())
+    assert resp.status == 201
+
+    resp = await app_client.post('/api/pipeline/targets/1/queue-removal')
+    assert resp.status == 204
+    assert await get_int_list(redis, 'unremoved-targets') == [1]
+
+    resp = await app_client.post('/api/pipeline/targets/1/queue-removal')
+    assert resp.status == 409
+
+
+async def test_queue_target_removal_no_exist(app_client):
+    resp = await app_client.post('/api/pipeline/targets/1/queue-removal')
     assert resp.status == 404
 
 

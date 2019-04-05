@@ -2,7 +2,7 @@
 
 Tasks move images and targets through the beginning and ending parts
 of the image recognition pipelines, with auto and manual image rec
-do the "middle parts".
+doing the "middle parts" by using the image-rec-master API.
 
 There are two distict pipelines at play: images and targets.
 
@@ -63,7 +63,6 @@ are used for reading on demand.
 """
 
 import asyncio
-import contextlib
 import logging
 
 import aiohttp
@@ -73,7 +72,7 @@ from common.logger import format_error
 from messages.imagery_pb2 import AvailableImages
 from messages.interop_pb2 import Odlc
 
-from .util import get_int_list, get_int_set
+from .util import get_int_list, get_int_set, watch_keys
 
 
 # Queue new images into the all-images, unprocessed-auto, and
@@ -96,7 +95,7 @@ async def queue_new_images(app):
         logging.error(format_error('http error', str(e)))
     else:
         # Otherwise, if there are new images, push them.
-        async with _watch_keys(app, 'all-images') as r:
+        async with watch_keys(app, 'all-images') as r:
             all_ids = await get_int_set(r, 'all-images')
             ids = sorted(set(available) - set(all_ids))
 
@@ -119,7 +118,7 @@ async def queue_new_images(app):
 # for the first time, otherwise on the second time marked it as
 # permanently errored. Runs on a slow 15s interval.
 async def requeue_auto_images(app):
-    async with _watch_keys(app, 'processing-auto') as r:
+    async with watch_keys(app, 'processing-auto') as r:
         processing = await get_int_list(r, 'processing-auto')
         prev = app.get('prev_processing_auto', [])
         stale_ids = sorted(set(processing).intersection(set(prev)))
@@ -269,7 +268,7 @@ async def remove_targets(app):
     # Try and remove a target that's queued for submission.
     while True:
         try:
-            async with _watch_keys(app, 'unsubmitted-targets') as r:
+            async with watch_keys(app, 'unsubmitted-targets') as r:
                 unsubmitted = await get_int_list(r, 'unsubmitted-targets')
 
                 if target_id in unsubmitted:
@@ -372,12 +371,3 @@ async def _delete_odlc(app, odlc_id):
 
         # The odlc was removed successfully.
         return True
-
-
-# Acquire a Redis connection and watch keys.
-@contextlib.asynccontextmanager
-async def _watch_keys(app, *keys):
-    with await app['redis'] as r:
-        await r.watch(*keys)
-        yield r
-        await r.unwatch()
