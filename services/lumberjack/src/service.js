@@ -11,7 +11,7 @@ import logger from './common/logger';
 import router from './router';
 
 addProtobuf(request);
-let telemTimes = 0;
+let gTimes, pTimes = '';
 
 export default class Service {
   /**
@@ -45,7 +45,7 @@ export default class Service {
     logger.debug('Starting service.');
 
     this._influx = new Influx.InfluxDB({
-      host: '10.146.79.190', //fix
+      host: '10.145.112.171', //fix
       port: 8086, //fix
       database: 'lumberjack',
       schema: [
@@ -77,9 +77,8 @@ export default class Service {
         {
           measurement: 'telemetry',
           fields: {
-            ptimes: Influx.FieldType.FLOAT, //might not need
-            gtimes: Influx.FieldType.FLOAT, //might not need
-            status: Influx.FieldType.INTEGER
+            gstatus: Influx.FieldType.STRING,
+            pstatus: Influx.FieldType.STRING
           },
           tags: [
             'host',
@@ -204,30 +203,31 @@ export default class Service {
 
   //Get ground telemetry and plane telemetry
   async _telemetryOverview() {
-    let status;
+    let gstatus, pstatus;
+    gstatus, pstatus = 'OFFLINE';
+
     let groundTelem = 
       (await request.get('http://' + this._telemetryHost + ':' + 
         this._telemetryPort + '/api/overview')
         .proto(telemetry.Overview)
         .timeout(1000)).body;
 
-    let planeTelem = 
+    /*let planeTelem = 
       (await request.get('http://' + this._planeTelemHost + ':' +
         this._planeTelemPort + '/endpoint') //is there an endpoint?
         .proto(what) //protobuf?
-        .timeout(1000)).body;
+        .timeout(1000)).body;*/
 
     //check if current time is the same as the previous timestate
-    if (groundTelem.time == telemTimes) {
-      status = 0;
+    if (groundTelem.time == gTimes) {
+      gstatus = 'OFFLINE';
     } else
-      status = 1;
-
-    telemTimes = groundTelem.time;
+      gstatus = 'ONLINE';
+    gTimes = groundTelem.time;
 
     await this._influx.writeMeasurement('telemetry', [
       {
-        fields: { ptimes: groundTelem.time, gtimes: groundTelem.time, status: status },
+        fields: { gstatus: gstatus, pstatus: pstatus },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
       }]);
   }
