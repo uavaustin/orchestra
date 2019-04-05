@@ -173,7 +173,7 @@ test('check the device ping response', async () => {
   expect(device_pings[2].host).toEqual('google.com');
   expect(device_pings[2].online).toEqual(true);
   expect(device_pings[2].ms).toBeGreaterThan(0);
-  expect(device_pings[2].ms).toBeLessThan(1000);
+  expect(device_pings[2].ms).toBeLessThan(10000);
 
   expect(device_pings[3].name).toEqual('non-existent-device');
   expect(device_pings[3].host).toEqual('no-host');
@@ -184,7 +184,7 @@ test('check the device ping response', async () => {
   expect(device_pings[4].host).toEqual('1.1.1.1');
   expect(device_pings[4].online).toEqual(true);
   expect(device_pings[4].ms).toBeGreaterThan(0);
-  expect(device_pings[4].ms).toBeLessThan(1000);
+  expect(device_pings[4].ms).toBeLessThan(10000);
 
 });
 
