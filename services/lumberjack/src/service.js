@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import request from 'superagent';
-const Influx = require('influx'); //fix
+import { Influx } from 'influx'; //fix
 import addProtobuf from 'superagent-protobuf';
 
 import { stats } from './messages';
@@ -31,8 +31,8 @@ export default class Service {
     this._pingPort = 7000; //fix
     this._forwardInteropHost = 'forward-interop'; //fix
     this._forwardInteropPort = 4000; //fix
-    this._telemetryHost = 'telemetry';
-    this._telemetryPort = 5000;
+    this._telemetryHost = 'telemetry'; //fix
+    this._telemetryPort = 5000; //fix
     this._planeTelemHost = options.planeTelemHost;
     this._planeTelemPort = options.planeTelemPort;
     this._influxHost = options.influxHost;
@@ -44,8 +44,9 @@ export default class Service {
   async start() {
     logger.debug('Starting service.');
 
+    try {
     this._influx = new Influx.InfluxDB({
-      host: '10.145.112.171', //fix
+      host: '10.147.30.142', //fix
       port: 8086, //fix
       database: 'lumberjack',
       schema: [
@@ -87,6 +88,9 @@ export default class Service {
         }
       ]
     });
+  } catch (e) {
+    console.log(e);
+  }
 
     //create database if it doesn't exist
     this._influx.createDatabase('lumberjack'); 
@@ -137,15 +141,15 @@ export default class Service {
 
   _startTasks() {
     this._pingTask =
-      createTimeoutTask(this._pingTask.bind(this), 5000)
+      createTimeoutTask(this._pingTask.bind(this), 5000) //make sure timeout right
         .on('error', logger.error)
         .start();
     this._uploadRateTask = 
-      createTimeoutTask(this._uploadRate.bind(this), 5000)
+      createTimeoutTask(this._uploadRate.bind(this), 5000) //make sure timeout right
         .on('error', logger.error)
         .start();
     this._telemetryTask =
-      createTimeoutTask(this._telemetryOverview.bind(this), 5000)
+      createTimeoutTask(this._telemetryOverview.bind(this), 5000) //make sure timeout right
         .on('error', logger.error)
         .start();
   }
@@ -221,8 +225,9 @@ export default class Service {
     //check if current time is the same as the previous timestate
     if (groundTelem.time == gTimes) {
       gstatus = 'OFFLINE';
-    } else
+    } else {
       gstatus = 'ONLINE';
+    }
     gTimes = groundTelem.time;
 
     await this._influx.writeMeasurement('telemetry', [

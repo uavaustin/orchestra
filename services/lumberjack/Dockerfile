@@ -5,7 +5,6 @@ FROM ${BASE} AS builder
 
 WORKDIR /builder
 
-# We need packages to install the net-ping node dependency.
 RUN apk --no-cache add \
     make \
     g++ \
@@ -46,8 +45,15 @@ COPY --from=builder /builder/lib lib
 
 COPY /lumberjack/bin bin
 
-ENV INFLUX_PORT=8086 \
-    INFLUX_HOST='localhost' 
+ENV INFLUX_HOST='localhost' \
+	INFLUX_PORT=8086 \
+    PING_HOST='pong' \
+	PING_PORT=7000 \
+	FORWARD_INTEROP_HOST='forward-interop' \
+	FORWARD_INTEROP_PORT=4000 \
+	TELEMETRY_HOST='telemetry' \
+	TELEMETRY_PORT=5000
+
 
 EXPOSE 6000
 
