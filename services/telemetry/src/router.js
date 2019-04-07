@@ -41,6 +41,10 @@ router.get('/api/overview', (ctx) => {
   ctx.proto = ctx.plane.getOverview();
 });
 
+router.get('/api/cxn-state', (ctx) => {
+  ctx.body = ctx.plane.getConnectionState();
+})
+
 router.get('/api/raw-mission', timeout, async (ctx) => {
   ctx.proto = await ctx.plane.getRawMission();
 });

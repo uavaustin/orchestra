@@ -97,6 +97,10 @@ export default class Plane {
     return this._interopTelem;
   }
 
+  getConnectionState() {
+    return this._cxnState;
+  }
+
   /**
    * Get the raw mission from the plane.
    *
