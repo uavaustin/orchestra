@@ -72,7 +72,7 @@ ENV PORT=8081 \
     # Maximum number of images that can be stored at a time in the
     # store. Old images will be pruned after the limit is reached.
     # Set this to 0 to disable.
-    MAX_IMAGES='200'
+    MAX_IMAGES='0'
 
 EXPOSE 8081
 
