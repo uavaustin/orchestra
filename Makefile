@@ -1,11 +1,11 @@
 # See service level Makefiles for more fine-grained control.
 
 .PHONY: all
-all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard
+all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard lumberjack
 
 .PHONY: test
 test: telemetry-test interop-proxy-test pong-test forward-interop-test \
-	imagery-test
+	imagery-test lumberjack-test
 
 .PHONY: mavproxy
 mavproxy:
@@ -55,6 +55,14 @@ imagery-test:
 dashboard:
 	$(MAKE) -C services/dashboard
 
+.PHONY: lumberjack
+lumberjack:
+	$(MAKE) -C services/lumberjack
+
+.PHONY: lumberjack-test
+lumberjack:
+	$(MAKE) -C services/lumberjack test
+
 .PHONY: clean
 clean:
 	$(MAKE) -C services/mavproxy clean
@@ -64,3 +72,4 @@ clean:
 	$(MAKE) -C services/forward-interop clean
 	$(MAKE) -C services/imagery clean
 	$(MAKE) -C services/dashboard clean
+	$(MAKE) -C services/lumberjack clean
