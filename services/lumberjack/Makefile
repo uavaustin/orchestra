@@ -1,8 +1,8 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
 
-PONG_IMAGE      := uavaustin/lumberjack
-PONG_TEST_IMAGE := uavaustin/lumberjack-test
+LUMBERJACK_IMAGE      := uavaustin/lumberjack
+LUMBERJACK_TEST_IMAGE := uavaustin/lumberjack-test
 ALPINE_IMAGE    := alpine
 
 current_dir := $(shell pwd)
@@ -12,13 +12,13 @@ all: image
 
 .PHONY: image
 image:
-	docker build -t $(PONG_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
+	docker build -t $(LUMBERJACK_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: test
 test: alpine
-	docker build -t $(PONG_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
+	docker build -t $(LUMBERJACK_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
 	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
-		-v /var/run/docker.sock:/var/run/docker.sock $(PONG_TEST_IMAGE)
+		-v /var/run/docker.sock:/var/run/docker.sock $(LUMBERJACK_TEST_IMAGE)
 
 .PHONY: alpine
 alpine:
@@ -29,5 +29,5 @@ alpine:
 .PHONY: clean
 clean:
 	rm -rf node_modules lib package-lock.json
-	docker rmi -f $(PONG_IMAGE)
-	docker rmi -f $(PONG_TEST_IMAGE)
+	docker rmi -f $(LUMBERJACK_IMAGE)
+	docker rmi -f $(LUMBERJACK_TEST_IMAGE)

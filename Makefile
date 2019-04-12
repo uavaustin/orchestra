@@ -60,7 +60,7 @@ lumberjack:
 	$(MAKE) -C services/lumberjack
 
 .PHONY: lumberjack-test
-lumberjack:
+lumberjack-test:
 	$(MAKE) -C services/lumberjack test
 
 .PHONY: clean
