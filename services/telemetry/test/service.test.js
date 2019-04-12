@@ -27,6 +27,7 @@ beforeAll(async () => {
   await planeSitl.start();
 
   planeIp = (await planeSitl.inspect()).NetworkSettings.IPAddress;
+
 }, 10000);
 
 // Stop the plane-sitl container.
