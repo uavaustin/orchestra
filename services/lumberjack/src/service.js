@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import request from 'superagent';
-import { Influx } from 'influx'; //fix
+import { InfluxDB, FieldType } from 'influx'; 
 import addProtobuf from 'superagent-protobuf';
 
 import { stats } from './messages';
@@ -11,7 +11,7 @@ import logger from './common/logger';
 import router from './router';
 
 addProtobuf(request);
-let gTimes, pTimes = '';
+let gTimes;
 
 export default class Service {
   /**
@@ -27,16 +27,16 @@ export default class Service {
    */
 
   constructor(options) {
-    this._pingHost = 'pong'; //fix
-    this._pingPort = 7000; //fix
-    this._forwardInteropHost = 'forward-interop'; //fix
-    this._forwardInteropPort = 4000; //fix
-    this._telemetryHost = 'telemetry'; //fix
-    this._telemetryPort = 5000; //fix
-    this._planeTelemHost = options.planeTelemHost;
-    this._planeTelemPort = options.planeTelemPort;
-    this._influxHost = options.influxHost;
-    this._influxPort = options.influxPort;
+    this._pingHost = 'pong'; 
+    this._pingPort = 7000; 
+    this._forwardInteropHost = 'forward-interop'; 
+    this._forwardInteropPort = 4000; 
+    this._telemetryHost = 'telemetry'; 
+    this._telemetryPort = 5000; 
+    this._influxHost = 'influx';
+    this._influxPort = 8086;
+    this._taskTimeout = options.taskTimeout;
+    this._queueLimit = -1;
     this._influx = null;
   }
 
@@ -45,16 +45,16 @@ export default class Service {
     logger.debug('Starting service.');
 
     try {
-    this._influx = new Influx.InfluxDB({
-      host: '10.147.30.142', //fix
-      port: 8086, //fix
+    this._influx = new InfluxDB({
+      host: this._influxHost, 
+      port: this._influxPort, 
       database: 'lumberjack',
       schema: [
         {
           measurement: 'ping',
           fields: {
-            apiPing: Influx.FieldType.INTEGER,
-            devicePing: Influx.FieldType.INTEGER
+            apiPing: FieldType.INTEGER,
+            devicePing: FieldType.INTEGER
           },
           tags: [
             'host',
@@ -65,10 +65,10 @@ export default class Service {
         {
           measurement: 'upload-rate',
           fields: {
-            t1: Influx.FieldType.INTEGER,
-            t5: Influx.FieldType.INTEGER,
-            f1: Influx.FieldType.INTEGER,
-            f5: Influx.FieldType.INTEGER
+            t1: FieldType.INTEGER,
+            t5: FieldType.INTEGER,
+            f1: FieldType.INTEGER,
+            f5: FieldType.INTEGER
           },
           tags: [
             'host',
@@ -78,8 +78,8 @@ export default class Service {
         {
           measurement: 'telemetry',
           fields: {
-            gstatus: Influx.FieldType.STRING,
-            pstatus: Influx.FieldType.STRING
+            gstatus: FieldType.INTEGER,
+            pstatus: FieldType.INTEGER
           },
           tags: [
             'host',
@@ -141,15 +141,15 @@ export default class Service {
 
   _startTasks() {
     this._pingTask =
-      createTimeoutTask(this._pingTask.bind(this), 5000) //make sure timeout right
+      createTimeoutTask(this._pingTask.bind(this), this._taskTimeout)
         .on('error', logger.error)
         .start();
     this._uploadRateTask = 
-      createTimeoutTask(this._uploadRate.bind(this), 5000) //make sure timeout right
+      createTimeoutTask(this._uploadRate.bind(this), this._taskTimeout)
         .on('error', logger.error)
         .start();
     this._telemetryTask =
-      createTimeoutTask(this._telemetryOverview.bind(this), 5000) //make sure timeout right
+      createTimeoutTask(this._telemetryOverview.bind(this), this._taskTimeout)
         .on('error', logger.error)
         .start();
   }
@@ -207,8 +207,9 @@ export default class Service {
 
   //Get ground telemetry and plane telemetry
   async _telemetryOverview() {
+    const OFFLINE = 0;
+    const ONLINE = 1;
     let gstatus, pstatus;
-    gstatus, pstatus = 'OFFLINE';
 
     let groundTelem = 
       (await request.get('http://' + this._telemetryHost + ':' + 
@@ -216,18 +217,23 @@ export default class Service {
         .proto(telemetry.Overview)
         .timeout(1000)).body;
 
-    /*let planeTelem = 
-      (await request.get('http://' + this._planeTelemHost + ':' +
-        this._planeTelemPort + '/endpoint') //is there an endpoint?
-        .proto(what) //protobuf?
-        .timeout(1000)).body;*/
+    let queueLength = 
+      (await request.get('http://' + this._telemetryHost + ':' + 
+        this._telemetryPort + '/api/queue-length')
+        .timeout(1000)).body;
 
     //check if current time is the same as the previous timestate
     if (groundTelem.time == gTimes) {
-      gstatus = 'OFFLINE';
+      gstatus = OFFLINE;
+      pstatus = OFFLINE;
     } else {
-      gstatus = 'ONLINE';
+      gstatus = ONLINE;
+      pstatus = ONLINE;
     }
+    if (queueLength > this._queueLimit){
+      pstatus = OFFLINE;
+    } 
+
     gTimes = groundTelem.time;
 
     await this._influx.writeMeasurement('telemetry', [

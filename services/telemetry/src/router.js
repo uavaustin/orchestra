@@ -29,6 +29,10 @@ router.get('/api/alive', (ctx) => {
   ctx.body = 'Yes, I\'m alive!\n';
 });
 
+router.get('/api/queue-length', (ctx) => {
+  ctx.body = ctx.plane.getQueueLength();
+});
+
 router.get('/api/interop-telem', (ctx) => {
   ctx.proto = ctx.plane.getInteropTelem();
 });
@@ -40,10 +44,6 @@ router.get('/api/camera-telem', (ctx) => {
 router.get('/api/overview', (ctx) => {
   ctx.proto = ctx.plane.getOverview();
 });
-
-router.get('/api/cxn-state', (ctx) => {
-  ctx.body = ctx.plane.getConnectionState();
-})
 
 router.get('/api/raw-mission', timeout, async (ctx) => {
   ctx.proto = await ctx.plane.getRawMission();

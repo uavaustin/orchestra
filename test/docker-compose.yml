@@ -63,8 +63,7 @@ services:
                       forward-interop,172.16.238.15:4000
                       imagery,172.16.238.50:8081
       - PING_DEVICES=localhost-pong,127.0.0.1
-                     bradley,10.148.116.231
-                     remus,10.146.52.235
+                     google.com,8.8.8.8
     ports:
       - '7000:7000'
     networks:
@@ -113,6 +112,14 @@ services:
     networks:
       test_net:
         ipv4_address: 172.16.238.17
+
+  influx:
+    image: influxdb:alpine
+    ports:
+      - '8086:8086'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.18
 
 networks:
   test_net:
