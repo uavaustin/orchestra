@@ -11,8 +11,8 @@ let service = new Service({
   forwardInteropPort: process.env.FORWARD_INTEROP_PORT,
   telemetryHost: process.env.TELEMETRY_HOST,
   telemetryPort: process.env.TELEMETRY_PORT,
-  planeTelemHost: process.env.PLANE_TELEMETRY_HOST,
-  planeTelemPort: process.env.PLANE_TELEMETRY_PORT
+  taskTimeout: process.env.TASK_TIMEOUT,
+  queueLimit: process.env.QUEUE_LIMIT
 });
 
 service.start();
