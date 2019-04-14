@@ -17,26 +17,30 @@ export default class Service {
   /**
    * Create a new service.
    * @param {Object}  options
-   * @param {string}  pinghost
-   * @param {number}  pingport
-   * @param {string}  telemhost
-   * @param {number}  telemport
-   * @param {string}  influxhost
-   * @param {number}  influxport
-   * @param {???} influx
+   * @param {string}  options.pingHost
+   * @param {number}  options.pingPort
+   * @param {string}  options.forwardInteropHost
+   * @param {number}  options.forwardInteropPort
+   * @param {string}  options.telemetryHost  
+   * @param {number}  options.telemetryPort
+   * @param {string}  options.influxHost
+   * @param {number}  options.influxPort
+   * @param {number}  options.taskTimeout
+   * @param {number}  options.queueLimit
+   * @param {InfluxDB} influx
    */
 
   constructor(options) {
-    this._pingHost = 'pong'; 
-    this._pingPort = 7000; 
-    this._forwardInteropHost = 'forward-interop'; 
-    this._forwardInteropPort = 4000; 
-    this._telemetryHost = 'telemetry'; 
-    this._telemetryPort = 5000; 
-    this._influxHost = 'influx';
-    this._influxPort = 8086;
+    this._pingHost = 'pong'; //options.pingHost;
+    this._pingPort = 7000; //options.pingPort;
+    this._forwardInteropHost = 'forward-interop'; //options.forwardInteropHost;
+    this._forwardInteropPort = 4000; //options.forwardInteropPort;
+    this._telemetryHost = 'telemetry'; //options.telemetryHost;
+    this._telemetryPort = 5000; //options.telemetryPort;
+    this._influxHost = 'influx'; //options.influxHost;
+    this._influxPort = 8086; //options.influxPort;
     this._taskTimeout = options.taskTimeout;
-    this._queueLimit = -1;
+    this._queueLimit = options.queueLimit;
     this._influx = null;
   }
 
@@ -44,7 +48,7 @@ export default class Service {
   async start() {
     logger.debug('Starting service.');
 
-    try {
+    /** Database configuration */
     this._influx = new InfluxDB({
       host: this._influxHost, 
       port: this._influxPort, 
@@ -88,11 +92,7 @@ export default class Service {
         }
       ]
     });
-  } catch (e) {
-    console.log(e);
-  }
-
-    //create database if it doesn't exist
+    //Create database 
     this._influx.createDatabase('lumberjack'); 
 
     this._startTasks();
@@ -154,17 +154,16 @@ export default class Service {
         .start();
   }
 
-  // Get service ping data and write it to the database
+  /** Get service ping data and write to the database */
   async _pingTask() {
-    logger.debug('');
-
+    //Get ping data
     let ping =
       (await request.get('http://' + this._pingHost + ':' +
         this._pingPort + '/api/ping')
         .proto(stats.PingTimes)
         .timeout(1000)).body;
 
-    //write data for services
+    //Write data for services 
     for (let endpoint of ping.service_pings) {
       let { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
@@ -176,7 +175,7 @@ export default class Service {
       });
     }
 
-    //write data for devices
+    //Write data for devices 
     for (let endpoint of ping.device_pings) {
       let { host, port, name} = endpoint;
       await this._influx.writeMeasurement('ping', [
@@ -189,8 +188,9 @@ export default class Service {
     }
   }
 
-  // Get telemetry upload rate data and write it to the database
+  /** Get telemetry upload rate data and write to the database */
   async _uploadRate() {
+    //Get upload rate
     let rate =
       (await request.get('http://' + this._forwardInteropHost + ':' +
         this._forwardInteropPort + '/api/upload-rate')
@@ -205,24 +205,26 @@ export default class Service {
       }]);
   }
 
-  //Get ground telemetry and plane telemetry
+  /** Get ground telemetry time and task queue length and write to the database */
   async _telemetryOverview() {
     const OFFLINE = 0;
     const ONLINE = 1;
     let gstatus, pstatus;
 
+    //Get telemetry overview
     let groundTelem = 
       (await request.get('http://' + this._telemetryHost + ':' + 
         this._telemetryPort + '/api/overview')
         .proto(telemetry.Overview)
         .timeout(1000)).body;
 
+    //Get length of task queue for the plane
     let queueLength = 
       (await request.get('http://' + this._telemetryHost + ':' + 
         this._telemetryPort + '/api/queue-length')
         .timeout(1000)).body;
 
-    //check if current time is the same as the previous timestate
+    //Check if current time is the same as the previous timestate 
     if (groundTelem.time == gTimes) {
       gstatus = OFFLINE;
       pstatus = OFFLINE;

@@ -109,6 +109,9 @@ services:
     image: uavaustin/lumberjack
     ports:
       - '6000:6000'
+    depends_on:
+      - 'forward-interop'
+      - 'pong'
     networks:
       test_net:
         ipv4_address: 172.16.238.17
