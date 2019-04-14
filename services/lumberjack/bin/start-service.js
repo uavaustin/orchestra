@@ -3,6 +3,7 @@
 const Service = require('..');
 
 let service = new Service({
+  port: process.env.PORT,
   influxHost: process.env.INFLUX_HOST,
   influxPort: process.env.INFLUX_PORT,
   pingHost: process.env.PING_HOST,

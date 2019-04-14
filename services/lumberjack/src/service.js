@@ -17,6 +17,7 @@ export default class Service {
   /**
    * Create a new service.
    * @param {Object}  options
+   * @param {number}  options.port
    * @param {string}  options.pingHost
    * @param {number}  options.pingPort
    * @param {string}  options.forwardInteropHost
@@ -31,6 +32,7 @@ export default class Service {
    */
 
   constructor(options) {
+    this._port = options.port;
     this._pingHost = 'pong'; //options.pingHost;
     this._pingPort = 7000; //options.pingPort;
     this._forwardInteropHost = 'forward-interop'; //options.forwardInteropHost;
@@ -92,8 +94,12 @@ export default class Service {
         }
       ]
     });
-    //Create database 
-    this._influx.createDatabase('lumberjack'); 
+    //Create database if it doesn't exist
+    this._influx.getDatabaseNames().then(names => {
+      if (!names.includes('lumberjack')) {
+        return this._influx.createDatabase('lumberjack');
+      }
+    });
 
     this._startTasks();
     this.server = await this._createApi();
@@ -124,7 +130,7 @@ export default class Service {
 
     // Start and wait until the server is up and then return it.
     return await new Promise((resolve, reject) => {
-      const server = app.listen(6000, (err) => {
+      const server = app.listen(this._port, (err) => {
         if (err) {
           reject(err);
         }
