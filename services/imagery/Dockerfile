@@ -57,8 +57,11 @@ COPY --from=builder /builder/lib lib
 COPY /imagery/bin bin
 
 ENV PORT=8081 \
-    # Must be one of "gphoto2", "file", "sync".
+    # Must be one of "gphoto2", "z-cam-e1", "file", "sync".
     BACKEND='gphoto2' \
+    # Must be set if using the z-cam-e1 backend.
+    CAMERA_HOST='camera' \
+    CAMERA_PORT='80' \
     # Must be set if using the sync backend.
     IMAGERY_SYNC_HOST='' \
     IMAGERY_SYNC_PORT='8081' \

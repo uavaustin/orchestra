@@ -6,6 +6,7 @@ import logger from './common/logger';
 import GPhoto2Backend from './backends/gphoto2-backend';
 import FileBackend from './backends/file-backend';
 import SyncBackend from './backends/sync-backend';
+import ZCamE1Backend from './backends/z-cam-e1-backend';
 import ImageStore from './image-store';
 import router from './router';
 
@@ -22,8 +23,10 @@ export default class Service {
    *
    * @param {Object} options
    * @param {number} options.port
-   * @param {string} options.backend - one of 'gphoto2', 'file',
-   *                                    'sync'
+   * @param {string} options.backend - one of 'gphoto2', 'z-cam-e1',
+   *                                   'file', 'sync'
+   * @param {string} [options.cameraHost]
+   * @param {string} [options.cameraPort]
    * @param {string} [options.imagerySyncHost]
    * @param {string} [options.imagerySyncPort]
    * @param {string} [options.telemetryHost]
@@ -31,8 +34,15 @@ export default class Service {
    * @param {number} [options.captureInterval] - milliseconds
    */
   constructor(options) {
-    if (['gphoto2', 'file', 'sync'].indexOf(options.backend) === -1)
+    const backends = ['gphoto2', 'z-cam-e1', 'file', 'sync'];
+
+    if (backends.indexOf(options.backend) === -1)
       throw Error('Invalid backend type');
+
+    if (options.backend == 'z-cam-e1' && !options.cameraHost)
+      throw Error('Camera host is required with z-cam-e1 backend');
+    if (options.backend == 'z-cam-e1' && !options.cameraPort)
+      throw Error('Camera port is required with z-cam-e1 backend');
     if (options.backend == 'sync' && !options.imagerySyncHost)
       throw Error('Imagery sync host is required with sync backend');
     if (options.backend == 'sync' && !options.imagerySyncPort)
@@ -41,6 +51,8 @@ export default class Service {
     this._port = options.port;
     this._backendType = options.backend;
 
+    this._cameraUrl = 'http://' + options.cameraHost + ':' +
+        options.cameraPort;
     this._imagerySyncUrl = 'http://' + options.imagerySyncHost + ':' +
         options.imagerySyncPort;
     this._telemetryUrl = options.telemetryHost && options.telemetryPort &&
@@ -62,6 +74,12 @@ export default class Service {
     case 'gphoto2':
       this._backend = new GPhoto2Backend(
         this._imageStore, this._captureInterval, this._telemetryUrl
+      );
+      break;
+    case 'z-cam-e1':
+      this._backend = new ZCamE1Backend(
+        this._imageStore, this._captureInterval, this._cameraUrl,
+        this._telemetryUrl
       );
       break;
     case 'file':

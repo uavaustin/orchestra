@@ -6,10 +6,11 @@ The service has three backends which can be used:
 
 - `gphoto2` (default)
 
-  This backend takes images directly from a camera device passed in to the
-  container. Running as priviledged will do this if it's hard to find which
-  device is the camera. The gphoto2 dependency will autodetect the camera. If
-  no camera, or two or more cameras are found, an error will be thrown.
+  This backend takes images directly from a gphoto2-supported camera device
+  passed in to the container. Running as priviledged will do this if it's hard
+  to find which device is the camera. The gphoto2 dependency will autodetect
+  the camera. If no camera, or two or more cameras are found, an error will be
+  thrown.
 
   By default, the capture rate is set to take a photo every two seconds. To set
   a different interval, set the `CAPTURE_INTERVAL` environment variable. The
@@ -18,6 +19,15 @@ The service has three backends which can be used:
   To specify the telemetry service for tagging images, you can specify the
   `TELEMETRY_HOST` and `TELEMETRY_PORT` environment variables. These both
   default to `telemetry` and `5000`.
+
+- `z-cam-e1`
+
+  Takes photos with a [Z Cam E1](http://www.z-cam.com/e1/) camera using the
+  camera's HTTP API with the `CAMERA_HOST` and `CAMERA_PORT` environment
+  variables.
+
+  Similarly to the `gphoto2` backend, it uses a capture rate and optionally
+  uses a telemetry service.
 
 - `file`
 
@@ -41,6 +51,10 @@ onto the container, the service will use the images in that folder.
 
 - `PORT` - defaults to `8081`.
 - `BACKEND` - defaults to `gphoto2`.
+- `CAMERA_HOST` - required when using the `z-cam-e1` backend, defaults to
+  `camera`.
+- `CAMERA_PORT` - required when using the `z-cam-e1` backend, defaults to
+  `80`.
 - `IMAGERY_SYNC_HOST` - required when using the `sync` backend.
 - `IMAGERY_SYNC_PORT` - defaults to `8081`.
 - `TELEMETRY_HOST` - used with the `gphoto2` backend, defaults to `telemetry`.
