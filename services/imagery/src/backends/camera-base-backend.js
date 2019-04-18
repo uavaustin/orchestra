@@ -25,6 +25,8 @@ export default class CameraBaseBackend {
     this._interval = interval;
     this._telemetryUrl = telemetryUrl;
     this._active = false;
+    this._runningMeta = 0;  // Number of running meta tasks.
+    this._endMeta = () => {};  // Used for stop().
   }
 
   /** Get the camera and then start the loop in the background. */
@@ -38,15 +40,21 @@ export default class CameraBaseBackend {
       this._camera = { };
     }
 
-    this._runLoop();
+    this._loop = this._runLoop();
   }
 
   /** Set a flag to kill the camera loop. */
   async stop() {
-    // FIXME: Since there's not a proper shutdown, this will just
-    //        wait the duration of the capture interval for now.
     this._active = false;
-    await wait(this._interval);
+
+    // Wait until the running loop has finished.
+    await this._loop;
+
+    // Wait until all the background tasks have finished.
+    await new Promise((resolve) => {
+      this._endMeta = () => this._runningMeta === 0 ? resolve() : null;
+      this._endMeta();  // In case it's already zero.
+    });
 
     // Run a release function if created on implementor class.
     if (this.release) {
@@ -61,12 +69,19 @@ export default class CameraBaseBackend {
 
       let photo;
       const metadataPromise = this._getMeta();
+      this._runningMeta++;
 
       try {
         photo = await this._takePhoto(this._camera);
       } catch (err) {
         const message = err.name + ': ' + err.message;
         logger.error('Encountered an error in camera loop: ' + message);
+
+        // Update the count whether successful or not.
+        metadataPromise.catch(() => {}).then(() => {
+          this._runningMeta--;
+          this._endMeta();
+        });
 
         // If we have an error, wait for a little to prevent these
         // errors from happening too rapidly and then continue;
@@ -83,6 +98,10 @@ export default class CameraBaseBackend {
       }).catch((err) => {
         const message = err.name + ': ' + err.message;
         logger.error('Error while registering photo: ' + message);
+      }).then(() => {
+        // Update the count.
+        this._runningMeta--;
+        this._endMeta();
       });
 
       const endTime = Date.now();
