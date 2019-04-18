@@ -41,7 +41,7 @@ export default class ZCamE1Backend extends CameraBaseBackend {
 
     // Each request comes with a code if it failed (except images).
     if (!buffer && res.body.code !== 0) {
-      throw new Error('Non-zero status code from z-cam-e1 for ' + endpoint);
+      throw new Error(`code ${res.body.code} from z-cam-e1 for ${endpoint}`);
     }
 
     return res.body;
