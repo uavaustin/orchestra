@@ -33,7 +33,7 @@ import "messages/interop.proto";
 // Service's location. `yaw`, `pitch`, and `roll` can be sourced from Rotation,
 // and finally Speed gets us `airspeed` and `ground_speed`. `wind_dir` we don't
 // have a source for yet so we'll just ignore it for now (TODO).
-import "messages/telemetry.proto"
+import "messages/telemetry.proto";
 
 // Everything in the list of Waypoints can be sourced from a RawMission (also
 // telemetry.proto).
@@ -55,8 +55,8 @@ message Request {
     telemetry.RawMission mission = 7;
 
     // Finally, config options:
-    optional double buffer_size = 8;
-    optional uint32 process_time = 9;
+    double buffer_size = 8;  // optional
+    uint32 process_time = 9; // optional
 }
 
 // The Pathfinder service returns a list of (adjusted) Waypoints. We'll want
