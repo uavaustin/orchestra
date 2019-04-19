@@ -11,11 +11,10 @@ gphoto2.GPhoto2 = jest.fn(() => {
 });
 
 nock('http://camera:1234')
-  .defaultReplyHeaders({ 'content-type': 'application/json' })
   .get('/ctrl/session')
-  .reply(200, { code: 0, desc: '', msg: '' })
+  .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
   .get('/ctrl/session?action=quit')
-  .reply(200, { code: 0, desc: '', msg: '' });
+  .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }));
 
 const names = ['gphoto2', 'z-cam-e1', 'file', 'sync'];
 const options = [

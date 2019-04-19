@@ -25,23 +25,26 @@ test('capture images with telemetry when available', async () => {
   const t1 = telemetry.CameraTelem.encode({ time: 1, lat: 2 }).finish();
 
   const cameraApi = nock('http://camera:1234')
-    .defaultReplyHeaders({ 'content-type': 'application/json' })
     .get('/ctrl/session')
-    .reply(200, { code: 0, desc: '', msg: '' })
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
-    .reply(200, { code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6391.JPG' })
+    .reply(200, JSON.stringify({
+      code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6391.JPG'
+    }))
     .get('/DCIM/100MEDIA/EYED6391.JPG')
     .reply(200, image, { 'content-type': 'image/jpeg' })
     .get('/DCIM/100MEDIA/EYED6391.JPG?act=rm')
-    .reply(200, { code: 0, desc: '', msg: '' })
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
-    .reply(200, { code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6392.JPG' })
+    .reply(200, JSON.stringify({
+      code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6392.JPG'
+    }))
     .get('/DCIM/100MEDIA/EYED6392.JPG')
     .reply(200, image, { 'content-type': 'image/jpeg' })
     .get('/DCIM/100MEDIA/EYED6392.JPG?act=rm')
-    .reply(200, { code: 0, desc: '', msg: '' })
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/session?action=quit')
-    .reply(200, { code: 0, desc: '', msg: '' });
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }));
 
   const telemApi = nock('http://telemetry:8081')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
@@ -85,19 +88,18 @@ test('capture images with telemetry when available', async () => {
 
 test('backend continues after errors', async () => {
   const cameraApi = nock('http://camera:1234')
-    .defaultReplyHeaders({ 'content-type': 'application/json' })
     .get('/ctrl/session')
-    .reply(200, { code: 0, desc: '', msg: '' })
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
     .reply(500)
     .get('/ctrl/still?action=single')
-    .reply(200, { code: 1, desc: '', msg: '' })
+    .reply(200, JSON.stringify({ code: 1, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
-    .reply(200, { code: 0, desc: '', msg: '/empty-image' })
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '/empty-image' }))
     .get('/empty-image')
     .reply(200, '', { 'content-type': 'image/jpeg' })
     .get('/ctrl/session?action=quit')
-    .reply(200, { code: 0, desc: '', msg: '' });
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }));
 
   const backend = new ZCamE1Backend(
     {}, 500, 'http://camera:1234'

@@ -34,16 +34,24 @@ export default class ZCamE1Backend extends CameraBaseBackend {
     await this._makeReq('/ctrl/session?action=quit');
   }
 
-  async _makeReq(endpoint, buffer = false) {
+  async _makeReq(endpoint, image = false) {
     const res = await request.get(this._cameraUrl + endpoint)
-      .buffer(buffer)
+      .buffer()
       .timeout(5000);
 
     // Each request comes with a code if it failed (except images).
-    if (!buffer && res.body.code !== 0) {
-      throw new Error(`code ${res.body.code} from z-cam-e1 for ${endpoint}`);
-    }
+    if (image) {
+      return res.body;
+    } else {
+      // We can't rely on the content type being set to
+      // `application/json` for the Z Cam E1.
+      const body = JSON.parse(res.text);
 
-    return res.body;
+      if (body.code !== 0) {
+        throw new Error(`code ${body.code} from z-cam-e1 for ${endpoint}`);
+      } else {
+        return body;
+      }
+    }
   }
 }
