@@ -124,6 +124,16 @@ services:
       test_net:
         ipv4_address: 172.16.238.18
 
+  grafana:
+    image: grafana/grafana
+    ports:
+      - '3000:3000'
+    volumes:
+      - '../services/grafana:/etc/'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.19
+
 networks:
   test_net:
     driver: bridge
