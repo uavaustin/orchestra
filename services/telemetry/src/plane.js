@@ -5,6 +5,7 @@ import logger from './common/logger';
 import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission, sendMissionCurrent } from './mission';
 import { degrees, modDegrees360, modDegrees180 } from './util';
+import { onHeartbeat } from './mode';
 
 const ConnectionState = Object.freeze({
   NOT_CONNECTED: Symbol('not_connected'),
@@ -12,30 +13,6 @@ const ConnectionState = Object.freeze({
   READING:       Symbol('reading'),
   WRITING:       Symbol('writing')
 });
-
-let mode_mapping_apm = {
-  0 : 'MANUAL',
-  1 : 'CIRCLE',
-  2 : 'STABILIZE',
-  3 : 'TRAINING',
-  4 : 'ACRO',
-  5 : 'FBWA',
-  6 : 'FBWB',
-  7 : 'CRUISE',
-  8 : 'AUTOTUNE',
-  10 : 'AUTO',
-  11 : 'RTL',
-  12 : 'LOITER',
-  14 : 'LAND',
-  15 : 'GUIDED',
-  16 : 'INITIALISING',
-  17 : 'QSTABILIZE',
-  18 : 'QHOVER',
-  19 : 'QLOITER',
-  20 : 'QLAND',
-  21 : 'QRTL',
-  22 : 'QAUTOTUNE'
-};
 
 /** Holds the state of a plane over a MAVLink UDP connection. */
 export default class Plane {
@@ -271,7 +248,7 @@ export default class Plane {
       'MISSION_ITEM': this._onMissionItem.bind(this),
       'VFR_HUD': this._onVfrHud.bind(this),
       'SYS_STATUS': this._onSysStatus.bind(this),
-      'HEARTBEAT': this._onHeartbeat.bind(this)
+      'HEARTBEAT': onHeartbeat.bind(this)
     };
 
     // Make every message definition .on
@@ -363,12 +340,5 @@ export default class Plane {
     ov.battery.voltage = fields.voltage_battery / 1000;
     ov.battery.current = fields.current_battery / 100;
     ov.battery.percentage = fields.battery_remaining;
-  }
-
-  async _onHeartbeat(fields) {
-    let ov = this._overview;
-
-    ov.time = Date.now() / 1000;
-    ov.mode = mode_mapping_apm[fields.custom_mode];
   }
 }
