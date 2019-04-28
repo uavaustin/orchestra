@@ -1,0 +1,49 @@
+ARG BASE_BUILDER=alpine:3.9
+ARG BASE=python:3.7-slim
+
+# Compile the proto files (using alpine for easy recent protoc
+# install).
+FROM ${BASE_BUILDER} AS builder
+
+WORKDIR /builder
+
+RUN apk --no-cache add \
+    protobuf
+
+COPY common/messages/image_rec.proto \
+    common/messages/imagery.proto \
+    common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    messages/
+
+RUN mkdir dist && protoc --python_out=dist messages/*.proto
+
+# Making the actual image now
+FROM ${BASE}
+
+WORKDIR /app
+
+# Needed for OpenCV.
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0
+
+COPY common/python/requirements.txt common/requirements.txt
+COPY image-rec-auto/requirements.txt .
+
+RUN pip install -r common/requirements.txt -r requirements.txt
+
+# Copy the protobuf messages from above.
+COPY --from=builder /builder/dist/messages messages
+
+COPY common/python common
+COPY image-rec-auto/service service
+
+ENV IMAGERY_HOST='imagery' \
+    IMAGERY_PORT='8081' \
+    IMAGE_REC_MASTER_HOST='image-rec-master' \
+    IMAGE_REC_MASTER_PORT='8082' \
+    FETCH_INTERVAL='1000'
+
+ENV PYTHONUNBUFFERED=TRUE
+
+CMD python -m service

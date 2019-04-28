@@ -128,6 +128,15 @@ services:
       test_net:
         ipv4_address: 172.16.238.52
 
+  image-rec-auto:
+    image: uavaustin/image-rec-auto
+    depends_on:
+      - imagery
+      - image-rec-master
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.53
+
 networks:
   test_net:
     driver: bridge
