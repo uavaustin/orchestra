@@ -120,6 +120,9 @@ services:
     image: influxdb:alpine
     ports:
       - '8086:8086'
+    volumes:
+      - './influxdb/data:/var/lib/influxdb'
+      - './influxdb/config/:/etc/influxdb/'
     networks:
       test_net:
         ipv4_address: 172.16.238.18
@@ -129,7 +132,7 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - '../services/grafana:/etc/'
+      - '../services/grafana:/etc/grafana'
     networks:
       test_net:
         ipv4_address: 172.16.238.19

@@ -4,6 +4,7 @@ DOCKERFLAGS :=
 LUMBERJACK_IMAGE      := uavaustin/lumberjack
 LUMBERJACK_TEST_IMAGE := uavaustin/lumberjack-test
 ALPINE_IMAGE    := alpine
+INFLUX_IMAGE    := influxdb:alpine
 
 current_dir := $(shell pwd)
 
@@ -24,6 +25,9 @@ test: alpine
 alpine:
 	@if ! docker inspect --type=image $(ALPINE_IMAGE) &> /dev/null; then \
 		docker pull $(ALPINE_IMAGE); \
+	fi
+	@if ! docker inspect --type=image $(INFLUX_IMAGE) &> /dev/null; then \
+		docker pull $(INFLUX_IMAGE); \
 	fi
 
 .PHONY: clean

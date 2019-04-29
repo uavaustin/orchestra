@@ -1,6 +1,6 @@
 import Koa from 'koa';
 import request from 'superagent';
-import { InfluxDB, FieldType } from 'influx'; 
+import { InfluxDB, FieldType } from 'influx';
 import addProtobuf from 'superagent-protobuf';
 
 import { stats } from './messages';
@@ -22,26 +22,26 @@ export default class Service {
    * @param {number}  options.pingPort
    * @param {string}  options.forwardInteropHost
    * @param {number}  options.forwardInteropPort
-   * @param {string}  options.telemetryHost  
+   * @param {string}  options.telemetryHost
    * @param {number}  options.telemetryPort
    * @param {string}  options.influxHost
    * @param {number}  options.influxPort
-   * @param {number}  options.taskTimeout
+   * @param {number}  options.uploadInterval
    * @param {number}  options.queueLimit
    * @param {InfluxDB} influx
    */
 
   constructor(options) {
     this._port = options.port;
-    this._pingHost = 'pong'; //options.pingHost;
-    this._pingPort = 7000; //options.pingPort;
-    this._forwardInteropHost = 'forward-interop'; //options.forwardInteropHost;
-    this._forwardInteropPort = 4000; //options.forwardInteropPort;
-    this._telemetryHost = 'telemetry'; //options.telemetryHost;
-    this._telemetryPort = 5000; //options.telemetryPort;
-    this._influxHost = 'influx'; //options.influxHost;
-    this._influxPort = 8086; //options.influxPort;
-    this._taskTimeout = options.taskTimeout;
+    this._pingHost = options.pingHost;
+    this._pingPort = options.pingPort;
+    this._forwardInteropHost = options.forwardInteropHost;
+    this._forwardInteropPort = options.forwardInteropPort;
+    this._telemetryHost = options.telemetryHost;
+    this._telemetryPort = options.telemetryPort;
+    this._influxHost = options.influxHost;
+    this._influxPort = options.influxPort;
+    this._uploadInterval = options.uploadInterval;
     this._queueLimit = options.queueLimit;
     this._influx = null;
   }
@@ -52,8 +52,8 @@ export default class Service {
 
     /** Database configuration */
     this._influx = new InfluxDB({
-      host: this._influxHost, 
-      port: this._influxPort, 
+      host: this._influxHost,
+      port: this._influxPort,
       database: 'lumberjack',
       schema: [
         {
@@ -94,15 +94,11 @@ export default class Service {
         }
       ]
     });
-    //Create database if it doesn't exist
-    this._influx.getDatabaseNames().then(names => {
-      if (!names.includes('lumberjack')) {
-        return this._influx.createDatabase('lumberjack');
-      }
-    });
+    //Create database
+    this._influx.createDatabase('lumberjack');
 
+    this._server = await this._createApi(this._influx);
     this._startTasks();
-    this.server = await this._createApi();
     logger.debug('Service started');
   }
 
@@ -112,17 +108,21 @@ export default class Service {
 
     await Promise.all([
       this._server.closeAsync(),
-      Promise.all(this._forwardTasks.map(t => t.stop()))
+      this._pingTask.stop(),
+      this._uploadRateTask.stop(),
+      this._telemetryTask.stop()
     ]);
 
     logger.debug('Service stopped.');
   }
 
   // Create the koa api and return the http server.
-  async _createApi() {
+  async _createApi(influx) {
     const app = new Koa();
 
     app.use(koaLogger());
+
+    app.context.influx = influx;
 
     // Set up the router middleware.
     app.use(router.routes());
@@ -131,14 +131,11 @@ export default class Service {
     // Start and wait until the server is up and then return it.
     return await new Promise((resolve, reject) => {
       const server = app.listen(this._port, (err) => {
-        if (err) {
-          reject(err);
-        }
-        else {
-          resolve(server);
-        }
+        if (err) reject(err);
+        else resolve(server);
       });
 
+      // Add a promisified close method to the server.
       server.closeAsync = () => new Promise((resolve) => {
         server.close(() => resolve());
       });
@@ -147,15 +144,16 @@ export default class Service {
 
   _startTasks() {
     this._pingTask =
-      createTimeoutTask(this._pingTask.bind(this), this._taskTimeout)
+      createTimeoutTask(this._pingTask.bind(this), this._uploadInterval)
         .on('error', logger.error)
         .start();
-    this._uploadRateTask = 
-      createTimeoutTask(this._uploadRate.bind(this), this._taskTimeout)
+    this._uploadRateTask =
+      createTimeoutTask(this._uploadRate.bind(this), this._uploadInterval)
         .on('error', logger.error)
         .start();
     this._telemetryTask =
-      createTimeoutTask(this._telemetryOverview.bind(this), this._taskTimeout)
+      createTimeoutTask(this._telemetryOverview.bind(this),
+        this._uploadInterval)
         .on('error', logger.error)
         .start();
   }
@@ -169,7 +167,7 @@ export default class Service {
         .proto(stats.PingTimes)
         .timeout(1000)).body;
 
-    //Write data for services 
+    //Write data for services
     for (let endpoint of ping.service_pings) {
       let { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
@@ -181,7 +179,7 @@ export default class Service {
       });
     }
 
-    //Write data for devices 
+    //Write data for devices
     for (let endpoint of ping.device_pings) {
       let { host, port, name} = endpoint;
       await this._influx.writeMeasurement('ping', [
@@ -189,7 +187,7 @@ export default class Service {
           fields: { devicePing: endpoint.ms },
           tags: { host, port, name}
         }], {
-          database: 'lumberjack'
+        database: 'lumberjack'
       });
     }
   }
@@ -211,27 +209,29 @@ export default class Service {
       }]);
   }
 
-  /** Get ground telemetry time and task queue length and write to the database */
+  /** Get telemetry overview and task queue length and
+  write to the database */
   async _telemetryOverview() {
     const OFFLINE = 0;
     const ONLINE = 1;
     let gstatus, pstatus;
 
     //Get telemetry overview
-    let groundTelem = 
-      (await request.get('http://' + this._telemetryHost + ':' + 
+    let groundTelem =
+      (await request.get('http://' + this._telemetryHost + ':' +
         this._telemetryPort + '/api/overview')
         .proto(telemetry.Overview)
         .timeout(1000)).body;
 
     //Get length of task queue for the plane
-    let queueLength = 
-      (await request.get('http://' + this._telemetryHost + ':' + 
+    let queueLength =
+      (await request.get('http://' + this._telemetryHost + ':' +
         this._telemetryPort + '/api/queue-length')
         .timeout(1000)).body;
 
-    //Check if current time is the same as the previous timestate 
-    if (groundTelem.time == gTimes) {
+    //Check if current time is the same or less than the previous
+    //timestate
+    if (groundTelem.time <= gTimes) {
       gstatus = OFFLINE;
       pstatus = OFFLINE;
     } else {
@@ -240,9 +240,11 @@ export default class Service {
     }
     if (queueLength > this._queueLimit){
       pstatus = OFFLINE;
-    } 
+    }
 
-    gTimes = groundTelem.time;
+    //update current time if greater or same from previous time state
+    if (groundTelem.time >= gTimes)
+      gTimes = groundTelem.time;
 
     await this._influx.writeMeasurement('telemetry', [
       {

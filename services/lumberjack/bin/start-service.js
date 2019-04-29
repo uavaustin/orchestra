@@ -12,7 +12,7 @@ let service = new Service({
   forwardInteropPort: process.env.FORWARD_INTEROP_PORT,
   telemetryHost: process.env.TELEMETRY_HOST,
   telemetryPort: process.env.TELEMETRY_PORT,
-  taskTimeout: process.env.TASK_TIMEOUT,
+  uploadInterval: process.env.UPLOAD_INTERVAL,
   queueLimit: process.env.QUEUE_LIMIT
 });
 
