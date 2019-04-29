@@ -97,7 +97,7 @@ export default class Plane {
     return this._interopTelem;
   }
 
-  /** Get the length of the task queue*/
+  /** Get the length of the task queue. */
   getQueueLength() {
     return this._taskQueue.length();
   }

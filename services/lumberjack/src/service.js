@@ -160,14 +160,14 @@ export default class Service {
 
   /** Get service ping data and write to the database */
   async _pingTask() {
-    //Get ping data
+    // Get ping data
     let ping =
       (await request.get('http://' + this._pingHost + ':' +
         this._pingPort + '/api/ping')
         .proto(stats.PingTimes)
         .timeout(1000)).body;
 
-    //Write data for services
+    // Write data for services
     for (let endpoint of ping.service_pings) {
       let { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
@@ -179,13 +179,13 @@ export default class Service {
       });
     }
 
-    //Write data for devices
+    // Write data for devices
     for (let endpoint of ping.device_pings) {
-      let { host, port, name} = endpoint;
+      let { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
           fields: { devicePing: endpoint.ms },
-          tags: { host, port, name}
+          tags: { host, port, name }
         }], {
         database: 'lumberjack'
       });
@@ -194,7 +194,7 @@ export default class Service {
 
   /** Get telemetry upload rate data and write to the database */
   async _uploadRate() {
-    //Get upload rate
+    // Get upload rate
     let rate =
       (await request.get('http://' + this._forwardInteropHost + ':' +
         this._forwardInteropPort + '/api/upload-rate')
@@ -248,7 +248,7 @@ export default class Service {
 
     await this._influx.writeMeasurement('telemetry', [
       {
-        fields: { gstatus: gstatus, pstatus: pstatus },
+        fields: { gstatus, pstatus },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
       }]);
   }

@@ -13,12 +13,11 @@ let service;
 let aliveApi;
 let customApi;
 let noEndpointApi;
-let docker;
 let device;
 let deviceIP;
 
 beforeAll(async () => {
-  docker = new Docker();
+  const docker = new Docker();
   device = await docker.createContainer({ Image: 'alpine' });
   await device.start();
 

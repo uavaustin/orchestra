@@ -85,7 +85,6 @@ test('check ping requests', async () => {
 test('check forward-interop requests', async () => {
   forwardInteropApi = nock('http://forward-interop-test:4000')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
-    .log(console.log) //eslint-disable-line
     .get('/api/upload-rate').reply(200, f1);
 
   await new Promise(resolve => setTimeout(resolve, 1000));
