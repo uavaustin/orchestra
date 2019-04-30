@@ -1,4 +1,3 @@
-import Koa from 'koa';
 import request from 'superagent';
 import { InfluxDB, FieldType } from 'influx';
 import addProtobuf from 'superagent-protobuf';
@@ -6,9 +5,7 @@ import addProtobuf from 'superagent-protobuf';
 import { stats } from './messages';
 import { telemetry } from './messages';
 import { createTimeoutTask } from './common/task';
-import koaLogger from './common/koa-logger';
 import logger from './common/logger';
-import router from './router';
 
 addProtobuf(request);
 let gTimes;
@@ -17,7 +14,6 @@ export default class Service {
   /**
    * Create a new service.
    * @param {Object}  options
-   * @param {number}  options.port
    * @param {string}  options.pingHost
    * @param {number}  options.pingPort
    * @param {string}  options.forwardInteropHost
@@ -28,11 +24,9 @@ export default class Service {
    * @param {number}  options.influxPort
    * @param {number}  options.uploadInterval
    * @param {number}  options.queueLimit
-   * @param {InfluxDB} influx
    */
 
   constructor(options) {
-    this._port = options.port;
     this._pingHost = options.pingHost;
     this._pingPort = options.pingPort;
     this._forwardInteropHost = options.forwardInteropHost;
@@ -42,6 +36,8 @@ export default class Service {
     this._influxHost = options.influxHost;
     this._influxPort = options.influxPort;
     this._uploadInterval = options.uploadInterval;
+    this._pingInterval = options.pingInterval;
+    this._telemInterval = options.telemInterval;
     this._queueLimit = options.queueLimit;
     this._influx = null;
   }
@@ -71,10 +67,10 @@ export default class Service {
         {
           measurement: 'upload-rate',
           fields: {
-            t1: FieldType.INTEGER,
-            t5: FieldType.INTEGER,
-            f1: FieldType.INTEGER,
-            f5: FieldType.INTEGER
+            total_1: FieldType.INTEGER,
+            total_5: FieldType.INTEGER,
+            fresh_1: FieldType.INTEGER,
+            fresh_5: FieldType.INTEGER
           },
           tags: [
             'host',
@@ -97,7 +93,6 @@ export default class Service {
     //Create database
     this._influx.createDatabase('lumberjack');
 
-    this._server = await this._createApi(this._influx);
     this._startTasks();
     logger.debug('Service started');
   }
@@ -107,7 +102,6 @@ export default class Service {
     logger.debug('Stopping service.');
 
     await Promise.all([
-      this._server.closeAsync(),
       this._pingTask.stop(),
       this._uploadRateTask.stop(),
       this._telemetryTask.stop()
@@ -116,35 +110,9 @@ export default class Service {
     logger.debug('Service stopped.');
   }
 
-  // Create the koa api and return the http server.
-  async _createApi(influx) {
-    const app = new Koa();
-
-    app.use(koaLogger());
-
-    app.context.influx = influx;
-
-    // Set up the router middleware.
-    app.use(router.routes());
-    app.use(router.allowedMethods());
-
-    // Start and wait until the server is up and then return it.
-    return await new Promise((resolve, reject) => {
-      const server = app.listen(this._port, (err) => {
-        if (err) reject(err);
-        else resolve(server);
-      });
-
-      // Add a promisified close method to the server.
-      server.closeAsync = () => new Promise((resolve) => {
-        server.close(() => resolve());
-      });
-    });
-  }
-
   _startTasks() {
     this._pingTask =
-      createTimeoutTask(this._pingTask.bind(this), this._uploadInterval)
+      createTimeoutTask(this._pingTask.bind(this), this._pingInterval)
         .on('error', logger.error)
         .start();
     this._uploadRateTask =
@@ -153,7 +121,7 @@ export default class Service {
         .start();
     this._telemetryTask =
       createTimeoutTask(this._telemetryOverview.bind(this),
-        this._uploadInterval)
+        this._telemInterval)
         .on('error', logger.error)
         .start();
   }

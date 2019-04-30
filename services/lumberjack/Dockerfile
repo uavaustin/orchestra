@@ -31,8 +31,6 @@ FROM ${BASE}
 
 WORKDIR /app
 
-# Copying over raw-socket since we don't have to build it again.
-
 ENV NODE_ENV=production
 
 COPY common/nodejs/package.json src/common/

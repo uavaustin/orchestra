@@ -15,6 +15,7 @@
     "common-nodejs": "file:src/common",
     "dockerode": "^2.5.7",
     "influx": "^5.0.7",
+    "kleur": "^3.0.3",
     "koa": "^2.6.2",
     "koa-protobuf": "^0.1.0",
     "koa-router": "^7.4.0",
