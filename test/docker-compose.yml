@@ -112,6 +112,8 @@ services:
     depends_on:
       - 'forward-interop'
       - 'pong'
+      - 'telemetry'
+      - 'influx'
     networks:
       test_net:
         ipv4_address: 172.16.238.17
@@ -133,6 +135,8 @@ services:
       - '3000:3000'
     volumes:
       - '../services/grafana/provisioning:/etc/grafana/provisioning'
+    depends_on:
+      - 'influx'
     networks:
       test_net:
         ipv4_address: 172.16.238.19
