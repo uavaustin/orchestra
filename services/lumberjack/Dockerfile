@@ -43,8 +43,7 @@ COPY --from=builder /builder/lib lib
 
 COPY /lumberjack/bin bin
 
-ENV PORT=6000 \
-	INFLUX_HOST='influx' \
+ENV INFLUX_HOST='influx' \
 	INFLUX_PORT=8086 \
   PING_HOST='pong' \
 	PING_PORT=7000 \

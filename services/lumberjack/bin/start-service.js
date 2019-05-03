@@ -15,8 +15,7 @@ let service = new Service({
   planeTelemetryPort: process.env.PLANE_TELEMETRY_PORT,
   uploadInterval: process.env.UPLOAD_INTERVAL,
   pingInterval: process.env.PING_INTERVAL,
-  telemInterval: process.env.TELEM_INTERVAL.
-  queueLimit: process.env.QUEUE_LIMIT
+  telemInterval: process.env.TELEM_INTERVAL,
 });
 
 service.start();

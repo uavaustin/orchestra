@@ -6,7 +6,6 @@ ENV NODE_ENV=test
 
 WORKDIR /test
 
-# We need packages to install the net-ping node dependency.
 RUN apk --no-cache add \
     make \
     g++ \

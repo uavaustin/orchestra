@@ -38,7 +38,6 @@ export default class Service {
     this._uploadInterval = options.uploadInterval;
     this._pingInterval = options.pingInterval;
     this._telemInterval = options.telemInterval;
-    this._queueLimit = options.queueLimit;
     this._influx = null;
   }
 
@@ -119,9 +118,14 @@ export default class Service {
       createTimeoutTask(this._uploadRate.bind(this), this._uploadInterval)
         .on('error', logger.error)
         .start();
-    this._telemetryTask =
-      createTimeoutTask(this._telemetryOverview.bind(this),
+    this._groundTelemetryTask =
+      createTimeoutTask(this._groundTelemetry.bind(this),
         this._telemInterval)
+        .on('error', logger.error)
+        .start();
+    this._planeTelemetryTask = 
+      createTimeoutTask(this._planeTelmetry.bind(this),
+        this.telemInterval)
         .on('error', logger.error)
         .start();
   }
@@ -129,12 +133,22 @@ export default class Service {
   /** Get service ping data and write to the database */
   async _pingTask() {
     // Get ping data
-    let ping =
-      (await request.get('http://' + this._pingHost + ':' +
-        this._pingPort + '/api/ping')
-        .proto(stats.PingTimes)
-        .timeout(1000)).body;
-
+    try {
+      let ping =
+        (await request.get('http://' + this._pingHost + ':' +
+          this._pingPort + '/api/ping')
+          .proto(stats.PingTimes)
+          .timeout(1000)).body;  
+    } catch (err) {
+      await this._influx.writeMeasurement('ping', [
+        {
+          fields: { apiPing: 0 },
+          tags: { host: '', port: 0, name: ''}
+        }], {
+        database: 'lumberjack'
+      });
+    }
+    
     // Write data for services
     for (let endpoint of ping.service_pings) {
       let { host, port, name } = endpoint;
@@ -163,40 +177,51 @@ export default class Service {
   /** Get telemetry upload rate data and write to the database */
   async _uploadRate() {
     // Get upload rate
-    let rate =
+    try {
+      let rate =
       (await request.get('http://' + this._forwardInteropHost + ':' +
         this._forwardInteropPort + '/api/upload-rate')
         .proto(stats.InteropUploadRate)
         .timeout(1000)).body;
+    } catch (err) {
+      await this._influx.writeMeasurement('upload-rate', [
+        {
+          fields: { total_1: 0, total_5: 0, fresh_1: 0, fresh_5: 0},
+          tags: { host: '', port: 0}
+        }], {
+          database: 'lumberjack'
+      });
+    }
+    
 
     await this._influx.writeMeasurement('upload-rate', [
       {
-        fields: { t1: rate.total_1, t5: rate.total_5,
-          f1: rate.fresh_1, f5: rate.fresh_5 },
+        fields: { total_1: rate.total_1, total_5: rate.total_5,
+          fresh_1: rate.fresh_1, fresh_5: rate.fresh_5 },
         tags: { host: this._forwardInteropHost, port: this._forwardInteropPort }
-      }]);
+      }], {
+        database: 'lumberjack'
+    });
   }
 
-  /** Get telemetry overview and task queue length and
-  write to the database */
-  async _telemetryOverview() {
+  /** Get telemetry overview and write to the database */
+  async _groundTelemetry() {
     const OFFLINE = 0;
     const ONLINE = 1;
     let gstatus, pstatus;
 
     //Get telemetry overview
-    let groundTelem =
-      (await request.get('http://' + this._telemetryHost + ':' +
-        this._telemetryPort + '/api/overview')
-        .proto(telemetry.Overview)
-        .timeout(1000)).body;
-
-    //Get length of task queue for the plane
-    let queueLength =
-      (await request.get('http://' + this._telemetryHost + ':' +
-        this._telemetryPort + '/api/queue-length')
-        .timeout(1000)).body;
-
+    try {
+      let groundTelem =
+        (await request.get('http://' + this._telemetryHost + ':' +
+          this._telemetryPort + '/api/overview')
+          .proto(telemetry.Overview)
+          .timeout(1000)).body;  
+    } catch (err) {
+      gstatus = OFFLINE;
+      pstatus = OFFLINE;
+    }
+    
     //Check if current time is the same or less than the previous
     //timestate
     if (groundTelem.time <= gTimes) {
@@ -205,9 +230,6 @@ export default class Service {
     } else {
       gstatus = ONLINE;
       pstatus = ONLINE;
-    }
-    if (queueLength > this._queueLimit){
-      pstatus = OFFLINE;
     }
 
     //update current time if greater or same from previous time state
@@ -219,5 +241,9 @@ export default class Service {
         fields: { gstatus, pstatus },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
       }]);
+  }
+
+  async _planeTelmetry() {
+    
   }
 }
