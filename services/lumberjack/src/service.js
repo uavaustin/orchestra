@@ -204,11 +204,11 @@ export default class Service {
     });
   }
 
-  /** Get telemetry overview and write to the database */
+  /** Get ground telemetry overview and write to the database */
   async _groundTelemetry() {
     const OFFLINE = 0;
     const ONLINE = 1;
-    let gstatus, pstatus;
+    let gstatus;
 
     //Get telemetry overview
     try {
@@ -219,16 +219,49 @@ export default class Service {
           .timeout(1000)).body;  
     } catch (err) {
       gstatus = OFFLINE;
-      pstatus = OFFLINE;
     }
     
     //Check if current time is the same or less than the previous
     //timestate
     if (groundTelem.time <= gTimes) {
       gstatus = OFFLINE;
-      pstatus = OFFLINE;
     } else {
       gstatus = ONLINE;
+    }
+
+    //update current time if greater or same from previous time state
+    if (groundTelem.time >= gTimes)
+      gTimes = groundTelem.time;
+
+    await this._influx.writeMeasurement('telemetry', [
+      {
+        fields: { gstatus },
+        tags: { host: this._telemetryHost, port: this._telemetryPort }
+      }]);
+  }
+
+  /** Get plane telemetry overview and write to database */
+  async _planeTelmetry() {
+    const OFFLINE = 0;
+    const ONLINE = 1;
+    let pstatus;
+
+    //Get telemetry overview
+    try {
+      let groundTelem =
+        (await request.get('http://' + this._telemetryHost + ':' +
+          this._telemetryPort + '/api/overview')
+          .proto(telemetry.Overview)
+          .timeout(1000)).body;  
+    } catch (err) {
+      pstatus = OFFLINE;
+    }
+    
+    //Check if current time is the same or less than the previous
+    //timestate
+    if (groundTelem.time <= gTimes) {
+      pstatus = OFFLINE;
+    } else {
       pstatus = ONLINE;
     }
 
@@ -238,12 +271,8 @@ export default class Service {
 
     await this._influx.writeMeasurement('telemetry', [
       {
-        fields: { gstatus, pstatus },
+        fields: { pstatus },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
       }]);
-  }
-
-  async _planeTelmetry() {
-    
   }
 }
