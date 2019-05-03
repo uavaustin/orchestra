@@ -8,7 +8,6 @@ import { createTimeoutTask } from './common/task';
 import logger from './common/logger';
 
 addProtobuf(request);
-let gTimes;
 
 export default class Service {
   /**
@@ -38,6 +37,7 @@ export default class Service {
     this._uploadInterval = options.uploadInterval;
     this._pingInterval = options.pingInterval;
     this._telemInterval = options.telemInterval;
+    this._gTimes = options.gTimes;
     this._influx = null;
   }
 
@@ -103,7 +103,8 @@ export default class Service {
     await Promise.all([
       this._pingTask.stop(),
       this._uploadRateTask.stop(),
-      this._telemetryTask.stop()
+      this._groundTelemetryTask.stop(),
+      this._planeTelemetryTask.stop(),
     ]);
 
     logger.debug('Service stopped.');
@@ -123,9 +124,9 @@ export default class Service {
         this._telemInterval)
         .on('error', logger.error)
         .start();
-    this._planeTelemetryTask = 
-      createTimeoutTask(this._planeTelmetry.bind(this),
-        this.telemInterval)
+    this._planeTelemetryTask =
+      createTimeoutTask(this._planeTelemetry.bind(this),
+        this._telemInterval)
         .on('error', logger.error)
         .start();
   }
@@ -133,22 +134,23 @@ export default class Service {
   /** Get service ping data and write to the database */
   async _pingTask() {
     // Get ping data
+    let ping;
     try {
-      let ping =
+      ping =
         (await request.get('http://' + this._pingHost + ':' +
           this._pingPort + '/api/ping')
           .proto(stats.PingTimes)
-          .timeout(1000)).body;  
+          .timeout(1000)).body;
     } catch (err) {
       await this._influx.writeMeasurement('ping', [
         {
           fields: { apiPing: 0 },
-          tags: { host: '', port: 0, name: ''}
+          tags: { host: ' ', port: 0, name: ' '}
         }], {
         database: 'lumberjack'
       });
     }
-    
+
     // Write data for services
     for (let endpoint of ping.service_pings) {
       let { host, port, name } = endpoint;
@@ -177,8 +179,9 @@ export default class Service {
   /** Get telemetry upload rate data and write to the database */
   async _uploadRate() {
     // Get upload rate
+    let rate;
     try {
-      let rate =
+      rate =
       (await request.get('http://' + this._forwardInteropHost + ':' +
         this._forwardInteropPort + '/api/upload-rate')
         .proto(stats.InteropUploadRate)
@@ -187,12 +190,11 @@ export default class Service {
       await this._influx.writeMeasurement('upload-rate', [
         {
           fields: { total_1: 0, total_5: 0, fresh_1: 0, fresh_5: 0},
-          tags: { host: '', port: 0}
+          tags: { host: ' ', port: 0}
         }], {
-          database: 'lumberjack'
+        database: 'lumberjack'
       });
     }
-    
 
     await this._influx.writeMeasurement('upload-rate', [
       {
@@ -200,7 +202,7 @@ export default class Service {
           fresh_1: rate.fresh_1, fresh_5: rate.fresh_5 },
         tags: { host: this._forwardInteropHost, port: this._forwardInteropPort }
       }], {
-        database: 'lumberjack'
+      database: 'lumberjack'
     });
   }
 
@@ -211,27 +213,28 @@ export default class Service {
     let gstatus;
 
     //Get telemetry overview
+    let groundTelem;
     try {
-      let groundTelem =
+      groundTelem =
         (await request.get('http://' + this._telemetryHost + ':' +
           this._telemetryPort + '/api/overview')
           .proto(telemetry.Overview)
-          .timeout(1000)).body;  
+          .timeout(1000)).body;
     } catch (err) {
       gstatus = OFFLINE;
     }
-    
+
     //Check if current time is the same or less than the previous
     //timestate
-    if (groundTelem.time <= gTimes) {
+    if (groundTelem.time <= this._gTimes) {
       gstatus = OFFLINE;
     } else {
       gstatus = ONLINE;
     }
 
     //update current time if greater or same from previous time state
-    if (groundTelem.time >= gTimes)
-      gTimes = groundTelem.time;
+    if (groundTelem.time >= this._gTimes)
+      this._gTimes = groundTelem.time;
 
     await this._influx.writeMeasurement('telemetry', [
       {
@@ -241,33 +244,34 @@ export default class Service {
   }
 
   /** Get plane telemetry overview and write to database */
-  async _planeTelmetry() {
+  async _planeTelemetry() {
     const OFFLINE = 0;
     const ONLINE = 1;
     let pstatus;
 
     //Get telemetry overview
+    let planeTelem;
     try {
-      let groundTelem =
+      planeTelem =
         (await request.get('http://' + this._telemetryHost + ':' +
           this._telemetryPort + '/api/overview')
           .proto(telemetry.Overview)
-          .timeout(1000)).body;  
+          .timeout(1000)).body;
     } catch (err) {
       pstatus = OFFLINE;
     }
-    
+
     //Check if current time is the same or less than the previous
     //timestate
-    if (groundTelem.time <= gTimes) {
+    if (planeTelem.time <= this._gTimes) {
       pstatus = OFFLINE;
     } else {
       pstatus = ONLINE;
     }
 
     //update current time if greater or same from previous time state
-    if (groundTelem.time >= gTimes)
-      gTimes = groundTelem.time;
+    if (planeTelem.time >= this._gTimes)
+      this._gTimes = planeTelem.time;
 
     await this._influx.writeMeasurement('telemetry', [
       {

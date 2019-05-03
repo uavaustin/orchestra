@@ -32,8 +32,6 @@ let t1 = telemetry.Overview.encode({
   time: 3, pos: 4, rot: 5, alt: 6, vel: 7, speed: 8, battery: 9
 }).finish();
 
-let length = 1;
-
 beforeAll(async () => {
   docker = new Docker();
 
@@ -58,26 +56,29 @@ test('start up the service', async () => {
     telemetryPort: 5000,
     influxHost: influxIP,
     influxPort: 8086,
-    uploadInterval: 1000
+    uploadInterval: 1000,
+    telemInterval: 1000,
+    pingInterval: 1000
   });
 
   await service.start();
 }, 40000);
 
-test('service is alive', async () => {
+/*test('service is alive', async () => {
   let res = await request('http://localhost:6000')
     .get('/api/alive');
 
   expect(res.status).toEqual(200);
   expect(res.type).toEqual('text/plain');
   expect(res.text).toBeTruthy();
-});
+});*/
 
 test('check ping requests', async () => {
   //time for one request
   pingApi = nock('http://ping-test:7000')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
-    .get('/api/ping').times(3).reply(200, p1);
+    .get('/api/ping').reply(200, p1)
+    .get('/api/ping').reply(200, p1);
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 });
@@ -85,6 +86,7 @@ test('check ping requests', async () => {
 test('check forward-interop requests', async () => {
   forwardInteropApi = nock('http://forward-interop-test:4000')
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
+    .get('/api/upload-rate').reply(200, f1)
     .get('/api/upload-rate').reply(200, f1);
 
   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -93,7 +95,7 @@ test('check forward-interop requests', async () => {
 test('check telemetry requests', async () => {
   telemetryApi = nock('http://telemetry-test:5000')
     .get('/api/overview').reply(200, t1)
-    .get('/api/queue-length').reply(200, length);
+    .get('/api/overview').reply(200, t1);
 
   await new Promise(resolve => setTimeout(resolve, 1000));
 });
