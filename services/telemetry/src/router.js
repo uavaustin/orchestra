@@ -29,10 +29,6 @@ router.get('/api/alive', (ctx) => {
   ctx.body = 'Yes, I\'m alive!\n';
 });
 
-router.get('/api/queue-length', (ctx) => {
-  ctx.body = ctx.plane.getQueueLength();
-});
-
 router.get('/api/interop-telem', (ctx) => {
   ctx.proto = ctx.plane.getInteropTelem();
 });
