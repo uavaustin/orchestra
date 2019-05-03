@@ -18,6 +18,7 @@ jobs:
     - env: SERVICE=forward-interop
     - env: SERVICE=imagery
     - env: SERVICE=dashboard
+    - env: SERVICE=lumberjack
     - stage: test
       env: SERVICE_TEST=telemetry
       language: node_js
@@ -32,6 +33,9 @@ jobs:
       language: node_js
       node_js: '8'
     - env: SERVICE_TEST=imagery
+      language: node_js
+      node_js: '8'
+    - env: SERVICE_TEST=lumberjack
       language: node_js
       node_js: '8'
 notifications:
