@@ -34,6 +34,7 @@ defmodule InteropProxy.Mixfile do
       {:httpoison, "~> 0.13.0"},
       {:phoenix, "~> 1.3.0"},
       {:phoenix_pubsub, "~> 1.0"},
+      {:plug_cowboy, "~> 1.0"},
       {:poison, "~> 3.1.0"}
     ]
   end
