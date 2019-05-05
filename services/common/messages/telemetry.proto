@@ -24,7 +24,7 @@ message Overview {
     Velocity vel = 5;
     Speed speed = 6;
     Battery battery = 7;
-    string mode = 8;
+    Mode mode = 8;
 }
 
 // WGS84 in degrees
@@ -115,4 +115,8 @@ message RawMission {
 message MissionCurrent {
     double time = 1;
     uint32 item_number = 2;
+}
+
+message Mode {
+    string name = 1;
 }

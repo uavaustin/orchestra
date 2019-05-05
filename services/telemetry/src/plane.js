@@ -5,7 +5,7 @@ import logger from './common/logger';
 import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission, sendMissionCurrent } from './mission';
 import { degrees, modDegrees360, modDegrees180 } from './util';
-import { onHeartbeat } from './mode';
+import { onHeartbeat, sendMode } from './mode';
 
 const ConnectionState = Object.freeze({
   NOT_CONNECTED: Symbol('not_connected'),
@@ -41,7 +41,7 @@ export default class Plane {
       vel: {},
       speed: {},
       battery: {},
-      mode: ''
+      mode: {}
     });
 
     // Will be assigned on each GLOBAL_POSITION_INT message.
@@ -186,6 +186,18 @@ export default class Plane {
 
       try {
         await sendMissionCurrent(this._mav, missionCurrent);
+      } finally {
+        this._cxnState = ConnectionState.IDLE;
+      }
+    });
+  }
+
+  async setMode(mode) {
+    await this._execTransaction(async () => {
+      this._cxnState = ConnectionState.WRITING;
+
+      try {
+        await sendMode(this._mav, mode);
       } finally {
         this._cxnState = ConnectionState.IDLE;
       }

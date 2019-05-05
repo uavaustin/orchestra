@@ -194,7 +194,7 @@ test('get overview telemetry', async () => {
 
   expect(res.status).toEqual(200);
   expect(res.body.pos.lat).toBeTruthy();
-  expect(res.body.mode).toEqual('MANUAL');
+  expect(res.body.mode.name).toEqual('MANUAL');
 });
 
 // Take down the service once the other service tests are done.
