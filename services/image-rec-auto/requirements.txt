@@ -3,6 +3,5 @@ opencv-python-headless~=3.4
 Pillow~=6.0
 protobuf~=3.7
 requests~=2.18
-https://github.com/uavaustin/target-finder/releases/download/v0.3.1/target-finder-0.3.1.tar.gz
-https://github.com/uavaustin/target-finder-model/releases/download/v0.2.0/target-finder-model-0.2.0.tar.gz
-tensorflow~=1.5
+https://github.com/uavaustin/target-finder/archive/object-detection-base.zip
+https://github.com/uavaustin/target-finder-model/releases/download/v0.3.0-dev.1/target-finder-model-0.3.0.dev1.tar.gz

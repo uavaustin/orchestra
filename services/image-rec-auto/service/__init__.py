@@ -50,27 +50,20 @@ class Service:
         t_2 = curr_time()
         logging.info('retreived image in {:d} ms'.format(t_2 - t_1))
 
-        # Getting the list of blobs.
-        blobs = target_finder.find_blobs(image, limit=20)
+        # Getting targets in our set of blobs (if there are any).
+        targets = target_finder.find_targets(image)
 
         t_3 = curr_time()
-        logging.info('{:d} blobs found in {:d} ms'.format(len(blobs),
-                                                          t_3 - t_2))
-
-        # Getting targets in our set of blobs (if there are any).
-        targets = target_finder.find_targets(blobs=blobs)
-
-        t_4 = curr_time()
         logging.info('{:d} targets found in {:d} ms'.format(len(targets),
-                                                            t_4 - t_3))
+                                                            t_3 - t_2))
 
         if targets:
             ret = self._queue_targets(image_id, image_proto, image, targets)
 
-            t_5 = curr_time()
+            t_4 = curr_time()
 
             if ret:
-                logging.info('queued targets in {:d} ms'.format(t_5 - t_4))
+                logging.info('queued targets in {:d} ms'.format(t_4 - t_3))
             else:
                 logging.error('failed to upload targets')
 
