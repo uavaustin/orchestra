@@ -38,6 +38,7 @@ export default class Service {
     this._pingInterval = options.pingInterval;
     this._telemInterval = options.telemInterval;
     this._gTimes = options.gTimes;
+    this._dbName = options.dbName;
     this._influx = null;
   }
 
@@ -49,7 +50,7 @@ export default class Service {
     this._influx = new InfluxDB({
       host: this._influxHost,
       port: this._influxPort,
-      database: 'lumberjack',
+      database: this._dbName,
       schema: [
         {
           measurement: 'ping',
@@ -89,8 +90,10 @@ export default class Service {
         }
       ]
     });
-    //Create database
-    this._influx.createDatabase('lumberjack');
+    // Create database if it doesn't exist
+    const names = await this._influx.getDatabaseNames();
+    if (!names.includes(this._dbName))
+      await this._influx.createDatabase(this._dbName);
 
     this._startTasks();
     logger.debug('Service started');
@@ -112,11 +115,13 @@ export default class Service {
 
   _startTasks() {
     this._pingTask =
-      createTimeoutTask(this._pingTask.bind(this), this._pingInterval)
+      createTimeoutTask(this._ping.bind(this),
+        this._pingInterval)
         .on('error', logger.error)
         .start();
     this._uploadRateTask =
-      createTimeoutTask(this._uploadRate.bind(this), this._uploadInterval)
+      createTimeoutTask(this._uploadRate.bind(this),
+        this._uploadInterval)
         .on('error', logger.error)
         .start();
     this._groundTelemetryTask =
@@ -132,7 +137,7 @@ export default class Service {
   }
 
   /** Get service ping data and write to the database */
-  async _pingTask() {
+  async _ping() {
     // Get ping data
     let ping;
     try {
@@ -142,36 +147,37 @@ export default class Service {
           .proto(stats.PingTimes)
           .timeout(1000)).body;
     } catch (err) {
+      logger.error(err);
       await this._influx.writeMeasurement('ping', [
         {
           fields: { apiPing: 0 },
-          tags: { host: ' ', port: 0, name: ' '}
+          tags: { host: 'non-existent-service', port: 0, name: 'service'}
         }], {
-        database: 'lumberjack'
+        database: this._dbName
       });
     }
 
     // Write data for services
     for (let endpoint of ping.service_pings) {
-      let { host, port, name } = endpoint;
+      const { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
           fields: { apiPing: endpoint.ms },
           tags: { host, port, name }
         }], {
-        database: 'lumberjack'
+        database: this._dbName
       });
     }
 
     // Write data for devices
     for (let endpoint of ping.device_pings) {
-      let { host, port, name } = endpoint;
+      const { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
           fields: { devicePing: endpoint.ms },
           tags: { host, port, name }
         }], {
-        database: 'lumberjack'
+        database: this._dbName
       });
     }
   }
@@ -190,9 +196,9 @@ export default class Service {
       await this._influx.writeMeasurement('upload-rate', [
         {
           fields: { total_1: 0, total_5: 0, fresh_1: 0, fresh_5: 0},
-          tags: { host: ' ', port: 0}
+          tags: { host: 'non-existent-service', port: 0}
         }], {
-        database: 'lumberjack'
+        database: this._dbName
       });
     }
 
@@ -202,7 +208,7 @@ export default class Service {
           fresh_1: rate.fresh_1, fresh_5: rate.fresh_5 },
         tags: { host: this._forwardInteropHost, port: this._forwardInteropPort }
       }], {
-      database: 'lumberjack'
+      database: this._dbName
     });
   }
 
@@ -212,7 +218,7 @@ export default class Service {
     const ONLINE = 1;
     let gstatus;
 
-    //Get telemetry overview
+    // Get telemetry overview
     let groundTelem;
     try {
       groundTelem =
@@ -224,15 +230,16 @@ export default class Service {
       gstatus = OFFLINE;
     }
 
-    //Check if current time is the same or less than the previous
-    //timestate
+    // Check if current time is the same or less than the previous
+    // timestate
     if (groundTelem.time <= this._gTimes) {
       gstatus = OFFLINE;
     } else {
       gstatus = ONLINE;
     }
 
-    //update current time if greater or same from previous time state
+    // Update current time if greater or same from previous time
+    // state
     if (groundTelem.time >= this._gTimes)
       this._gTimes = groundTelem.time;
 
@@ -240,7 +247,9 @@ export default class Service {
       {
         fields: { gstatus },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
-      }]);
+      }], {
+      database: this._dbName
+    });
   }
 
   /** Get plane telemetry overview and write to database */
@@ -249,7 +258,7 @@ export default class Service {
     const ONLINE = 1;
     let pstatus;
 
-    //Get telemetry overview
+    // Get telemetry overview
     let planeTelem;
     try {
       planeTelem =
@@ -261,15 +270,16 @@ export default class Service {
       pstatus = OFFLINE;
     }
 
-    //Check if current time is the same or less than the previous
-    //timestate
+    // Check if current time is the same or less than the previous
+    // timestate
     if (planeTelem.time <= this._gTimes) {
       pstatus = OFFLINE;
     } else {
       pstatus = ONLINE;
     }
 
-    //update current time if greater or same from previous time state
+    // Update current time if greater or same from previous time
+    // state
     if (planeTelem.time >= this._gTimes)
       this._gTimes = planeTelem.time;
 
@@ -277,6 +287,8 @@ export default class Service {
       {
         fields: { pstatus },
         tags: { host: this._telemetryHost, port: this._telemetryPort }
-      }]);
+      }], {
+      database: this._dbName
+    });
   }
 }

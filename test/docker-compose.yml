@@ -107,7 +107,7 @@ services:
 
   lumberjack:
     image: uavaustin/lumberjack
-    ports: #is this needed
+    ports:
       - '6000:6000'
     depends_on:
       - 'forward-interop'

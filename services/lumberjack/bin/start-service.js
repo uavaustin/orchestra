@@ -16,6 +16,7 @@ let service = new Service({
   uploadInterval: process.env.UPLOAD_INTERVAL,
   pingInterval: process.env.PING_INTERVAL,
   telemInterval: process.env.TELEM_INTERVAL,
+  dbName: process.env.DB_NAME
 });
 
 service.start();
