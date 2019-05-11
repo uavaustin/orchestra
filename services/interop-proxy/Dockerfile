@@ -1,5 +1,5 @@
 ARG BASE_BUILDER=elixir:1.6-alpine
-ARG BASE=alpine:3.8
+ARG BASE=alpine:3.9
 
 FROM ${BASE_BUILDER} as builder
 
@@ -34,7 +34,7 @@ WORKDIR /app
 # :erlang.crypto.
 RUN apk --no-cache add \
     bash \
-    libssl1.0
+    libssl1.1
 
 # Getting the archive from the builder, then uncompressing it.
 COPY --from=builder /builder/interop_proxy.tar.gz .
