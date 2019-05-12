@@ -1,7 +1,18 @@
 [package]
-name = "pathfinder"
+name = "pathfinder_testing"
 version = "0.1.0"
-authors = ["Rahul Butani <rr.butani@gmail.com>"]
+authors = ["sopokey"]
 edition = "2018"
 
 [dependencies]
+tower-web = "0.3.6"
+tower-service = "0.1.0"
+prost = "0.5.0"
+tower-web-protobuf = {git = "https://github.com/rrbutani/tower-web-protobuf"}
+pathfinder = {git = "https://github.com/uavaustin/pathfinder"}
+serde = "1.0.89"
+bytes = "0.4.12"
+
+
+[build-dependencies]
+prost-build = "0.5.0"

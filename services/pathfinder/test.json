@@ -1,0 +1,78 @@
+{
+        "flyzones": [
+            {
+                "alt_msl_max": 1.0,
+                "alt_msl_min": 2.0,
+                "boundary": [
+                    {
+                        "lat": 1.0,
+                        "lon": 2.0
+                    }
+                ]
+            }
+        ],
+        "obstacles": {
+            "stationary": [
+                {
+                    "pos": {
+                        "lat": 1.0,
+                        "lon": 2.0
+                    },
+                    "height": 2.0,
+                    "radius": 3.0
+                }
+            ],
+            "moving": [
+                {
+                    "pos": {
+                        "lat": 1.0,
+                        "lon": 2.0,
+                        "alt_msl": 3.0
+                    },
+                    "radius": 2.0
+                }
+            ],
+            "time": 1.0
+        },
+        "plane_pos": {
+            "lat": 1.0,
+            "lon": 2.0
+        },
+        "plane_alt": {
+            "msl": 1.0,
+            "agl": 2.0
+        },
+        "plane_rot": {
+            "yaw": 1.0,
+            "pitch": 2.0,
+            "roll": 3.0
+        },
+        "plane_speed": {
+            "airspeed": 1.0,
+            "ground_speed": 2.0
+        },
+        "mission": {
+            "time": 1.0,
+            "mission_items": [
+                {
+                    "target_system": 1,
+                    "target_component": 2,
+                    "seq": 3,
+                    "frame": 4,
+                    "command": 5,
+                    "current": 6,
+                    "autocontinue": 7,
+                    "param_1": 8.0,
+                    "param_2": 9.0,
+                    "param_3": 10.0,
+                    "param_4": 11.0,
+                    "x": 12.0,
+                    "y": 13.0,
+                    "z": 14.0,
+                    "mission_type": 15
+                }
+            ]
+        },
+        "buffer_size": 8.0,
+        "process_time": 9
+}
