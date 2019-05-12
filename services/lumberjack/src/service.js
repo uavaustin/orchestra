@@ -17,8 +17,10 @@ export default class Service {
    * @param {number}  options.pingPort
    * @param {string}  options.forwardInteropHost
    * @param {number}  options.forwardInteropPort
-   * @param {string}  options.telemetryHost
-   * @param {number}  options.telemetryPort
+   * @param {string}  options.groundTelemetryHost
+   * @param {number}  options.groundTelemetryPort
+   * @param {string}  options.planeTelemetryHost
+   * @param {number}  options.planeTelemetryPort
    * @param {string}  options.influxHost
    * @param {number}  options.influxPort
    * @param {number}  options.uploadInterval
@@ -30,8 +32,10 @@ export default class Service {
     this._pingPort = options.pingPort;
     this._forwardInteropHost = options.forwardInteropHost;
     this._forwardInteropPort = options.forwardInteropPort;
-    this._telemetryHost = options.telemetryHost;
-    this._telemetryPort = options.telemetryPort;
+    this._groundTelemetryHost = options.groundTelemetryHost;
+    this._groundTelemetryPort = options.groundTelemetryPort;
+    this._planeTelemetryHost = options.planeTelemetryHost;
+    this._planeTelemetryPort = options.planeTelemetryPort;
     this._influxHost = options.influxHost;
     this._influxPort = options.influxPort;
     this._uploadInterval = options.uploadInterval;
@@ -222,8 +226,8 @@ export default class Service {
     let groundTelem;
     try {
       groundTelem =
-        (await request.get('http://' + this._telemetryHost + ':' +
-          this._telemetryPort + '/api/overview')
+        (await request.get('http://' + this._groundTelemetryHost + ':' +
+          this._groundTelemetryPort + '/api/overview')
           .proto(telemetry.Overview)
           .timeout(1000)).body;
     } catch (err) {
@@ -246,7 +250,8 @@ export default class Service {
     await this._influx.writeMeasurement('telemetry', [
       {
         fields: { gstatus },
-        tags: { host: this._telemetryHost, port: this._telemetryPort }
+        tags: { host: this._groundTelemetryHost, 
+          port: this._groundTelemetryPort }
       }], {
       database: this._dbName
     });
@@ -262,8 +267,8 @@ export default class Service {
     let planeTelem;
     try {
       planeTelem =
-        (await request.get('http://' + this._telemetryHost + ':' +
-          this._telemetryPort + '/api/overview')
+        (await request.get('http://' + this._planeTelemetryHost + ':' +
+          this._planeTelemetryPort + '/api/overview')
           .proto(telemetry.Overview)
           .timeout(1000)).body;
     } catch (err) {
@@ -286,7 +291,8 @@ export default class Service {
     await this._influx.writeMeasurement('telemetry', [
       {
         fields: { pstatus },
-        tags: { host: this._telemetryHost, port: this._telemetryPort }
+        tags: { host: this._planeTelemetryHost, 
+          port: this._planeTelemetryPort }
       }], {
       database: this._dbName
     });
