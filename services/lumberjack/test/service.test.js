@@ -11,7 +11,8 @@ let influxIP;
 let service;
 let pingApi;
 let forwardInteropApi;
-let telemetryApi;
+let groundTelemetryApi;
+let planeTelemetryApi;
 
 let p1 = stats.PingTimes.encode({
   time: 1,
@@ -42,8 +43,10 @@ beforeAll(async () => {
     pingPort: 7000,
     forwardInteropHost: 'forward-interop-test',
     forwardInteropPort: 4000,
-    telemetryHost: 'telemetry-test',
-    telemetryPort: 5000,
+    groundTelemetryHost: 'telemetry-test',
+    groundTelemetryPort: 5000,
+    planeTelemetryHost: 'plane-telemetry-test',
+    planeTelemetryPort: 5000,
     influxHost: influxIP,
     influxPort: 8086,
     uploadInterval: 1000,
@@ -62,7 +65,12 @@ beforeAll(async () => {
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
     .get('/api/upload-rate').reply(200, f1);
 
-  telemetryApi = nock('http://telemetry-test:5000')
+  groundTelemetryApi = nock('http://telemetry-test:5000')
+    .persist()
+    .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
+    .get('/api/overview').reply(200, t1);
+
+  planeTelemetryApi = nock('http://plane-telemetry-test:5000')
     .persist()
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
     .get('/api/overview').reply(200, t1);
@@ -79,8 +87,12 @@ test('check forward-interop requests', async () => {
   expect(forwardInteropApi.isDone()).toBeTruthy();
 });
 
-test('check telemetry requests', async () => {
-  expect(telemetryApi.isDone()).toBeTruthy();
+test('check ground telemetry requests', async () => {
+  expect(groundTelemetryApi.isDone()).toBeTruthy();
+});
+
+test('check plane telemetry requests', async () => {
+  expect(planeTelemetryApi.isDone()).toBeTruthy();
 });
 
 test('stop service', async () => {
@@ -88,5 +100,6 @@ test('stop service', async () => {
   await influxContainer.stop();
   pingApi.done();
   forwardInteropApi.done();
-  telemetryApi.done();
+  groundTelemetryApi.done();
+  planeTelemetryApi.done();
 });

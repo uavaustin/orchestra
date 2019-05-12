@@ -250,7 +250,7 @@ export default class Service {
     await this._influx.writeMeasurement('telemetry', [
       {
         fields: { gstatus },
-        tags: { host: this._groundTelemetryHost, 
+        tags: { host: this._groundTelemetryHost,
           port: this._groundTelemetryPort }
       }], {
       database: this._dbName
@@ -291,7 +291,7 @@ export default class Service {
     await this._influx.writeMeasurement('telemetry', [
       {
         fields: { pstatus },
-        tags: { host: this._planeTelemetryHost, 
+        tags: { host: this._planeTelemetryHost,
           port: this._planeTelemetryPort }
       }], {
       database: this._dbName
