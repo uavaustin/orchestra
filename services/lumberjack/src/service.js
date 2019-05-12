@@ -236,16 +236,15 @@ export default class Service {
 
     // Check if current time is the same or less than the previous
     // timestate
+    // Update time if current time is greater than previous timestate
+    // this._gTimes will be set to groundTelem.time at start since
+    // if/else will evaluate to false when this._gTimes is undefined
     if (groundTelem.time <= this._gTimes) {
       gstatus = OFFLINE;
     } else {
       gstatus = ONLINE;
-    }
-
-    // Update current time if greater or same from previous time
-    // state
-    if (groundTelem.time >= this._gTimes)
       this._gTimes = groundTelem.time;
+    }
 
     await this._influx.writeMeasurement('telemetry', [
       {
@@ -275,23 +274,17 @@ export default class Service {
       pstatus = OFFLINE;
     }
 
-    // Check if current time is the same or less than the previous
-    // timestate
-    if (planeTelem.time <= this._gTimes) {
+    if (planeTelem.time <= this._gTimes)
       pstatus = OFFLINE;
-    } else {
+    else {
       pstatus = ONLINE;
-    }
-
-    // Update current time if greater or same from previous time
-    // state
-    if (planeTelem.time >= this._gTimes)
       this._gTimes = planeTelem.time;
+    }
 
     await this._influx.writeMeasurement('telemetry', [
       {
         fields: { pstatus },
-        tags: { host: this._planeTelemetryHost,
+        tags: {host: this._planeTelemetryHost,
           port: this._planeTelemetryPort }
       }], {
       database: this._dbName
