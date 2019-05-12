@@ -1,0 +1,8 @@
+###   Rust   ###
+# From Cargo:
+/target/
+
+# Courtesy of rustfmt:
+**/*.rs.bk
+
+# Since this is an application, we won't exclude Cargo.lock.
