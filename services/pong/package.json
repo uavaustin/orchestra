@@ -13,11 +13,8 @@
   },
   "dependencies": {
     "common-nodejs": "file:src/common",
-<<<<<<< HEAD
     "dockerode": "^2.5.7",
-=======
     "ip-regex": "^4.0.0",
->>>>>>> 42940f9de280acf7f02e8ffc177afeec5c283c0a
     "koa": "^2.5.1",
     "koa-protobuf": "^0.1.0",
     "koa-router": "^7.4.0",

@@ -18,11 +18,8 @@ jobs:
     - env: SERVICE=forward-interop
     - env: SERVICE=imagery
     - env: SERVICE=dashboard
-<<<<<<< HEAD
     - env: SERVICE=lumberjack
-=======
     - env: SERVICE=image-rec-master
->>>>>>> 42940f9de280acf7f02e8ffc177afeec5c283c0a
     - stage: test
       env: SERVICE_TEST=telemetry
       language: node_js
@@ -39,15 +36,13 @@ jobs:
     - env: SERVICE_TEST=imagery
       language: node_js
       node_js: '8'
-<<<<<<< HEAD
     - env: SERVICE_TEST=lumberjack
       language: node_js
       node_js: '8'
-=======
     - env: SERVICE_TEST=image-rec-master
       language: python
       python: '3.7'
->>>>>>> 42940f9de280acf7f02e8ffc177afeec5c283c0a
+
 notifications:
   email: false
   webhooks:
