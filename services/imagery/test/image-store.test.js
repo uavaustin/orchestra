@@ -22,7 +22,8 @@ test('create an empty image store', async () => {
   const imageStore = new ImageStore();
   await imageStore.setup();
 
-  expect(imageStore.getCount()).toEqual(0);
+  expect(await imageStore.getCount()).toEqual(0);
+  expect(await imageStore.exists(1)).toEqual(false);
 });
 
 test('images can be added to the image store', async () => {
@@ -36,7 +37,7 @@ test('images can be added to the image store', async () => {
     shapes[1], imagery.Image.create({ time: 5 })
   );
 
-  expect(imageStore.getCount()).toEqual(2);
+  expect(await imageStore.getCount()).toEqual(2);
 
   expect(await imageStore.getImage(id1)).toEqual(shapes[0]);
   expect(await imageStore.getImage(id2)).toEqual(shapes[1]);
@@ -53,7 +54,7 @@ test('clear existing removes existing images', async () => {
   const imageStore2 = new ImageStore(true);
   await imageStore2.setup();
 
-  expect(imageStore2.getCount()).toEqual(0);
+  expect(await imageStore2.getCount()).toEqual(0);
 });
 
 test('not using clear existing keeps existing images', async () => {
@@ -65,11 +66,13 @@ test('not using clear existing keeps existing images', async () => {
   const imageStore2 = new ImageStore();
   await imageStore2.setup();
 
-  expect(imageStore2.getCount()).toEqual(1);
+  expect(await imageStore2.getCount()).toEqual(1);
 });
 
 test('image store stores image add rates', async () => {
   const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
   const clock = lolex.install();
 
   expect(imageStore.getRate()).toEqual(0);
@@ -87,4 +90,58 @@ test('image store stores image add rates', async () => {
   expect(imageStore.getRate()).toEqual(0);
 
   clock.uninstall();
+});
+
+test('image store deletes old images', async () => {
+  const imageStore = new ImageStore(true, 2);
+  await imageStore.setup();
+
+  const ids = [];
+  for (let i = 0; i < 3; i++) {
+    ids[i] = await imageStore.addImage(
+      shapes[i],
+      imagery.Image.create({ time: i })
+    );
+  }
+  const lastIds = [ids[ids.length - 2], ids[ids.length - 1]];
+
+  expect(await imageStore.getCount()).toEqual(2);
+  expect(await imageStore.getAvailable()).toEqual(lastIds);
+  expect(await imageStore.exists(ids[0])).toEqual(true);
+  expect(await imageStore.deleted(ids[0])).toEqual(true);
+});
+
+test('image store deletes any existing image', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  const ids = [];
+  for (let i = 0; i < 3; i++) {
+    ids[i] = await imageStore.addImage(
+      shapes[i],
+      imagery.Image.create({ time: i })
+    );
+  }
+  await imageStore.deleteImage(ids[0]);
+  const lastIds = [ids[ids.length - 2], ids[ids.length - 1]];
+
+  expect(await imageStore.getCount()).toEqual(2);
+  expect(await imageStore.getAvailable()).toEqual(lastIds);
+  expect(await imageStore.exists(ids[0])).toEqual(true);
+  expect(await imageStore.deleted(ids[0])).toEqual(true);
+});
+
+test('image store gets latest ID', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  await imageStore.addImage(
+    shapes[0], imagery.Image.create({ time: 4 })
+  );
+
+  const latestId = await imageStore.addImage(
+    shapes[1], imagery.Image.create({ time: 5 })
+  );
+
+  expect(await imageStore.getLatestId()).toEqual(latestId);
 });

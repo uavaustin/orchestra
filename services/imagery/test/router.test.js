@@ -57,7 +57,7 @@ test('get available images with GET /api/available', async () => {
   app.use(router.allowedMethods());
 
   app.context.imageStore = {
-    getCount: jest.fn().mockReturnValue(6)
+    getAvailable: jest.fn().mockReturnValue([0, 1, 2, 3, 4, 5])
   };
 
   const server = app.listen();
@@ -112,9 +112,9 @@ test('get the latest image with GET /api/image/latest', async () => {
   const image = imagery.Image.create({ id: 3, image: imageData });
 
   app.context.imageStore = {
-    getCount: jest.fn().mockReturnValueOnce(4),
     getImage: jest.fn().mockReturnValueOnce(imageData),
-    getMetadata: jest.fn().mockReturnValueOnce(imageMeta)
+    getMetadata: jest.fn().mockReturnValueOnce(imageMeta),
+    getLatestId: jest.fn().mockReturnValueOnce(Promise.resolve(3))
   };
 
   const server = app.listen();
@@ -171,19 +171,22 @@ test('get the image by id with GET /api/image/:id', async () => {
   app.use(router.routes());
   app.use(router.allowedMethods());
 
-  const imageData = Buffer.from([0x02, 0x09]);
-  const imageMeta = imagery.Image.create({ id: 2 });
-  const image = imagery.Image.create({ id: 2, image: imageData });
-
-  app.context.imageStore = {
-    getCount: jest.fn().mockReturnValueOnce(4),
-    getImage: jest.fn().mockReturnValueOnce(imageData),
-    getMetadata: jest.fn().mockReturnValueOnce(imageMeta)
-  };
-
   const server = app.listen();
 
   try {
+    // Subtest: 200 OK on found image
+    const imageData = Buffer.from([0x02, 0x09]);
+    const imageMeta = imagery.Image.create({ id: 2 });
+    const image = imagery.Image.create({ id: 2, image: imageData });
+
+    app.context.imageStore = {
+      getCount: jest.fn().mockReturnValueOnce(4),
+      getImage: jest.fn().mockReturnValueOnce(imageData),
+      getMetadata: jest.fn().mockReturnValueOnce(imageMeta),
+      exists: jest.fn().mockReturnValueOnce(Promise.resolve(true)),
+      deleted: jest.fn().mockReturnValueOnce(Promise.resolve(false))
+    };
+
     await request(server)
       .get('/api/image/2')
       .proto(imagery.Image)
@@ -191,6 +194,89 @@ test('get the image by id with GET /api/image/:id', async () => {
 
     expect(app.context.imageStore.getImage).toBeCalledWith(2);
     expect(app.context.imageStore.getMetadata).toBeCalledWith(2);
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
+
+    // Subtest: 404 when image does not exist
+    app.context.imageStore = {
+      exists: jest.fn().mockReturnValueOnce(Promise.resolve(false)),
+      deleted: jest.fn().mockReturnValueOnce(Promise.resolve(false))
+    };
+
+    await request(server)
+      .get('/api/image/2')
+      .proto(imagery.Image)
+      .expect(404);
+
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
+
+    // Subtest: 410 when image does not exist
+    app.context.imageStore = {
+      exists: jest.fn().mockReturnValueOnce(Promise.resolve(true)),
+      deleted: jest.fn().mockReturnValueOnce(Promise.resolve(true))
+    };
+
+    await request(server)
+      .get('/api/image/2')
+      .proto(imagery.Image)
+      .expect(410);
+
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
+    expect(app.context.imageStore.deleted).toBeCalledWith(2);
+  } finally {
+    await new Promise(resolve => server.close(() => resolve()));
+  }
+});
+
+test('delete an image by id with DELETE /api/image/:id', async () => {
+  const app = new Koa();
+
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+
+  const server = app.listen();
+
+  try {
+    // Subtest: 200 OK when image exists
+    app.context.imageStore = {
+      exists: jest.fn().mockReturnValueOnce(Promise.resolve(true)),
+      deleted: jest.fn().mockReturnValueOnce(Promise.resolve(false)),
+      deleteImage: jest.fn().mockReturnValueOnce(Promise.resolve(true))
+    };
+
+    await request(server)
+      .delete('/api/image/2')
+      .proto(imagery.Image)
+      .expect(200);
+
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
+    expect(app.context.imageStore.deleted).toBeCalledWith(2);
+
+    // Subtest: 404 when image does not exist
+    app.context.imageStore = {
+      exists: jest.fn().mockReturnValueOnce(Promise.resolve(false)),
+      deleted: jest.fn().mockReturnValueOnce(Promise.resolve(false))
+    };
+
+    await request(server)
+      .delete('/api/image/2')
+      .proto(imagery.Image)
+      .expect(404);
+
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
+
+    // Subtest: 410 when image was deleted
+    app.context.imageStore = {
+      exists: jest.fn().mockReturnValueOnce(Promise.resolve(true)),
+      deleted: jest.fn().mockReturnValueOnce(Promise.resolve(true))
+    };
+
+    await request(server)
+      .delete('/api/image/2')
+      .proto(imagery.Image)
+      .expect(410);
+
+    expect(app.context.imageStore.exists).toBeCalledWith(2);
+    expect(app.context.imageStore.deleted).toBeCalledWith(2);
   } finally {
     await new Promise(resolve => server.close(() => resolve()));
   }
