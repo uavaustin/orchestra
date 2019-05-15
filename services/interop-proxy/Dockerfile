@@ -1,4 +1,4 @@
-ARG BASE_BUILDER=elixir:1.6-alpine
+ARG BASE_BUILDER=elixir:1.8-alpine
 ARG BASE=alpine:3.9
 
 FROM ${BASE_BUILDER} as builder
