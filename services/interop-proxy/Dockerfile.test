@@ -1,4 +1,4 @@
-ARG BASE=elixir:1.6-alpine
+ARG BASE=elixir:1.8-alpine
 
 FROM ${BASE}
 
