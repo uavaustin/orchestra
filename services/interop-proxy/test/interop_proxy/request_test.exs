@@ -4,7 +4,7 @@ defmodule InteropProxy.RequestTest do
   alias InteropProxy.Request
   alias InteropProxy.TestHelper
 
-  import TestHelper, only: [url: 0, username: 0, password: 0]
+  import TestHelper, only: [url: 0, username: 0, password: 0, mission_id: 0]
 
   test "log in successfully" do
     {:ok, _, cookie} = Request.login url(), username(), password()
@@ -12,45 +12,23 @@ defmodule InteropProxy.RequestTest do
     assert is_binary(cookie)
   end
 
-  test "get all missions" do
-    {:ok, _, cookie} = Request.login url(), username(), password()
-
-    {:ok, missions} = Request.get_missions url(), cookie
-
-    assert Enum.at(missions, 0)["active"] === true
-  end
-
   test "get one mission" do
     {:ok, _, cookie} = Request.login url(), username(), password()
 
-    {:ok, mission} = Request.get_mission url(), cookie, 1
+    {:ok, mission} = Request.get_mission url(), cookie, mission_id()
 
-    assert mission["active"] === true
-  end
-
-  test "get stationary obstacles" do
-    {:ok, _, cookie} = Request.login url(), username(), password()
-
-    {:ok, obstacles_1} = Request.get_obstacles url(), cookie
-
-    # Should be one type of obstacles.
-    assert obstacles_1 |> Map.keys |> length === 1
-
-    stat_1 = obstacles_1["stationary_obstacles"]
-
-    # Stationary obstacles should have 4 keys.
-    assert stat_1 |> Enum.at(0) |> Map.keys |> length === 4
+    assert mission["id"] === mission_id()
   end
 
   test "post valid telemetry" do
     {:ok, _, cookie} = Request.login url(), username(), password()
 
     {:ok, _} = Request.post_telemetry url(), cookie, %{
-      latitude: 30.3, longitude: 33.3, altitude_msl: 4, uas_heading: 22.9
+      latitude: 30.3, longitude: 33.3, altitude: 4, heading: 22.9
     }
 
     {:ok, _} = Request.post_telemetry url(), cookie, %{
-      latitude: 30, longitude: 33, altitude_msl: 4.444444, uas_heading: 359.9
+      latitude: 30, longitude: 33, altitude: 4.444444, heading: 359.9
     }
   end
 
@@ -59,10 +37,10 @@ defmodule InteropProxy.RequestTest do
 
     # Posting a new odlc.
     {:ok, uploaded} = Request.post_odlc url(), cookie, %{
-      "type" => "standard", "latitude" => 12.345, "longitude" => 34.567
-    }
+      "type" => "STANDARD", "latitude" => 12.345, "longitude" => 34.567
+    }, mission_id()
 
-    assert uploaded["type"] === "standard"
+    assert uploaded["type"] === "STANDARD"
     assert uploaded["latitude"] === 12.345
     assert uploaded["longitude"] === 34.567
 
@@ -89,14 +67,14 @@ defmodule InteropProxy.RequestTest do
 
     # Posting a new odlc.
     {:ok, uploaded} = Request.post_odlc url(), cookie, %{
-      type: "standard", shape: "semicircle", color: "red", alphanumeric: "Y",
-      alphanumeric_color: "green", autonomous: true
-    }
+      type: "STANDARD", shape: "SEMICIRCLE", shapeColor: "RED",
+      alphanumeric: "Y", alphanumericColor: "GREEN", autonomous: true
+    }, mission_id()
 
     id = uploaded["id"]
 
     # Using a reference amount of uploaded odlcs.
-    {:ok, all_odlc} = Request.get_odlcs url(), cookie
+    {:ok, all_odlc} = Request.get_odlcs url(), cookie, mission_id()
 
     starting_count = length all_odlc
 
@@ -104,7 +82,7 @@ defmodule InteropProxy.RequestTest do
     {:ok, _} = Request.delete_odlc url(), cookie, id
 
     # Make sure the total odlcs decreased by one.
-    {:ok, all_odlc} = Request.get_odlcs url(), cookie
+    {:ok, all_odlc} = Request.get_odlcs url(), cookie, mission_id()
 
     end_count = length all_odlc
 
@@ -117,18 +95,18 @@ defmodule InteropProxy.RequestTest do
     # Getting the reference count (in case the interop server was not
     # newly created).
     get_count = fn ->
-      {:ok, all_odlc} = Request.get_odlcs url(), cookie
+      {:ok, all_odlc} = Request.get_odlcs url(), cookie, mission_id()
 
       off_axis_count = Enum.count(all_odlc, fn
         %{
-          "type" => "off_axis", "latitude" => 12.345, "longitude" => 34.567
+          "type" => "OFF_AXIS", "latitude" => 12.345, "longitude" => 34.567
         } -> true
         _ -> false
       end)
 
       emergent_count = Enum.count(all_odlc, fn
         %{
-          "type" => "emergent", "latitude" => -12.345, "longitude" => -34.567,
+          "type" => "EMERGENT", "latitude" => -12.345, "longitude" => -34.567,
           "description" => "Fireman"
         } -> true
         _ -> false
@@ -140,17 +118,17 @@ defmodule InteropProxy.RequestTest do
     {start_oa, start_e} = get_count.()
 
     {:ok, %{"id" => id_1}} = Request.post_odlc url(), cookie, %{
-      type: "off_axis", latitude: 12.345, longitude: 34.567
-    }
+      type: "OFF_AXIS", latitude: 12.345, longitude: 34.567
+    }, mission_id()
 
     image_2 = TestHelper.get_image "image-2.jpg"
 
     {:ok, _} = Request.post_odlc_image url(), cookie, id_1, image_2
 
     {:ok, %{"id" => id_2}} = Request.post_odlc url(), cookie, %{
-      type: "emergent", latitude: -12.345, longitude: -34.567,
+      type: "EMERGENT", latitude: -12.345, longitude: -34.567,
       description: "Fireman"
-    }
+    }, mission_id()
 
     image_3 = TestHelper.get_image "image-3.jpg"
 
@@ -168,23 +146,23 @@ defmodule InteropProxy.RequestTest do
 
     # Posting a new odlc.
     {:ok, %{"id" => id}} = Request.post_odlc url(), cookie, %{
-      "type" => "standard", "latitude" => 12.345, "longitude" => 34.567
-    }
+      "type" => "STANDARD", "latitude" => 12.345, "longitude" => 34.567
+    }, mission_id()
 
     # Updating it.
     {:ok, odlc} = Request.put_odlc url(), cookie, id, %{
-      "type" => "standard", "latitude" => -12.345, "longitude" => -34.567
-    }
+      "type" => "STANDARD", "latitude" => -12.345, "longitude" => -34.567
+    }, mission_id()
 
     # Checking that the contents were updated.
     %{
-      "type" => "standard", "latitude" => -12.345, "longitude" => -34.567
+      "type" => "STANDARD", "latitude" => -12.345, "longitude" => -34.567
     } = odlc
 
     {:ok, odlc} = Request.get_odlc url(), cookie, id
 
     %{
-      "type" => "standard", "latitude" => -12.345, "longitude" => -34.567
+      "type" => "STANDARD", "latitude" => -12.345, "longitude" => -34.567
     } = odlc
   end
 
@@ -193,8 +171,8 @@ defmodule InteropProxy.RequestTest do
 
     # Posting a new odlc.
     {:ok, %{"id" => id}} = Request.post_odlc url(), cookie, %{
-      "type" => "standard", "latitude" => 12.345, "longitude" => 34.567
-    }
+      "type" => "STANDARD", "latitude" => 12.345, "longitude" => 34.567
+    }, mission_id()
 
     # Adding the image to it, then changing it.
     image_1 = TestHelper.get_image "image-1.jpg"
