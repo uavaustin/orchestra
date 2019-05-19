@@ -9,11 +9,11 @@ defmodule InteropProxyTest do
 
   import InteropProxy
 
-  test "get the active mission" do
-    mission = get_active_mission!()
+  test "get the mission" do
+    mission = get_mission!()
 
     assert mission.current_mission === true
-    assert is_float(mission.home_pos.lat)
+    assert is_float(mission.air_drop_pos.lat)
   end
 
   test "get stationary obstacles" do

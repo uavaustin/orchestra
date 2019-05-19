@@ -8,15 +8,16 @@ with the server.
 
 ## Running the Image
 
-When running the image, make sure to pass in the `INTEROP_URL`, `USERNAME`, and
-`PASSWORD` envrionment variables. They default to `0.0.0.0:8080`, `testuser`,
-and `testpass`, respectively.
+When running the image, make sure to pass in the `INTEROP_URL`, `USERNAME`,
+`PASSWORD`, `MISSION_ID` envrionment variables. They default to `0.0.0.0:8080`,
+`testuser`, `testpass`, and `1` respectively.
 
 ```
 $ docker run -it -p 8000:8000 \
     -e INTEROP_URL="192.168.0.5:8080" \
     -e USERNAME="someuser" \
     -e PASSWORD="somepass" \
+    -e MISSION_ID="1" \
     uavaustin/interop-proxy
 ```
 
@@ -38,13 +39,13 @@ If the interop server could not be reached, a `503` status code will be sent.
 
 - `GET /api/mission`
 
-  Lists the active mission on the server.
+  Return the mission using the given mission id.
 
-  Note that if there isn't an active mession, the reply will have all defaults
-  and `current_mission` will be set to `false`.
+  If the set mission is not accessible, there isn't an active mission and the
+  reply will have all defaults and `current_mission` will be set to `false`.
 
-  On successful response: `200` status code with `interop::Mission` Protobuf
-  message.
+  On successful response: `200` status code with `interop::InteropMission`
+  Protobuf message.
 
 - `GET /api/obstacles`
 

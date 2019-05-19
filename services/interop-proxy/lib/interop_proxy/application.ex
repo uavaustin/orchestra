@@ -17,6 +17,7 @@ defmodule InteropProxy.Application do
       url:        Application.get_env(:interop_proxy, :url),
       username:   Application.get_env(:interop_proxy, :username),
       password:   Application.get_env(:interop_proxy, :password),
+      mission_id: Application.get_env(:interop_proxy, :mission_id),
       name:       InteropProxy.Session,
       respond_to: self()
     ]

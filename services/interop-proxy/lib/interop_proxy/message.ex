@@ -21,18 +21,13 @@ defmodule InteropProxy.Message do
 
       iex> alias InteropProxy.Message
       iex> alias InteropProxy.Message.Interop.InteropMission
-      iex> map = %{home_pos: %{lat: 1}, waypoints: [%{lat: 12,
-      ...>   lon: 23}]}
+      iex> map = %{waypoints: [%{lat: 12, lon: 23}]}
       iex> Message.form_message map, InteropMission
       %InteropProxy.Message.Interop.InteropMission{
         air_drop_pos: nil,
         current_mission: nil,
         emergent_pos: nil,
         fly_zones: [],
-        home_pos: %InteropProxy.Message.Interop.Position{
-          lat: 1,
-          lon: nil
-        },
         off_axis_pos: nil,
         search_area: [],
         time: nil,
