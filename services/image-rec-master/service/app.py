@@ -205,6 +205,13 @@ async def handle_post_pipeline_target(request):
             # does not need to be referenced for uniqueness.
             async with watch_keys(request.app, 'all-targets',
                                   'unremoved-targets') as r:
+                # Check that the auto target cap hasn't been hit.
+                if odlc.autonomous and request.app['max_auto_targets'] != -1:
+                    auto_count = int(await r.get('auto-target-count') or 0)
+
+                    if auto_count >= request.app['max_auto_targets']:
+                        return web.HTTPConflict()
+
                 # Check for uniqueness
                 if odlc.autonomous and odlc.type == Odlc.STANDARD:
                     # Reference target ids.
@@ -241,6 +248,9 @@ async def handle_post_pipeline_target(request):
                                 'errored', 0, 'removed', 0)
 
                 tr = r.multi_exec()
+
+                if odlc.autonomous:
+                    tr.incr('auto-target-count')
 
                 tr.incr('target-count')
                 tr.sadd('all-targets', target_id)
@@ -311,9 +321,16 @@ async def handle_queue_pipeline_target_removal(request):
                 if target_id in remove_ids:
                     return web.HTTPConflict()
 
+                odlc = (await _get_target(request, target_id)).odlc
+
                 # Transaction with the watch. Queue the removal.
                 tr = r.multi_exec()
+
+                if odlc.autonomous:
+                    tr.decr('auto-target-count')
+
                 tr.lpush('unremoved-targets', target_id)
+
                 await tr.execute()
         except aioredis.MultiExecError:
             # The amount of targets changed.
@@ -427,12 +444,17 @@ async def _parse_body(request, msg_type):
         return msg
 
 
-def create_app():
+def create_app(redis_url, imagery_url, interop_url, max_auto_targets):
     """Create an aiohttp web application."""
     app = web.Application()
     app.on_startup.append(_start_tasks)
     app.on_shutdown.append(_stop_tasks)
     app.router.add_routes(routes)
+
+    app['redis_url'] = redis_url
+    app['imagery_url'] = imagery_url
+    app['interop_url'] = interop_url
+    app['max_auto_targets'] = max_auto_targets
 
     return app
 
