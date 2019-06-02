@@ -13,10 +13,10 @@ class Service:
         self._port = port
 
         app = create_app(
-            f'redis://{redis_host}:{redis_port}',
-            f'http://{imagery_host}:{imagery_port}',
-            f'http://{interop_host}:{interop_port}',
-            max_auto_targets
+            redis_url=f'redis://{redis_host}:{redis_port}',
+            imagery_url=f'http://{imagery_host}:{imagery_port}',
+            interop_url=f'http://{interop_host}:{interop_port}',
+            max_auto_targets=max_auto_targets
         )
 
         self._app = app
