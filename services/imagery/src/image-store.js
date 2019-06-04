@@ -66,7 +66,7 @@ export default class ImageStore extends EventEmitter {
         return db;
       },
       destroy: (db) => db.close()
-    }, { max: 5, min: 0 });
+    }, { max: 1, min: 0 });
 
     await this._withDb(async (db) => {
       await db.run('CREATE TABLE IF NOT EXISTS ' +
