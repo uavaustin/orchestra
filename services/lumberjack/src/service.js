@@ -41,9 +41,10 @@ export default class Service {
     this._uploadInterval = options.uploadInterval;
     this._pingInterval = options.pingInterval;
     this._telemInterval = options.telemInterval;
-    this._gTimes = options.gTimes;
     this._dbName = options.dbName;
     this._influx = null;
+    this._lastGroundData = {};
+    this._lastPlaneData = {};
   }
 
   /** Start the service. */
@@ -62,11 +63,7 @@ export default class Service {
             apiPing: FieldType.INTEGER,
             devicePing: FieldType.INTEGER
           },
-          tags: [
-            'host',
-            'port',
-            'name'
-          ]
+          tags: [ 'host', 'port', 'name' ]
         },
         {
           measurement: 'upload-rate',
@@ -76,10 +73,7 @@ export default class Service {
             fresh_1: FieldType.INTEGER,
             fresh_5: FieldType.INTEGER
           },
-          tags: [
-            'host',
-            'port'
-          ]
+          tags: [ 'host', 'port' ]
         },
         {
           measurement: 'telemetry',
@@ -87,10 +81,7 @@ export default class Service {
             gstatus: FieldType.INTEGER,
             pstatus: FieldType.INTEGER
           },
-          tags: [
-            'host',
-            'port'
-          ]
+          tags: [ 'host', 'port' ]
         }
       ]
     });
@@ -129,12 +120,12 @@ export default class Service {
         .on('error', logger.error)
         .start();
     this._groundTelemetryTask =
-      createTimeoutTask(this._groundTelemetry.bind(this),
+      createTimeoutTask(this._telemetry.bind(this, 'gstatus'),
         this._telemInterval)
         .on('error', logger.error)
         .start();
     this._planeTelemetryTask =
-      createTimeoutTask(this._planeTelemetry.bind(this),
+      createTimeoutTask(this._telemetry.bind(this, 'pstatus'),
         this._telemInterval)
         .on('error', logger.error)
         .start();
@@ -159,6 +150,7 @@ export default class Service {
         }], {
         database: this._dbName
       });
+      return;
     }
 
     // Write data for services
@@ -188,104 +180,81 @@ export default class Service {
 
   /** Get telemetry upload rate data and write to the database */
   async _uploadRate() {
+    let host = this._forwardInteropHost;
+    let port = this._forwardInteropPort;
+
     // Get upload rate
-    let rate;
+    let total_1, total_5, fresh_1, fresh_5;
     try {
-      rate =
-      (await request.get('http://' + this._forwardInteropHost + ':' +
-        this._forwardInteropPort + '/api/upload-rate')
-        .proto(stats.InteropUploadRate)
-        .timeout(1000)).body;
+      ({ total_1, total_5, fresh_1, fresh_5 } =
+        (await request.get(`http://${host}:${port}/api/upload-rate`)
+          .proto(stats.InteropUploadRate)
+          .timeout(1000)).body);
     } catch (err) {
-      await this._influx.writeMeasurement('upload-rate', [
-        {
-          fields: { total_1: 0, total_5: 0, fresh_1: 0, fresh_5: 0},
-          tags: { host: 'non-existent-service', port: 0}
-        }], {
-        database: this._dbName
-      });
+      host = 'non-existent-service';
+      port = 0;
     }
 
     await this._influx.writeMeasurement('upload-rate', [
       {
-        fields: { total_1: rate.total_1, total_5: rate.total_5,
-          fresh_1: rate.fresh_1, fresh_5: rate.fresh_5 },
-        tags: { host: this._forwardInteropHost, port: this._forwardInteropPort }
+        fields: { total_1, total_5, fresh_1, fresh_5 },
+        tags: { host, port }
       }], {
       database: this._dbName
     });
   }
 
-  /** Get ground telemetry overview and write to the database */
-  async _groundTelemetry() {
-    const OFFLINE = 0;
-    const ONLINE = 1;
-    let gstatus;
+  /**
+   * Get ground or plane telemetry overview and write to the
+   * database.
+   *
+   * @param {String} type the InfluxDB field to write to.
+   * Must be `gstatus` or `pstatus`.
+   */
+  async _telemetry(type) {
+    const types = {
+      gstatus: {
+        host: this._groundTelemetryHost,
+        port: this._groundTelemetryPort,
+        lastData: this._lastGroundData
+      },
+      pstatus: {
+        host: this._planeTelemetryHost,
+        port: this._planeTelemetryPort,
+        lastData: this._lastPlaneData
+      }
+    };
+
+    const { host, port, lastData } = types[type];
+    let online = false;
 
     // Get telemetry overview
-    let groundTelem;
+    let telemData;
     try {
-      groundTelem =
-        (await request.get('http://' + this._groundTelemetryHost + ':' +
-          this._groundTelemetryPort + '/api/overview')
+      telemData =
+        (await request.get(`http://${host}:${port}/api/overview`)
           .proto(telemetry.Overview)
           .timeout(1000)).body;
+
+      // Check if current time is the same or less than the previous
+      // timestate.
+      if (lastData && telemData.time <= lastData.time) {
+        online = false;
+      } else {
+        online = true;
+        // Assign to lastData's reference and not its value so that
+        // the respective field in `this` gets updated as well.
+        Object.assign(lastData, telemData);
+      }
     } catch (err) {
-      gstatus = OFFLINE;
+      online = false;
     }
 
-    // Check if current time is the same or less than the previous
-    // timestate
-    // Update time if current time is greater than previous timestate
-    // this._gTimes will be set to groundTelem.time at start since
-    // if/else will evaluate to false when this._gTimes is undefined
-    if (groundTelem.time <= this._gTimes) {
-      gstatus = OFFLINE;
-    } else {
-      gstatus = ONLINE;
-      this._gTimes = groundTelem.time;
-    }
-
+    online = Number(online);
     await this._influx.writeMeasurement('telemetry', [
       {
-        fields: { gstatus },
-        tags: { host: this._groundTelemetryHost,
-          port: this._groundTelemetryPort }
-      }], {
-      database: this._dbName
-    });
-  }
-
-  /** Get plane telemetry overview and write to database */
-  async _planeTelemetry() {
-    const OFFLINE = 0;
-    const ONLINE = 1;
-    let pstatus;
-
-    // Get telemetry overview
-    let planeTelem;
-    try {
-      planeTelem =
-        (await request.get('http://' + this._planeTelemetryHost + ':' +
-          this._planeTelemetryPort + '/api/overview')
-          .proto(telemetry.Overview)
-          .timeout(1000)).body;
-    } catch (err) {
-      pstatus = OFFLINE;
-    }
-
-    if (planeTelem.time <= this._gTimes)
-      pstatus = OFFLINE;
-    else {
-      pstatus = ONLINE;
-      this._gTimes = planeTelem.time;
-    }
-
-    await this._influx.writeMeasurement('telemetry', [
-      {
-        fields: { pstatus },
-        tags: {host: this._planeTelemetryHost,
-          port: this._planeTelemetryPort }
+        fields: { [type]: online },
+        tags: { host, port }
       }], {
       database: this._dbName
     });
