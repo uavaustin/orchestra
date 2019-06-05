@@ -13,18 +13,10 @@ services:
       - portainer-data:/data
     restart: unless-stopped
 
-  interop-server:
-    image: auvsisuas/interop-server
-    ports:
-      - '8080:80'
-    networks:
-      - ground-net
-    restart: unless-stopped
-
   mavproxy-ground:
     image: uavaustin/mavproxy
     command: --master udpout:mavproxy-plane:14551
-             --master /dev/3dr
+             --master /dev/antenna
              --out udpin:0.0.0.0:14550
              --out udpin:0.0.0.0:14551
              --nowait
@@ -36,7 +28,7 @@ services:
     networks:
       - ground-net
     devices:
-      - /dev/3dr:/dev/3dr
+      - /dev/rfd900:/dev/antenna
     restart: unless-stopped
 
   telemetry-ground:
@@ -51,9 +43,10 @@ services:
   interop-proxy:
     image: uavaustin/interop-proxy
     environment:
-      - INTEROP_URL=interop-server
-      - USERNAME=testuser
-      - PASSWORD=testpass
+      - INTEROP_URL=${INTEROP_URL}
+      - USERNAME=${INTEROP_USERNAME}
+      - PASSWORD=${INTEROP_PASSWORD}
+      - MISSION_ID=${INTEROP_MISSION_ID}
     networks:
       - ground-net
     restart: unless-stopped
@@ -61,7 +54,7 @@ services:
   pong:
     image: uavaustin/pong
     environment:
-      - PING_SERVICES=interop-server,interop-server,/
+      - PING_SERVICES=interop-server,${INTEROP_URL},/
                       interop-proxy,interop-proxy:8000
                       telemetry-plane,telemetry-plane:5000
                       telemetry-ground,telemetry-ground:5000
