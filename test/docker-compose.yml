@@ -130,18 +130,6 @@ services:
       test_net:
         ipv4_address: 172.16.238.18
 
-  grafana:
-    image: grafana/grafana
-    ports:
-      - '3000:3000'
-    volumes:
-      - '../services/grafana/provisioning:/etc/grafana/provisioning'
-    depends_on:
-      - 'influx'
-    networks:
-      test_net:
-        ipv4_address: 172.16.238.19
-
   image-rec-redis:
     image: redis:alpine
     command: redis-server --save "" --appendonly no

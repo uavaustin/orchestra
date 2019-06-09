@@ -133,25 +133,12 @@ export default class Service {
 
   /** Get service ping data and write to the database */
   async _ping() {
-    // Get ping data
-    let ping;
-    try {
-      ping =
-        (await request.get('http://' + this._pingHost + ':' +
-          this._pingPort + '/api/ping')
-          .proto(stats.PingTimes)
-          .timeout(1000)).body;
-    } catch (err) {
-      logger.error(err);
-      await this._influx.writeMeasurement('ping', [
-        {
-          fields: { apiPing: 0 },
-          tags: { host: 'non-existent-service', port: 0, name: 'service'}
-        }], {
-        database: this._dbName
-      });
-      return;
-    }
+    // Get ping data. If it fails, it will be gracefully be caught
+    // and logged.
+    const ping = (await request.get('http://' + this._pingHost + ':' +
+      this._pingPort + '/api/ping')
+      .proto(stats.PingTimes)
+      .timeout(1000)).body;
 
     // Write data for services
     for (let endpoint of ping.service_pings) {
@@ -180,19 +167,20 @@ export default class Service {
 
   /** Get telemetry upload rate data and write to the database */
   async _uploadRate() {
-    let host = this._forwardInteropHost;
-    let port = this._forwardInteropPort;
+    const host = this._forwardInteropHost;
+    const port = this._forwardInteropPort;
 
     // Get upload rate
-    let total_1, total_5, fresh_1, fresh_5;
+    let { total_1, total_5, fresh_1, fresh_5 } =
+      stats.InteropUploadRate.create({});
     try {
       ({ total_1, total_5, fresh_1, fresh_5 } =
         (await request.get(`http://${host}:${port}/api/upload-rate`)
           .proto(stats.InteropUploadRate)
           .timeout(1000)).body);
     } catch (err) {
-      host = 'non-existent-service';
-      port = 0;
+      // Log the error, but still write the measurement.
+      logger.error(err);
     }
 
     await this._influx.writeMeasurement('upload-rate', [
