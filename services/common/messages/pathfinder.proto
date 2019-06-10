@@ -38,25 +38,31 @@ import "messages/telemetry.proto";
 // Everything in the list of Waypoints can be sourced from a RawMission (also
 // telemetry.proto).
 
+message Plane {
+    telemetry.Position pos = 1;
+    telemetry.Altitude alt = 2;
+    telemetry.Rotation rot = 3; // Only used for yaw, currently
+    telemetry.Velocity vel = 4; // Not currently used
+    telemetry.Speed speed = 5;  // Not currently used
+}
+
 message Request {
     // Flyzones:
     repeated interop.InteropMission.FlyZone flyzones = 1;
 
     // Obstacles:
-    interop.Obstacles obstacles = 2;
+    interop.Obstacles obstacles = 2; // Could be a list of stationary obstacles, but we'll leave it like this in case moving obstacles ever make a return.
 
-    // Plane's Position:
-    telemetry.Position plane_pos = 3;
-    telemetry.Altitude plane_alt = 4;
-    telemetry.Rotation plane_rot = 5;
-    telemetry.Speed plane_speed = 6;
+    // Plane's Position (and some other data - speed and velocity are currently unused):
+    telemetry.Overview overview = 3;
 
     // Current Waypoints:
-    telemetry.RawMission mission = 7;
+    telemetry.RawMission mission = 4;
 
     // Finally, config options:
-    double buffer_size = 8;  // optional
-    uint32 process_time = 9; // optional
+    double buffer_size = 5;  // optional
+    uint32 process_time = 6; // optional
+    string algorithm = 7;   // optional
 }
 
 // The Pathfinder service returns a list of (adjusted) Waypoints. We'll want
