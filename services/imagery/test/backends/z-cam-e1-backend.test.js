@@ -27,6 +27,10 @@ test('capture images with telemetry when available', async () => {
   const cameraApi = nock('http://camera:1234')
     .get('/ctrl/session')
     .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
+    .get('/ctrl/mode?action=to_cap')
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
+    .get('/ctrl/af')
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
     .reply(200, JSON.stringify({
       code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6391.JPG'
@@ -35,12 +39,14 @@ test('capture images with telemetry when available', async () => {
     .reply(200, image, { 'content-type': 'image/jpeg' })
     .get('/DCIM/100MEDIA/EYED6391.JPG?act=rm')
     .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
+    .get('/ctrl/af')
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
     .reply(200, JSON.stringify({
       code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6392.JPG'
     }))
     .get('/DCIM/100MEDIA/EYED6392.JPG')
-    .reply(200, image, { 'content-type': 'image/jpeg' })
+    .reply(200, image, JSON.stringify({ 'content-type': 'image/jpeg' }))
     .get('/DCIM/100MEDIA/EYED6392.JPG?act=rm')
     .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/session?action=quit')
@@ -54,6 +60,10 @@ test('capture images with telemetry when available', async () => {
   const backend = new ZCamE1Backend(
     imageStore, 500, 'http://camera:1234', 'http://telemetry:8081'
   );
+
+  // Skip the extra configuration for the tests.
+  backend.performExtendedConfiguration = false;
+
   const spy = jest.spyOn(logger, 'error');
 
   await backend.start();
@@ -90,10 +100,22 @@ test('backend continues after errors', async () => {
   const cameraApi = nock('http://camera:1234')
     .get('/ctrl/session')
     .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
+    .get('/ctrl/mode?action=to_cap')
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
+    .get('/ctrl/af')                             // Attempt 1
+    .reply(500)
+    .get('/ctrl/af')                             // Attempt 2
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
     .reply(500)
+    .get('/ctrl/af')                             // Attempt 3
+    .reply(200, JSON.stringify({ code: 1, desc: '', msg: '' }))
+    .get('/ctrl/af')                             // Attempt 4
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
     .reply(200, JSON.stringify({ code: 1, desc: '', msg: '' }))
+    .get('/ctrl/af')                             // Attempt 5
+    .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/still?action=single')
     .reply(200, JSON.stringify({ code: 0, desc: '', msg: '/empty-image' }))
     .get('/empty-image')
@@ -105,13 +127,16 @@ test('backend continues after errors', async () => {
     {}, 500, 'http://camera:1234'
   );
 
+  // Again, skip the extra configuration.
+  backend.performExtendedConfiguration = false;
+
   logger.transports[0].silent = true;
 
   await backend.start();
 
   // Check error conditions of 500 status code, a bad code in the
-  // JSON, and an empty image, so it should error out three times
-  // after 500 ms. There should be some lag to prevent errors from
+  // JSON, and an empty image, so it should error out five times
+  // after 1000 ms. There should be some lag to prevent errors from
   // repeating quickly (this prevents a device from being overloaded
   // with requests).
   const spy = jest.spyOn(logger, 'error');
@@ -130,6 +155,18 @@ test('backend continues after errors', async () => {
 
   await wait(10);
   expect(spy).toHaveBeenCalledTimes(3);
+
+  await wait(240);
+  expect(spy).toHaveBeenCalledTimes(3);
+
+  await wait(10);
+  expect(spy).toHaveBeenCalledTimes(4);
+
+  await wait(240);
+  expect(spy).toHaveBeenCalledTimes(4);
+
+  await wait(25);
+  expect(spy).toHaveBeenCalledTimes(5);
 
   await backend.stop();
 

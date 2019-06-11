@@ -51,16 +51,24 @@ export default class ZCamE1Backend extends CameraBaseBackend {
    *   https://github.com/imaginevision/Z-Camera-Doc/blob/master/E1/
    */
 
-  constructor(imageStore, interval, cameraUrl, telemetryUrl) {
+  constructor(imageStore, interval, cameraUrl, telemetryUrl,
+    extendedConfig = true) {
     super(imageStore, interval, telemetryUrl);
     this._cameraUrl = cameraUrl;
+    this.performExtendedConfiguration = extendedConfig;
   }
 
   /** Get a session on the camera and configure the camera. */
   async acquire() {
     await this._makeReq('/ctrl/session');
 
-    // Set the date. (no left-pad)
+    // Put us in capture mode.
+    await this._makeReq('/ctrl/mode?action=to_cap');
+
+    // If we're not fully configuring the camera, we're done here.
+    if (this.performExtendedConfiguration === false) return;
+
+    // Set the date (no left-pad).
     const datetime = new Date();
     const time  = datetime.toTimeString().split(' ')[0];
     const year  = `${datetime.getFullYear()}`.padStart(4, '0');
@@ -68,9 +76,6 @@ export default class ZCamE1Backend extends CameraBaseBackend {
     const day   = `${datetime.getDate()}`.padStart(2, '0');
     const date  = `${year}-${month}-${day}`;
     await this._setParam(`/datetime?date=${date}&time=${time}`);
-
-    // Put us in capture mode:.
-    await this._makeReq('/ctrl/mode?action=to_cap');
 
     // Load the configuration.
     configuration.forEach(async pair => {
