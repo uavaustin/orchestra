@@ -46,7 +46,7 @@ test('capture images with telemetry when available', async () => {
       code: 0, desc: '', msg: '/DCIM/100MEDIA/EYED6392.JPG'
     }))
     .get('/DCIM/100MEDIA/EYED6392.JPG')
-    .reply(200, image, JSON.stringify({ 'content-type': 'image/jpeg' }))
+    .reply(200, image, { 'content-type': 'image/jpeg' })
     .get('/DCIM/100MEDIA/EYED6392.JPG?act=rm')
     .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
     .get('/ctrl/session?action=quit')
