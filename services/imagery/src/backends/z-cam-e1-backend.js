@@ -78,10 +78,9 @@ export default class ZCamE1Backend extends CameraBaseBackend {
     await this._setParam(`/datetime?date=${date}&time=${time}`);
 
     // Load the configuration.
-    configuration.forEach(async pair => {
-      const [key, val] = pair;
-      await this._makeReq(key, val);
-    });
+    await Promise.all(
+      configuration.map(([key, val]) => this._setParam(key, val))
+    );
 
     const temperature = await this._makeReq('/ctrl/temperature');
     logger.debug(`Temperature: ${temperature['msg']}`);
