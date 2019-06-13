@@ -2,7 +2,7 @@ defmodule InteropProxyWeb.Router do
   use InteropProxyWeb, :router
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug :accepts, ["protobuf", "json"]
   end
 
   scope "/api", InteropProxyWeb do

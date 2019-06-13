@@ -18,8 +18,9 @@ RUN mix deps.get && mix deps.compile
 COPY interop-proxy .
 COPY common/messages lib/messages
 
-# Make a release so we can copy it later.
-RUN mix release
+# Make a release so we can copy it later. (Cleaning mime since we
+# have the custom protobuf mime type.)
+RUN mix compile && mix deps.clean mime --build && mix release
 
 # Moving the archive to the top directory so it can be accessed
 # easily below.
