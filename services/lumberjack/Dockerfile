@@ -33,6 +33,11 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+COPY common/scripts/wait-for-it.sh .
+
+RUN apk --no-cache add \
+    curl
+
 COPY common/nodejs/package.json src/common/
 COPY lumberjack/package.json .
 
@@ -60,4 +65,9 @@ ENV INFLUX_HOST='influx' \
 
 EXPOSE 6000
 
-CMD FORCE_COLOR=1 npm start --silent
+# Wait for response from influx database first.
+CMD ./wait-for-it.sh \
+        "http://$INFLUX_HOST:$INFLUX_PORT/ping" \
+        "influxdb" && \
+    printf 'Starting.\n' && \
+    FORCE_COLOR=1 npm start --silent

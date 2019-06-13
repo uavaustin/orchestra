@@ -53,41 +53,44 @@ export default class Service {
 
     /** Database configuration */
     this._influx = new InfluxDB({
-      host: this._influxHost,
-      port: this._influxPort,
-      database: this._dbName,
-      schema: [
-        {
-          measurement: 'ping',
-          fields: {
-            apiPing: FieldType.INTEGER,
-            devicePing: FieldType.INTEGER
-          },
-          tags: [ 'host', 'port', 'name' ]
+    host: this._influxHost,
+    port: this._influxPort,
+    database: this._dbName,
+    schema: [
+      {
+        measurement: 'ping',
+        fields: {
+          apiPing: FieldType.INTEGER,
+          apiStatus: FieldType.INTEGER,
+          devicePing: FieldType.INTEGER,
+          deviceStatus: FieldType.INTEGER
         },
-        {
-          measurement: 'upload-rate',
-          fields: {
-            total_1: FieldType.INTEGER,
-            total_5: FieldType.INTEGER,
-            fresh_1: FieldType.INTEGER,
-            fresh_5: FieldType.INTEGER
-          },
-          tags: [ 'host', 'port' ]
+        tags: [ 'host', 'port', 'name' ]
+      },
+      {
+        measurement: 'upload-rate',
+        fields: {
+          total_1: FieldType.INTEGER,
+          total_5: FieldType.INTEGER,
+          fresh_1: FieldType.INTEGER,
+          fresh_5: FieldType.INTEGER
         },
-        {
-          measurement: 'telemetry',
-          fields: {
-            gstatus: FieldType.INTEGER,
-            pstatus: FieldType.INTEGER
-          },
-          tags: [ 'host', 'port' ]
-        }
-      ]
+        tags: [ 'host', 'port' ]
+      },
+      {
+        measurement: 'telemetry',
+        fields: {
+          gstatus: FieldType.INTEGER,
+          pstatus: FieldType.INTEGER
+        },
+        tags: [ 'host', 'port' ]
+      }
+    ]
     });
+    
     // Create database if it doesn't exist
     const names = await this._influx.getDatabaseNames();
-    if (!names.includes(this._dbName))
+    if (!names.includes(this._dbName)) 
       await this._influx.createDatabase(this._dbName);
 
     this._startTasks();
@@ -142,10 +145,10 @@ export default class Service {
 
     // Write data for services
     for (let endpoint of ping.service_pings) {
-      const { host, port, name } = endpoint;
+      const { host, port, name} = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
-          fields: { apiPing: endpoint.ms },
+          fields: { apiPing: endpoint.ms, apiStatus: +endpoint.online},
           tags: { host, port, name }
         }], {
         database: this._dbName
@@ -154,10 +157,10 @@ export default class Service {
 
     // Write data for devices
     for (let endpoint of ping.device_pings) {
-      const { host, port, name } = endpoint;
+      const { host, port, name} = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
-          fields: { devicePing: endpoint.ms },
+          fields: { devicePing: endpoint.ms, deviceStatus: +endpoint.online},
           tags: { host, port, name }
         }], {
         database: this._dbName
@@ -213,38 +216,41 @@ export default class Service {
       }
     };
 
-    const { host, port, lastData } = types[type];
+    let { host, port, lastData } = types[type];
     let online = false;
 
     // Get telemetry overview
     let telemData;
-    try {
-      telemData =
-        (await request.get(`http://${host}:${port}/api/overview`)
-          .proto(telemetry.Overview)
-          .timeout(1000)).body;
 
-      // Check if current time is the same or less than the previous
-      // timestate.
-      if (lastData && telemData.time <= lastData.time) {
+    if (host) {
+      try {
+        telemData =
+          (await request.get(`http://${host}:${port}/api/overview`)
+            .proto(telemetry.Overview)
+            .timeout(1000)).body;
+
+        // Check if current time is the same or less than the previous
+        // timestate.
+        if (lastData && telemData.time <= lastData.time) {
+          online = false;
+        } else {
+          online = true;
+          // Assign to lastData's reference and not its value so that
+          // the respective field in `this` gets updated as well.
+          Object.assign(lastData, telemData);
+        }
+      } catch (err) {
         online = false;
-      } else {
-        online = true;
-        // Assign to lastData's reference and not its value so that
-        // the respective field in `this` gets updated as well.
-        Object.assign(lastData, telemData);
       }
-    } catch (err) {
-      online = false;
     }
 
     online = Number(online);
     await this._influx.writeMeasurement('telemetry', [
-      {
-        fields: { [type]: online },
-        tags: { host, port }
-      }], {
+    {
+      fields: { [type]: online },
+      tags: { host: host || 'N/A', port: port || 'N/A' }
+    }], {
       database: this._dbName
-    });
+    });  
   }
 }
