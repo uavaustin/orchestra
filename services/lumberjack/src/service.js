@@ -53,44 +53,44 @@ export default class Service {
 
     /** Database configuration */
     this._influx = new InfluxDB({
-    host: this._influxHost,
-    port: this._influxPort,
-    database: this._dbName,
-    schema: [
-      {
-        measurement: 'ping',
-        fields: {
-          apiPing: FieldType.INTEGER,
-          apiStatus: FieldType.INTEGER,
-          devicePing: FieldType.INTEGER,
-          deviceStatus: FieldType.INTEGER
+      host: this._influxHost,
+      port: this._influxPort,
+      database: this._dbName,
+      schema: [
+        {
+          measurement: 'ping',
+          fields: {
+            apiPing: FieldType.INTEGER,
+            devicePing: FieldType.INTEGER,
+            apiStatus: FieldType.INTEGER,
+            deviceStatus: FieldType.INTEGER
+          },
+          tags: [ 'host', 'port', 'name' ]
         },
-        tags: [ 'host', 'port', 'name' ]
-      },
-      {
-        measurement: 'upload-rate',
-        fields: {
-          total_1: FieldType.INTEGER,
-          total_5: FieldType.INTEGER,
-          fresh_1: FieldType.INTEGER,
-          fresh_5: FieldType.INTEGER
+        {
+          measurement: 'upload-rate',
+          fields: {
+            total_1: FieldType.INTEGER,
+            total_5: FieldType.INTEGER,
+            fresh_1: FieldType.INTEGER,
+            fresh_5: FieldType.INTEGER
+          },
+          tags: [ 'host', 'port' ]
         },
-        tags: [ 'host', 'port' ]
-      },
-      {
-        measurement: 'telemetry',
-        fields: {
-          gstatus: FieldType.INTEGER,
-          pstatus: FieldType.INTEGER
-        },
-        tags: [ 'host', 'port' ]
-      }
-    ]
+        {
+          measurement: 'telemetry',
+          fields: {
+            gstatus: FieldType.INTEGER,
+            pstatus: FieldType.INTEGER
+          },
+          tags: [ 'host', 'port' ]
+        }
+      ]
     });
-    
+
     // Create database if it doesn't exist
     const names = await this._influx.getDatabaseNames();
-    if (!names.includes(this._dbName)) 
+    if (!names.includes(this._dbName))
       await this._influx.createDatabase(this._dbName);
 
     this._startTasks();
@@ -138,17 +138,22 @@ export default class Service {
   async _ping() {
     // Get ping data. If it fails, it will be gracefully be caught
     // and logged.
-    const ping = (await request.get('http://' + this._pingHost + ':' +
+    let ping;
+    try {
+      ping = (await request.get('http://' + this._pingHost + ':' +
       this._pingPort + '/api/ping')
-      .proto(stats.PingTimes)
-      .timeout(1000)).body;
+        .proto(stats.PingTimes)
+        .timeout(1000)).body;
+    } catch (err) {
+      logger.error(err);
+    }
 
     // Write data for services
     for (let endpoint of ping.service_pings) {
-      const { host, port, name} = endpoint;
+      const { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
-          fields: { apiPing: endpoint.ms, apiStatus: +endpoint.online},
+          fields: { apiPing: endpoint.ms, apiStatus: endpoint.online ? 1 : 0 },
           tags: { host, port, name }
         }], {
         database: this._dbName
@@ -157,10 +162,10 @@ export default class Service {
 
     // Write data for devices
     for (let endpoint of ping.device_pings) {
-      const { host, port, name} = endpoint;
+      const { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
-          fields: { devicePing: endpoint.ms, deviceStatus: +endpoint.online},
+          fields: { devicePing: endpoint.ms, deviceStatus: endpoint.online ? 1 : 0 },
           tags: { host, port, name }
         }], {
         database: this._dbName
@@ -229,8 +234,8 @@ export default class Service {
             .proto(telemetry.Overview)
             .timeout(1000)).body;
 
-        // Check if current time is the same or less than the previous
-        // timestate.
+        // Check if current time is the same or less than the
+        // previous timestate.
         if (lastData && telemData.time <= lastData.time) {
           online = false;
         } else {
@@ -246,11 +251,11 @@ export default class Service {
 
     online = Number(online);
     await this._influx.writeMeasurement('telemetry', [
-    {
-      fields: { [type]: online },
-      tags: { host: host || 'N/A', port: port || 'N/A' }
-    }], {
+      {
+        fields: { [type]: online ? 1 : 0 },
+        tags: { host: host || 'N/A', port: port || 'N/A' }
+      }], {
       database: this._dbName
-    });  
+    });
   }
 }
