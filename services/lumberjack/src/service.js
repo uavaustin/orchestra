@@ -11,7 +11,7 @@ addProtobuf(request);
 
 export default class Service {
   /**
-   * Create a new service.
+   * Create a new logging service.
    * @param {Object}  options
    * @param {string}  options.pingHost
    * @param {number}  options.pingPort
@@ -26,7 +26,6 @@ export default class Service {
    * @param {number}  options.uploadInterval
    * @param {number}  options.queueLimit
    */
-
   constructor(options) {
     this._pingHost = options.pingHost;
     this._pingPort = options.pingPort;
