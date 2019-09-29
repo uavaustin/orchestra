@@ -10,7 +10,7 @@ defmodule InteropProxyWeb.ControllerHelpers do
   If the interop server could not be reached, a 503 status code will
   be sent.
   """
-  def send_message(conn, status_code \\ 200, message)
+  def send_message(conn, status_code \\ 201, message)
 
   def send_message(conn, _status_code, {:error, reason}) do
     {code, text} = case reason do

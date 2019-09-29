@@ -4,7 +4,7 @@ defmodule InteropProxyWeb.AliveControllerTest do
   test "returns some text", %{conn: conn} do
     response = conn
     |> get(alive_path(conn, :index))
-    |> text_response(200)
+    |> text_response(201)
 
     assert response === "What's up?\n"
   end

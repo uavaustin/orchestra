@@ -30,7 +30,7 @@ defmodule InteropProxyWeb.TelemetryControllerTest do
     |> put_req_header("content-type", "application/json")
     |> put_req_header("accept", "application/json")
     |> post(telemetry_path(conn, :create), Poison.encode!(@test_telem))
-    |> json_response(200)
+    |> json_response(201)
 
     assert is_binary(response["text"])
     assert response["text"] |> String.length > 0

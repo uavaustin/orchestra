@@ -15,7 +15,7 @@ defmodule InteropProxyWeb.MissionControllerTest do
     response = conn
     |> put_req_header("accept", "application/json")
     |> get(mission_path(conn, :index))
-    |> json_response(200)
+    |> json_response(201)
 
     assert response["current_mission"] === true    
   end

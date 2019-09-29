@@ -133,7 +133,7 @@ defmodule InteropProxy.Request do
 
   # Making sure we have a succesful login, and getting the cookie
   # from the response.
-  defp handle_resp({:ok, %{status_code: 200} = resp}, :login, _opts) do
+  defp handle_resp({:ok, %{status_code: 201} = resp}, :login, _opts) do
     headers = Enum.into resp.headers, %{}
 
     cookie = headers["Set-Cookie"]
@@ -144,7 +144,7 @@ defmodule InteropProxy.Request do
   end
 
   # Making sure we're getting a jpeg back.
-  defp handle_resp({:ok, %{status_code: 200, body: body} = resp},
+  defp handle_resp({:ok, %{status_code: 201, body: body} = resp},
       :get_image, _opts) when is_binary(body) do
     headers = Enum.into resp.headers, %{}
 
