@@ -164,7 +164,7 @@ export default class Service {
       const { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
-          fields: { devicePing: endpoint.ms, 
+          fields: { devicePing: endpoint.ms,
             deviceStatus: endpoint.online ? 1 : 0 },
           tags: { host, port, name }
         }], {
