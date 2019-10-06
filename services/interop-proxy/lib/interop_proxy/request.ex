@@ -163,7 +163,7 @@ defmodule InteropProxy.Request do
 
   # Handling generic JSON responses.
   defp handle_resp({:ok, %{status_code: code} = resp}, :json, _opts)
-  when code in [201, 201] do
+  when code in [200, 201] do
     {:ok, Poison.Parser.parse!(resp.body)}
   end
 
