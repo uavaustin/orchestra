@@ -14,22 +14,6 @@ const Targets = () => (
       <Target crop_image={image1} shape="square" shape_color="blue" alpha_numeric="B" alpha_numeric_color="green"/>
       <Target crop_image={image2} shape="triangle" shape_color="green" alpha_numeric="C" alpha_numeric_color="yellow"/>
       <Target crop_image={image3} shape="hexagon" shape_color="orange" alpha_numeric="D" alpha_numeric_color="purple"/>
-      <Target crop_image={image0} shape="circle" shape_color="red" alpha_numeric="A" alpha_numeric_color="orange"/>
-      <Target crop_image={image1} shape="square" shape_color="blue" alpha_numeric="B" alpha_numeric_color="green"/>
-      <Target crop_image={image2} shape="triangle" shape_color="green" alpha_numeric="C" alpha_numeric_color="yellow"/>
-      <Target crop_image={image3} shape="hexagon" shape_color="orange" alpha_numeric="D" alpha_numeric_color="purple"/>
-      <Target crop_image={image0} shape="circle" shape_color="red" alpha_numeric="A" alpha_numeric_color="orange"/>
-      <Target crop_image={image1} shape="square" shape_color="blue" alpha_numeric="B" alpha_numeric_color="green"/>
-      <Target crop_image={image2} shape="triangle" shape_color="green" alpha_numeric="C" alpha_numeric_color="yellow"/>
-      <Target crop_image={image3} shape="hexagon" shape_color="orange" alpha_numeric="D" alpha_numeric_color="purple"/>
-      <Target crop_image={image0} shape="circle" shape_color="red" alpha_numeric="A" alpha_numeric_color="orange"/>
-      <Target crop_image={image1} shape="square" shape_color="blue" alpha_numeric="B" alpha_numeric_color="green"/>
-      <Target crop_image={image2} shape="triangle" shape_color="green" alpha_numeric="C" alpha_numeric_color="yellow"/>
-      <Target crop_image={image3} shape="hexagon" shape_color="orange" alpha_numeric="D" alpha_numeric_color="purple"/>
-      <Target crop_image={image0} shape="circle" shape_color="red" alpha_numeric="A" alpha_numeric_color="orange"/>
-      <Target crop_image={image1} shape="square" shape_color="blue" alpha_numeric="B" alpha_numeric_color="green"/>
-      <Target crop_image={image2} shape="triangle" shape_color="green" alpha_numeric="C" alpha_numeric_color="yellow"/>
-      <Target crop_image={image3} shape="hexagon" shape_color="orange" alpha_numeric="D" alpha_numeric_color="purple"/>
     </Card.Group>
   </Container>
 );
