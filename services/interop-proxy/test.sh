@@ -16,7 +16,7 @@ start_interop_server() {
 
     docker run -itd --rm --net=interop-proxy-test-net --ip=172.37.0.2 \
             -p 8081:80 --name interop-proxy-test \
-            uavaustin/interop-server:2019.05 \
+            uavaustin/interop-server:2019.10 \
             > /dev/null
 
     if [ "$?" -ne 0 ]; then

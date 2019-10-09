@@ -22,7 +22,7 @@ services:
         ipv4_address: 172.16.238.10
 
   interop-server:
-    image: uavaustin/interop-server:2019.05
+    image: uavaustin/interop-server:2019.10
     ports:
       - '8080:80'
     networks:
