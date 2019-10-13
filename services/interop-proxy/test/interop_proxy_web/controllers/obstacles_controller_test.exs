@@ -15,7 +15,7 @@ defmodule InteropProxyWeb.ObstaclesControllerTest do
     response = conn
     |> put_req_header("accept", "application/json")
     |> get(obstacles_path(conn, :index))
-    |> json_response(201)
+    |> json_response(200)
 
     assert is_list(response["stationary"])
   end

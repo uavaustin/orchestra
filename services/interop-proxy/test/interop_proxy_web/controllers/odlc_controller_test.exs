@@ -50,7 +50,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("accept", "application/json")
       |> get(odlc_path(context.conn, :index))
-      |> json_response(201)
+      |> json_response(200)
 
       odlc = Enum.find response["list"], &(&1["id"] === context.id)
 
@@ -64,7 +64,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("accept", "application/json")
       |> get(odlc_path(context.conn, :index, image: "true"))
-      |> json_response(201)
+      |> json_response(200)
 
       odlc = Enum.find response["list"], &(&1["id"] === context.id)
 
@@ -117,7 +117,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("accept", "application/json")
       |> get(odlc_path(context.conn, :show, context.id))
-      |> json_response(201)
+      |> json_response(200)
 
       assert response["type"] === "EMERGENT"
       assert response["description"] === "fireman"
@@ -130,7 +130,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("accept", "application/json")
       |> get(odlc_path(context.conn, :show, context.id, image: "true"))
-      |> json_response(201)
+      |> json_response(200)
 
       assert response["type"] === "EMERGENT"
       assert response["description"] === "fireman"
@@ -269,7 +269,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
         shape: "SQUARE",
         orientation: "WEST"
       })
-      |> json_response(201)
+      |> json_response(200)
 
       assert response["shape"] === "SQUARE"
       assert response["orientation"] === "WEST"
@@ -288,7 +288,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
         alphanumeric: "Z",
         image: Base.encode64(context.image)
       })
-      |> json_response(201)
+      |> json_response(200)
 
       assert response["shape"] === "SQUARE"
       assert response["background_color"] === "RED"
@@ -319,7 +319,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("accept", "application/json")
       |> delete(odlc_path(context.conn, :delete, context.id_2))
-      |> json_response(201)
+      |> json_response(200)
 
       assert is_binary(response["text"])
       assert response["text"] |> String.length > 0
