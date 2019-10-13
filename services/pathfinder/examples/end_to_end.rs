@@ -18,7 +18,6 @@ use bytes::buf::IntoBuf;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener};
 use pathfinder_service::start_service;
 use reqwest::{Client, StatusCode};
-// use tower_web_protobuf::MessagePlus;
 use prost::Message;
 
 const TELEMETRY_SERVICE_URL: &'static str = "127.0.0.1:5000";
@@ -60,41 +59,19 @@ fn get_proto_with_body<S: Message + Default, R: Message + Default>(base_url: &st
 
 fn post_proto<T: Message>(base_url: &str, uri: &str, body: T) -> Option<StatusCode> {
     let mut buf = Vec::new();
-
     body.encode(&mut buf).unwrap();
 
     let resp = Client::new()
         .post(format!("http://{}/{}", base_url, uri).as_str())
         .header("Content-Type", "application/x-protobuf")
         .body(buf)
-        .send().unwrap();
+        .send()
+        .unwrap();
 
     Some(resp.status())
 }
 
-// fn get_raw_mission(base_url: &str) -> telemetry::RawMission {
-//     // let resp = Client::new()
-//     //  .get(format!("http://{}/{}", "api/raw-mission").as_str())
-//     //  .header("Accept", "application/protobuf")
-//     //  .send()
-//     //  .unwrap();
-
-//     // let mut buf = Vec::new();
-//     // resp.read_to_end(&mut buf).unwrap();
-//     // telemetry::RawMission::decode(&mut buf)
-
-//     get_proto(base_url, "api/raw-mission").unwrap()
-// }
-
-// fn post_raw_mission(base_url: &str, mission: telemetry::RawMission) {
-//     if post_proto(base_url, "api/raw-mission", mission).unwrap().as_u16() != 200 {
-//         eprintln!("Err!");
-//     }
-// }
-
 fn roundtrip(pathfinder_service_base_url: &str) {
-    // let mission = get_raw_mission(TELEMETRY_SERVICE_URL);
-
     let mission: telemetry::RawMission = get_proto(TELEMETRY_SERVICE_URL, "api/raw-mission").unwrap();
     let overview: telemetry::Overview = get_proto(TELEMETRY_SERVICE_URL, "api/overview").unwrap();
 

@@ -21,6 +21,11 @@ fn main() {
         .type_attribute(".", "#[derive(Serialize, Deserialize)]")
         .type_attribute(".", "#[serde(rename_all = \"snake_case\")]")
         .type_attribute(".", "#[serde(deny_unknown_fields)]")
+        // .type_attribute("interop.Obstacles", "#[derive(Hash, PartialEq)]")
+        // .type_attribute("interop.Obstacles.StationaryObstacle", "#[derive(Hash, Eq)]")
+        // .type_attribute("interop.Obstacles.MovingObstacle", "#[derive(Hash, Eq)]")
+        // .type_attribute("interop.InteropMission.FlyZone", "#[derive(Hash, Eq)]")
+        // .type_attribute("interop.AerialPosition", "#[derive(Hash, Eq)]")
         .compile_protos(
             proto_files_in_dir(MESSAGE_DIR).as_slice(),
             &[MESSAGE_ROOT.into()],
