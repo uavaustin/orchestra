@@ -1,0 +1,17 @@
+
+#fileList {
+    overflow: scroll;
+}
+
+#mainBody {
+    height: 80vh;
+    width: 90%;
+}
+
+#mainRow {
+    height: 100%;
+}
+
+#mainRow > *, #fileList {
+    height: 100%;
+}
