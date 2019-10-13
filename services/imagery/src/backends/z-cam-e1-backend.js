@@ -8,40 +8,40 @@ import { wait } from '../util';
 const configuration = [
   ['drive_mode', 'single'],           // Single shot drive mode
   ['photosize', '16M'],               // 16M
-  ['wb', 'Auto'],                     // Auto WB (White Balance)
-  ['iso', 'Auto'],                    // Auto ISO
+  //['wb', 'Auto'],                     // Auto WB (White Balance)
+  //['iso', 'Auto'],                    // Auto ISO
   //['sharpness', ' Normal '],          // ' Normal ' Sharpness
-  ['contrast', '64'],                 // 64/256 for Contrast
-  ['saturation', '64'],               // 64/256 for Saturation
-  ['brightness', '0'],                // Brightness: 0 [-256, 256]
-  ['meter_mode', 'Average'],          // Average for Meter Mode
-  ['ev', '0'],                        // EV: 0 (to start) [-96, 96]
+  //['contrast', '64'],                 // 64/256 for Contrast
+  //['saturation', '64'],               // 64/256 for Saturation
+  //['brightness', '0'],                // Brightness: 0 [-256, 256]
+  //['meter_mode', 'Average'],          // Average for Meter Mode
+  //['ev', '0'],                        // EV: 0 (to start) [-96, 96]
   ['lcd_backlight', '20'],            // Dim the screen
-  ['lcd', '0'],                       // Guarantee a timeout
-  ['auto_off', '0'],                  // Disable auto-off (will brick!)
-  ['auto_off_lcd', '30'],             // 30s LCD timeout
+  ['lcd', 'On'],                      // Don't question it; is cursed
   ['rotation', 'Normal'],             // We're not upside down!
   ['focus', 'AF'],                    // Enable Autofocus
   ['af_mode', 'Normal'],              // Normal Autofocus mode
   ['photo_q', 'S.Fine'],              // Photo Quality
   ['led', 'On'],                      // LEDs on!
-  ['max_exp', 'Auto'],                // Auto Exposure Time
-  ['shutter_angle', 'Auto'],          // Shouldn't matter
+  //['max_exp', 'Auto'],                // Auto Exposure Time
+  //['shutter_angle', 'Auto'],          // Shouldn't matter
   // Skipping "mwb"; this should have an invalid value when queried.
-  // ['shutter_spd', 'Auto'],            // Auto Shutter Speed
-  ['caf_range', 'Normal'],            // Auto Continuous AF Range
-  ['caf_sens', 'Middle'],             // Middle CAF Sensitivity
-  ['lut', 'sRGB'],                    // sRGB lookup
-  ['dewarp', 'On'],                   // Distortion Correction: On
-  ['vignette', 'Off'],                // Vignette Correction: Off
-  ['noise_reduction', 'NormalNoise'], // Default Noise Reduction
-  ['oled', 'On'],                     // Turn off the OLED Screen
+  //['shutter_spd', 'Auto'],            // Auto Shutter Speed
+  //['caf_range', 'Normal'],              // Auto Continuous AF Range
+  //['caf_sens', 'Middle'],             // Middle CAF Sensitivity
+  //['lut', 'sRGB'],                    // sRGB lookup
+  //['dewarp', 'On'],                   // Distortion Correction: On
+  //['vignette', 'Off'],                // Vignette Correction: Off
+  //['noise_reduction', 'NormalNoise'], // Default Noise Reduction
+  ['oled', 'On'],                     // Turn on the OLED Screen
   ['shoot_mode', 'Program AE'],       // Auto Mode, roughly.
-  ['liveview_audio', 'On'],           // Listen to the wind howling
-  ['max_iso', '6400'],                // Max ISO to absolute max
-  ['caf', '1'],                       // Continuous AF: On
+  //['liveview_audio', 'On'],           // Listen to the wind howling
+  //['max_iso', '6400'],                // Max ISO to absolute max
+  ['auto_off', '0'],                  // Disable auto-off
+  ['auto_off_lcd', '30'],             // 30s LCD timeout
+  //['caf', '1'],                       // Continuous AF: On
   ['grid_display', '0'],              // No grids!
-  ['level_correction', '0'],          // Level Correction: Off
+  //['level_correction', '0'],          // Level Correction: Off
 ];
 
 export default class ZCamE1Backend extends CameraBaseBackend {
@@ -106,7 +106,15 @@ export default class ZCamE1Backend extends CameraBaseBackend {
     // No explicit focus position; figure out the area automatically.
     if (state.count++ % 5 === 0) {
       await this._makeReq('/ctrl/af');
-      logger.crit(`FOCUSING`);
+
+      // This is important: The Z-Cam API doesn't let you know when
+      // it has actually finished focusing, so right now we just wait
+      // a bit after asking it to focus.
+      //
+      // Very very rough testing seemed to indicate that 500ms was a
+      // conservative worst case (it'll almost certainly finish
+      // focusing faster than this -- especially in flight).
+      logger.debug('FOCUSING');
       await wait(500);
     }
 
