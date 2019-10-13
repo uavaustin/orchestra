@@ -51,9 +51,11 @@ message Request {
     repeated interop.InteropMission.FlyZone flyzones = 1;
 
     // Obstacles:
-    interop.Obstacles obstacles = 2; // Could be a list of stationary obstacles, but we'll leave it like this in case moving obstacles ever make a return.
+    // Could just be a list of stationary obstacles, but we'll leave it like
+    // this in case moving obstacles ever make a return.
+    interop.Obstacles obstacles = 2;
 
-    // Plane's Position (and some other data - speed and velocity are currently unused):
+    // Plane's Position (and other data; speed & velocity are currently unused):
     telemetry.Overview overview = 3;
 
     // Current Waypoints:
@@ -62,11 +64,11 @@ message Request {
     // Finally, config options:
     double buffer_size = 5;  // optional
     uint32 process_time = 6; // optional
-    string algorithm = 7;   // optional
+    string algorithm = 7;    // optional
 }
 
-// The Pathfinder service returns a list of (adjusted) Waypoints. We'll want
-// to turn these into a RawMission for external consumption.
+// The Pathfinder service returns a list of (adjusted) Waypoints. We'll want to
+// turn these into a RawMission for external consumption.
 //
 // For fun we can throw in a couple of other fields:
 //   - time_to_adjust // Time, in seconds, it took to adjust the path
@@ -79,14 +81,26 @@ message Response {
     double time_to_adjust = 2;
 }
 
-// TODO: messages for stateful requests
+// The last thing we have to watch out for is units.
+//
+// ┌───────────┰────────────┬───────────┬───────────┐
+// │           ┃ Pathfinder │  Interop  │ Telemetry │
+// ┝━━━━━━━━━━━╋━━━━━━━━━━━━┿━━━━━━━━━━━┿━━━━━━━━━━━┥
+// │ altitude  ┃            │           │           │
+// │ latitude  ┃            │           │           │
+// │ longitude ┃            │           │           │
+// │ radius    ┃            │           │           │
+// │ yaw       ┃            │           │           │
+// │ pitch     ┃            │           │           │
+// │ roll      ┃            │           │           │
+// │ air sp    ┃            │           │           │
+// │ wind dir  ┃            │           │           │
+// │ ground sp ┃            │           │           │
+// │           ┃            │           │           │
+// └───────────┸────────────┴───────────┴───────────┘
+//
 
-// message SetBufferSize {}
 
-// message StatefulRequest {
-//     // new waypoints
-//     // new plane pos
-// }
 
 // message UpdateFlyzone {}
 
