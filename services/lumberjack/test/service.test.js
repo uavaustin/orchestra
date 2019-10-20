@@ -97,7 +97,11 @@ test('check plane telemetry requests', async () => {
 
 test('stop service', async () => {
   await service.stop();
+
   await influxContainer.stop();
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  await influxContainer.remove();
+  
   pingApi.done();
   forwardInteropApi.done();
   groundTelemetryApi.done();
