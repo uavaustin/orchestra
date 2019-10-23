@@ -1,6 +1,9 @@
 import request from 'superagent';
 import { InfluxDB, FieldType } from 'influx';
 import addProtobuf from 'superagent-protobuf';
+import Koa from 'koa';
+import koaLogger from './common/koa-logger';
+import router from './router';
 
 import { stats } from './messages';
 import { telemetry } from './messages';
@@ -27,6 +30,8 @@ export default class Service {
    * @param {number}  options.queueLimit
    */
   constructor(options) {
+    this._port = options.port;
+    this._server = null;
     this._pingHost = options.pingHost;
     this._pingPort = options.pingPort;
     this._forwardInteropHost = options.forwardInteropHost;
@@ -92,6 +97,8 @@ export default class Service {
     if (!names.includes(this._dbName))
       await this._influx.createDatabase(this._dbName);
 
+    this._server = await this._createApi(this);
+
     this._startTasks();
     logger.debug('Service started');
   }
@@ -106,6 +113,9 @@ export default class Service {
       this._groundTelemetryTask.stop(),
       this._planeTelemetryTask.stop(),
     ]);
+
+    await this._server.closeAsync();
+    this._server = null;
 
     logger.debug('Service stopped.');
   }
@@ -164,7 +174,7 @@ export default class Service {
       const { host, port, name } = endpoint;
       await this._influx.writeMeasurement('ping', [
         {
-          fields: { devicePing: endpoint.ms, 
+          fields: { devicePing: endpoint.ms,
             deviceStatus: endpoint.online ? 1 : 0 },
           tags: { host, port, name }
         }], {
@@ -257,5 +267,79 @@ export default class Service {
       }], {
       database: this._dbName
     });
+  }
+
+  // Create the koa api and return the http server.
+  async _createApi(service) {
+    let app = new Koa();
+
+    // Make service available to the routes.
+    app.context.service = service;
+
+    app.use(koaLogger());
+
+    // Set up the router middleware.
+    app.use(router.routes());
+    app.use(router.allowedMethods());
+
+    // Start and wait until the server is up and then return it.
+    return await new Promise((resolve, reject) => {
+      let server = app.listen(this._port, (err) => {
+        if (err) reject(err);
+        else resolve(server);
+      });
+
+      // Add a promisified close method to the server.
+      server.closeAsync = () => new Promise((resolve) => {
+        server.close(() => resolve());
+      });
+    });
+  }
+
+  async _clearData() {
+    this._influx.getDatabaseNames()
+      .then(name => {
+        if(name.includes('ping')) {
+          this._influx.dropMeasurement('ping')
+            .catch((err) => {
+              logger.error(err);
+            });
+        }
+      });
+
+    this._influx.getDatabaseNames()
+      .then(name => {
+        if(name.includes('upload-rate')) {
+          this._influx.dropMeasurement('upload-rate')
+            .catch((err) => {
+              logger.error(err);
+            });
+        }
+      });
+
+    this._influx.getDatabaseNames()
+      .then(name => {
+        if(name.includes('telemetry')) {
+          this._influx.dropMeasurement('telemetry')
+            .catch((err) => {
+              logger.error(err);
+            });
+        }
+      });
+
+    this._influx.getDatabaseNames()
+      .then(names => {
+        if (!names.includes('ping', 'upload-rate', 'telemetry')) {
+          return true;
+        }
+      })
+      .catch((err) => {
+        logger.error(err);
+      });
+  }
+
+  clearData() {
+    let res = this._clearData();
+    return res;
   }
 }
