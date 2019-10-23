@@ -111,7 +111,7 @@ test('check plane telemetry requests', async () => {
 });
 
 test('clear data', async () => {
-  expect(service._clearData()).toBeTruthy();
+  expect(service.clearData()).toBeTruthy();
 });
 
 test('service is alive', async () => {

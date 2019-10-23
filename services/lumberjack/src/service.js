@@ -296,31 +296,11 @@ export default class Service {
     });
   }
 
-  async _clearData() {
+  async clearData() {
     this._influx.getDatabaseNames()
       .then(name => {
-        if(name.includes('ping')) {
-          this._influx.dropMeasurement('ping')
-            .catch((err) => {
-              logger.error(err);
-            });
-        }
-      });
-
-    this._influx.getDatabaseNames()
-      .then(name => {
-        if(name.includes('upload-rate')) {
-          this._influx.dropMeasurement('upload-rate')
-            .catch((err) => {
-              logger.error(err);
-            });
-        }
-      });
-
-    this._influx.getDatabaseNames()
-      .then(name => {
-        if(name.includes('telemetry')) {
-          this._influx.dropMeasurement('telemetry')
+        for(let i = 0; i < name.length; i++){
+          this._influx.dropMeasurement(name[i])
             .catch((err) => {
               logger.error(err);
             });
@@ -336,10 +316,5 @@ export default class Service {
       .catch((err) => {
         logger.error(err);
       });
-  }
-
-  clearData() {
-    let res = this._clearData();
-    return res;
   }
 }
