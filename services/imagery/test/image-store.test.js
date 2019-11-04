@@ -45,6 +45,20 @@ test('images can be added to the image store', async () => {
   expect((await imageStore.getMetadata(id2)).time).toEqual(5);
 });
 
+test('total size can be computed correctly', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  await imageStore.addImage(
+    shapes[0], imagery.Image.create({ time: 4, size: 100 })
+  );
+  await imageStore.addImage(
+    shapes[1], imagery.Image.create({ time: 5, size: 10 })
+  );
+
+  expect((await imageStore.getTotalSize())).toEqual(110);
+});
+
 test('clear existing removes existing images', async () => {
   const imageStore1 = new ImageStore(true);
   await imageStore1.setup();
@@ -93,14 +107,14 @@ test('image store stores image add rates', async () => {
 });
 
 test('image store deletes old images', async () => {
-  const imageStore = new ImageStore(true, 2);
+  const imageStore = new ImageStore(true, 100);
   await imageStore.setup();
 
   const ids = [];
   for (let i = 0; i < 3; i++) {
     ids[i] = await imageStore.addImage(
       shapes[i],
-      imagery.Image.create({ time: i })
+      imagery.Image.create({ time: i, size: 40})
     );
   }
   const lastIds = [ids[ids.length - 2], ids[ids.length - 1]];
