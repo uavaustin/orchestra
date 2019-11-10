@@ -95,7 +95,11 @@ defmodule InteropProxy do
             {:error, _} = other -> other
           end
         else
-          {:ok, returned}
+          # Delete odlc that was submitted if image submission fails
+          case Request.delete_odlc url(), cookie(), returned.id do
+            {:ok, _}            -> {:ok, returned}
+            {:error, _} = other -> other
+          end
         end
       {:error, _} = other ->
         other
