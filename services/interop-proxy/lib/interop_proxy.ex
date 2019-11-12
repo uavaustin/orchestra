@@ -91,15 +91,16 @@ defmodule InteropProxy do
 
         if image !== <<>> do
           case Request.post_odlc_image url(), cookie(), returned.id, image do
-            {:ok, _}            -> {:ok, returned}
-            {:error, _} = other -> other
+            {:ok, _}    -> {:ok, returned}
+            {:error, _} ->
+              # Delete odlc that was submitted if image submission fails
+              case Request.delete_odlc url(), cookie(), returned.id do
+                {:ok, _}            -> {:ok, returned}
+                {:error, _} = other -> other
+              end
           end
         else
-          # Delete odlc that was submitted if image submission fails
-          case Request.delete_odlc url(), cookie(), returned.id do
-            {:ok, _}            -> {:ok, returned}
-            {:error, _} = other -> other
-          end
+          {:ok, returned}
         end
       {:error, _} = other ->
         other
