@@ -1,6 +1,4 @@
-ARG BASE=elixir:1.8-alpine
-
-FROM ${BASE}
+FROM elixir:1.8-alpine
 
 WORKDIR /test
 

@@ -1,7 +1,4 @@
-ARG BASE_BUILDER=elixir:1.8-alpine
-ARG BASE=alpine:3.9
-
-FROM ${BASE_BUILDER} as builder
+FROM elixir:1.8-alpine as builder
 
 WORKDIR /builder
 
@@ -27,7 +24,7 @@ RUN mix compile && mix deps.clean mime --build && mix release
 RUN cp _build/prod/rel/interop_proxy/releases/*/interop_proxy.tar.gz .
 
 # Making the production image now.
-FROM ${BASE}
+FROM alpine:3.9
 
 WORKDIR /app
 
