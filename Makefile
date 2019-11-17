@@ -64,6 +64,10 @@ image-rec-master:
 image-rec-master-test:
 	$(MAKE) -C services/image-rec-master test
 
+.PHONY: grafana
+grafana:
+	$(MAKE) -C services/grafana
+
 .PHONY: clean
 clean:
 	$(MAKE) -C services/mavproxy clean
@@ -74,3 +78,4 @@ clean:
 	$(MAKE) -C services/imagery clean
 	$(MAKE) -C services/dashboard clean
 	$(MAKE) -C services/image-rec-master clean
+	$(MAKE) -C services/grafana clean

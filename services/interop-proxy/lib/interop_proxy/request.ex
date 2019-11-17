@@ -22,15 +22,6 @@ defmodule InteropProxy.Request do
   end
 
   @doc """
-  Get the full list of missions from the server.
-  """
-  def get_missions(url, cookie) do
-    "http://#{url}/api/missions"
-    |> cookie_get(cookie)
-    |> handle_resp(:json)
-  end
-
-  @doc """
   Get a specific mission from the server.
   """
   def get_mission(url, cookie, id) when is_integer(id) do
@@ -40,30 +31,21 @@ defmodule InteropProxy.Request do
   end
 
   @doc """
-  Get the stationary and movie obstacles from the server.
-  """
-  def get_obstacles(url, cookie) do
-    "http://#{url}/api/obstacles"
-    |> cookie_get(cookie)
-    |> handle_resp(:json)
-  end
-
-  @doc """
   Post UAS telemetry to the server.
   """
   def post_telemetry(url, cookie, telem) when is_map(telem) do
-    body = get_urlencoded(telem)
+    body = get_json(telem)
 
     "http://#{url}/api/telemetry"
-    |> cookie_post(cookie, body, [@urlencoded])
+    |> cookie_post(cookie, body)
     |> handle_resp(:text, text: "UAS Telemetry Successfully Posted.")
   end
 
   @doc """
   Post a new ODLC to the server.
   """
-  def post_odlc(url, cookie, odlc) when is_map(odlc) do
-    body = get_json(odlc)
+  def post_odlc(url, cookie, odlc, mission_id) when is_map(odlc) do
+    body = get_json(odlc |> Map.put(:mission, mission_id))
 
     "http://#{url}/api/odlcs"
     |> cookie_post(cookie, body)
@@ -73,8 +55,8 @@ defmodule InteropProxy.Request do
   @doc """
   Get all ODLCs from the server.
   """
-  def get_odlcs(url, cookie) do
-    "http://#{url}/api/odlcs"
+  def get_odlcs(url, cookie, mission_id) do
+    "http://#{url}/api/odlcs?mission=#{mission_id}"
     |> cookie_get(cookie)
     |> handle_resp(:json)
   end
@@ -91,8 +73,9 @@ defmodule InteropProxy.Request do
   @doc """
   Update an ODLC on the server.
   """
-  def put_odlc(url, cookie, id, odlc) when is_integer(id) and is_map(odlc) do
-    body = get_json(odlc)
+  def put_odlc(url, cookie, id, odlc, mission_id)
+  when is_integer(id) and is_map(odlc) do
+    body = get_json(odlc |> Map.put(:mission, mission_id))
 
     "http://#{url}/api/odlcs/#{id}"
     |> cookie_put(cookie, body)
@@ -202,12 +185,6 @@ defmodule InteropProxy.Request do
   # as the reason for an error.
   defp handle_resp({:ok, resp}, _type, _opts),
     do: {:error, {:message, resp.status_code, resp.body}}
-
-  # Making a urlencoded message from a map.
-  defp get_urlencoded(body) when is_map(body) do
-    body
-    |> URI.encode_query
-  end
 
   # Making a json encoded message from a map.
   defp get_json(body) when is_map(body),

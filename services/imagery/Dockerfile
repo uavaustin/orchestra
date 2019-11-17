@@ -56,8 +56,11 @@ COPY --from=builder /builder/lib lib
 COPY /imagery/bin bin
 
 ENV PORT=8081 \
-    # Must be one of "gphoto2", "file", "sync".
+    # Must be one of "gphoto2", "z-cam-e1", "file", "sync".
     BACKEND='gphoto2' \
+    # Must be set if using the z-cam-e1 backend.
+    CAMERA_HOST='camera' \
+    CAMERA_PORT='80' \
     # Must be set if using the sync backend.
     IMAGERY_SYNC_HOST='' \
     IMAGERY_SYNC_PORT='8081' \
@@ -70,7 +73,7 @@ ENV PORT=8081 \
     # Maximum number of images that can be stored at a time in the
     # store. Old images will be pruned after the limit is reached.
     # Set this to 0 to disable.
-    MAX_IMAGES='200'
+    MAX_IMAGES='0'
 
 EXPOSE 8081
 

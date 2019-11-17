@@ -7,6 +7,8 @@ const Service = require('..');
 let service = new Service({
   port: process.env.PORT,
   backend: process.env.BACKEND,
+  cameraHost: process.env.CAMERA_HOST,
+  cameraPort: process.env.CAMERA_PORT,
   imagerySyncHost: process.env.IMAGERY_SYNC_HOST,
   imagerySyncPort: process.env.IMAGERY_SYNC_PORT,
   telemetryHost: process.env.TELEMETRY_HOST,

@@ -8,14 +8,16 @@ from .app import create_app
 
 class Service:
     def __init__(self, port, imagery_host, imagery_port, interop_host,
-                 interop_port, redis_host, redis_port):
+                 interop_port, redis_host, redis_port, max_auto_targets):
         """Create a new image-rec-master service."""
         self._port = port
 
-        app = create_app()
-        app['redis_url'] = f'redis://{redis_host}:{redis_port}'
-        app['imagery_url'] = f'http://{imagery_host}:{imagery_port}'
-        app['interop_url'] = f'http://{interop_host}:{interop_port}'
+        app = create_app(
+            redis_url=f'redis://{redis_host}:{redis_port}',
+            imagery_url=f'http://{imagery_host}:{imagery_port}',
+            interop_url=f'http://{interop_host}:{interop_port}',
+            max_auto_targets=max_auto_targets
+        )
 
         self._app = app
         self._runner = aiohttp.web.AppRunner(self._app)

@@ -30,10 +30,7 @@ message AerialPosition {
     double alt_msl = 3;
 }
 
-// Mission on the interop server.
-// 
-// Note the lack of an active field, as all missions passed into the
-// stack will be assumed to be active.
+// Mission on the interop server with the desired mission ID.
 message InteropMission {
     message FlyZone {
         double alt_msl_max = 1;
@@ -42,11 +39,11 @@ message InteropMission {
     }
 
     double time = 1;
-    // If there even is an active mission or not.
+    // If the mission with given id exists.
     bool current_mission = 2;
     Position air_drop_pos = 3;
     repeated FlyZone fly_zones = 4;
-    Position home_pos = 5;
+    // 5 reserved.
     repeated AerialPosition waypoints = 6;
     Position off_axis_pos = 7;
     Position emergent_pos = 8;
@@ -68,7 +65,7 @@ message Obstacles {
 
     double time = 1;
     repeated StationaryObstacle stationary = 2;
-    repeated MovingObstacle moving = 3;
+    // 3 reserved.
 }
 
 // Telemetry to upload to the server.

@@ -37,7 +37,7 @@ message PipelineState {
     repeated uint32 skipped_manual = 11;
     // Current state of targets.
     //
-    // Targets are stored by id numbers starting at 0 and don't
+    // Targets are stored by id numbers starting at 1 and don't
     // necessarily correspond to interop target ids.
     //
     // - All targets contains all created at any point.
@@ -58,7 +58,21 @@ message PipelineState {
     repeated uint32 removed_targets = 19;
 }
 
-message Target {
+message PipelineImage {
+    // Time last updated.
+    double time = 1;
+    // Image id from imagery service.
+    uint32 id = 2;
+    // See PipelineState above for fields below. Not including
+    // processing lists.
+    bool processed_auto = 3;
+    bool errored_auto = 4;
+    bool skipped_auto = 5;
+    bool processed_manual = 6;
+    bool skipped_manual = 7;
+}
+
+message PipelineTarget {
     // Time last updated.
     double time = 1;
     // Target id number given by the image rec pipeline.

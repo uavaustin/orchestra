@@ -1,6 +1,9 @@
 import Koa from 'koa';
 import ping from 'net-ping';
 import request from 'superagent';
+import dns from 'dns';
+import { promisify } from 'util';
+import ipRegex from 'ip-regex';
 
 import koaLogger from './common/koa-logger';
 import logger from './common/logger';
@@ -133,12 +136,21 @@ export default class Service {
     const session = ping.createSession();
     let online;
     let ms;
+    let ip;
 
     try {
+      if (ipRegex({exact: true, includeBoundaries: true}).test(host)) {
+        ip = host;
+      } else {
+        ip = (await promisify(dns.lookup)(host)).address;
+      }
       ms = await new Promise((resolve, reject) => {
-        session.pingHost(host, (err, _target, sent, rcvd) => {
+        let start = Date.now();
+        // Sent is undefined sometimes for unknown reasons,
+        // so start is used instead.
+        session.pingHost(ip, (err, _target, sent, rcvd) => {
           if (err) reject(err);
-          else resolve(rcvd - sent);
+          else resolve(rcvd - (sent || start));
         });
       });
 
@@ -148,6 +160,8 @@ export default class Service {
     } catch (_err) {
       ms = 0;
       online = false;
+    } finally {
+      session.close();
     }
 
     this._pingStore.updateDevicePing(device, online, ms);

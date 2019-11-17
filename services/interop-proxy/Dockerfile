@@ -1,4 +1,4 @@
-FROM elixir:1.6-alpine as builder
+FROM elixir:1.8-alpine as builder
 
 WORKDIR /builder
 
@@ -15,15 +15,16 @@ RUN mix deps.get && mix deps.compile
 COPY interop-proxy .
 COPY common/messages lib/messages
 
-# Make a release so we can copy it later.
-RUN mix release
+# Make a release so we can copy it later. (Cleaning mime since we
+# have the custom protobuf mime type.)
+RUN mix compile && mix deps.clean mime --build && mix release
 
 # Moving the archive to the top directory so it can be accessed
 # easily below.
 RUN cp _build/prod/rel/interop_proxy/releases/*/interop_proxy.tar.gz .
 
 # Making the production image now.
-FROM alpine:3.8
+FROM alpine:3.9
 
 WORKDIR /app
 
@@ -31,7 +32,7 @@ WORKDIR /app
 # :erlang.crypto.
 RUN apk --no-cache add \
     bash \
-    libssl1.0
+    libssl1.1
 
 # Getting the archive from the builder, then uncompressing it.
 COPY --from=builder /builder/interop_proxy.tar.gz .
