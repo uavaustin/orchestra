@@ -155,6 +155,7 @@ defmodule InteropProxyTest do
     error_msg = get_odlc(id, image: true)
 
     # Make sure odlc is deleted when image submission fails.
-    assert elem(elem(error_msg, 1), 1) === 404
+    {:error, {:message, status, _msg}} = error_msg
+    assert status === 404
   end
 end
