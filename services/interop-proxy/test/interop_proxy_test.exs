@@ -145,7 +145,7 @@ defmodule InteropProxyTest do
   end
 
   test "post an odlc with an invalid image" do
-    error_1 = TestHelper.get_image "error.tiff"
+    error_1 = TestHelper.get_image "error.jpg"
 
     # Post an image with an incorrect image format.
     %{id: id} = post_odlc! %Odlc{
