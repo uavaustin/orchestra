@@ -2,7 +2,7 @@
 
 .PHONY: all
 all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard \
-	image-rec-master
+	image-rec-master grafana
 
 .PHONY: test
 test: telemetry-test interop-proxy-test pong-test forward-interop-test \
