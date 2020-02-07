@@ -17,8 +17,6 @@ let pingApi;
 let forwardInteropApi;
 let groundTelemetryApi;
 let planeTelemetryApi;
-//let aliveApi;
-//let clearDataApi;
 
 let p1 = stats.PingTimes.encode({
   time: 1,
@@ -82,18 +80,18 @@ beforeAll(async () => {
     .defaultReplyHeaders({ 'content-type': 'application/x-protobuf' })
     .get('/api/overview').reply(200, t1);
 
-  /*aliveApi = nock('http://localhost:6000')
-    .get('/api/alive')
-    .reply(200);*/
-
-  /*clearDataApi = nock('http://ping-test:7000')
-    .get('/api/clear-data')
-    .reply(200);*/
-
   await service.start();
   await new Promise(resolve => setTimeout(resolve, 2000));
 }, 40000);
 
+test('service is alive', async () => {
+  let res = await request('http://localhost:8000')
+    .get('/api/alive');
+
+  expect(res.status).toEqual(200);
+});
+
+// check that i can query the database and get the same results back
 test('check ping requests', async () => {
   expect(pingApi.isDone()).toBeTruthy();
 });
@@ -110,15 +108,9 @@ test('check plane telemetry requests', async () => {
   expect(planeTelemetryApi.isDone()).toBeTruthy();
 });
 
-test('clear data', async () => {
-  expect(service.clearData()).toBeTruthy();
-});
-
-test('service is alive', async () => {
-  let res = await request('http://localhost:8000')
-    .get('/api/alive');
-
-  expect(res.status).toEqual(200);
+test('insert and query ping data', async () => {
+  // how to insert data directly into influx, perhaps an enpoint just for testing? 
+  // potential have a backdoor for future changes
 });
 
 test('check the service clear data response', async () => {
@@ -128,7 +120,7 @@ test('check the service clear data response', async () => {
   expect(res.status).toEqual(200);
 });
 
-test('stop service', async () => {
+test('stop service and check mock apis were hit correctly', async () => {
   await service.stop();
 
   await influxContainer.stop();

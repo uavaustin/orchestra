@@ -297,17 +297,18 @@ export default class Service {
   }
 
   async clearData() {
-    this._influx.getDatabaseNames()
-      .then(name => {
-        for(let i = 0; i < name.length; i++){
-          this._influx.dropMeasurement(name[i])
+    // doesn't include ping because no data was written to that measurement
+    this._influx.getMeasurements('lumberjack')
+      .then(names => {
+        for(let i = 0; i < names.length; i++) {
+          this._influx.dropMeasurement(names[i])
             .catch((err) => {
               logger.error(err);
             });
         }
       });
 
-    this._influx.getDatabaseNames()
+    this._influx.getMeasurements()
       .then(names => {
         if (!names.includes('ping', 'upload-rate', 'telemetry')) {
           return true;
