@@ -108,11 +108,6 @@ test('check plane telemetry requests', async () => {
   expect(planeTelemetryApi.isDone()).toBeTruthy();
 });
 
-test('insert and query ping data', async () => {
-  // how to insert data directly into influx, perhaps an enpoint just for testing? 
-  // potential have a backdoor for future changes
-});
-
 test('check the service clear data response', async () => {
   let res = await request('http://localhost:8000')
     .get('/api/clear-data');
@@ -126,9 +121,4 @@ test('stop service and check mock apis were hit correctly', async () => {
   await influxContainer.stop();
   await new Promise(resolve => setTimeout(resolve, 2000));
   await influxContainer.remove();
-
-  pingApi.done();
-  forwardInteropApi.done();
-  groundTelemetryApi.done();
-  planeTelemetryApi.done();
 });

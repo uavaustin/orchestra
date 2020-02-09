@@ -297,7 +297,7 @@ export default class Service {
   }
 
   async clearData() {
-    // doesn't include ping because no data was written to that measurement
+    // Tests doesn't include ping in measurements (no data).
     this._influx.getMeasurements('lumberjack')
       .then(names => {
         for(let i = 0; i < names.length; i++) {
