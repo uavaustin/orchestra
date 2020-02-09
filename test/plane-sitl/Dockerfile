@@ -1,6 +1,4 @@
-ARG BASE=debian:stretch-slim
-
-FROM ${BASE}
+FROM debian:stretch-slim
 
 WORKDIR /app
 

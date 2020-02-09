@@ -16,6 +16,8 @@ recognition pipeline services.
 - `INTEROP_PROXY_PORT` - defaults to `8000`.
 - `REDIS_HOST` - defaults to `redis`.
 - `REDIS_PORT` - defaults to `6379`.
+- `MAX_AUTO_TARGETS` - limits number of autonomous targets that can be
+   submitted. If unset (the dafault) no cap will be used.
 
 ## Endpoints
 
@@ -108,6 +110,8 @@ To get JSON data for the Protobuf endpoints, pass in `application/json` for the
 
   On non-unique autonomous standard target: `303` status code with reference to
   matching target.
+
+  On reaching maximum number of autonomous targets: `409` status code.
 
 - `POST /api/pipeline/targets/:id/queue-removal`
 

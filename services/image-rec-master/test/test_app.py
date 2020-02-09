@@ -17,6 +17,7 @@ async def app_client(aiohttp_client, redis):
     app = web.Application()
     app.router.add_routes(routes)
     app['redis'] = redis
+    app['max_auto_targets'] = -1
     return await aiohttp_client(app)
 
 
@@ -337,6 +338,53 @@ async def test_post_auto_targets_unique(app_client, redis):
 
     assert await get_int_set(redis, 'all-targets') == [1, 2]
     assert await get_int_list(redis, 'unsubmitted-targets') == [2, 1]
+
+
+async def test_post_auto_targets_cap(aiohttp_client, redis):
+    # Make an app instance with a cap of 3.
+    app = web.Application()
+    app.router.add_routes(routes)
+    app['redis'] = redis
+    app['max_auto_targets'] = 3
+    app_client = await aiohttp_client(app)
+
+    # Making a bunch of unique targets to work with to not have
+    # uniqueness interfere.
+    targets = []
+    shapes = [Odlc.SQUARE, Odlc.STAR, Odlc.CIRCLE, Odlc.CROSS, Odlc.OCTAGON,
+              Odlc.RECTANGLE]
+    colors = [Odlc.RED, Odlc.BLUE, Odlc.BLACK, Odlc.ORANGE, Odlc.GREEN,
+              Odlc.PURPLE]
+
+    for i in range(6):
+        target = PipelineTarget()
+        target.odlc.shape = shapes[i]
+        target.odlc.background_color = colors[i]
+        target.odlc.autonomous = True
+        targets.append(target)
+
+    # Submit the target up to the cap.
+    for i in range(3):
+        resp = await app_client.post('/api/pipeline/targets',
+                                     data=targets[i].SerializeToString())
+        assert resp.status == 201
+
+    # Shouldn't work now since we're at the cap.
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=targets[3].SerializeToString())
+    assert resp.status == 409
+
+    # Remove one and we should be able to submit just one more.
+    resp = await app_client.post('/api/pipeline/targets/1/queue-removal')
+    assert resp.status == 204
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=targets[4].SerializeToString())
+    assert resp.status == 201
+
+    resp = await app_client.post('/api/pipeline/targets',
+                                 data=targets[5].SerializeToString())
+    assert resp.status == 409
 
 
 async def test_queue_target_removal(app_client, redis):

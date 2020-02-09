@@ -3,7 +3,7 @@
 .PHONY: all
 
 all: mavproxy telemetry interop-proxy pong forward-interop imagery dashboard \
-	lumberjack image-rec-master
+  lumberjack image-rec-master image-rec-master grafana
 
 .PHONY: test
 test: telemetry-test interop-proxy-test pong-test forward-interop-test \
@@ -73,6 +73,10 @@ image-rec-master:
 image-rec-master-test:
 	$(MAKE) -C services/image-rec-master test
 
+.PHONY: grafana
+grafana:
+	$(MAKE) -C services/grafana
+
 .PHONY: clean
 clean:
 	$(MAKE) -C services/mavproxy clean
@@ -84,3 +88,4 @@ clean:
 	$(MAKE) -C services/dashboard clean
 	$(MAKE) -C services/lumberjack clean
 	$(MAKE) -C services/image-rec-master clean
+	$(MAKE) -C services/grafana clean

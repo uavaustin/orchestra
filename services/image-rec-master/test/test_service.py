@@ -25,7 +25,8 @@ async def test_start_stop(redis_container):
             interop_host='interop-proxy',
             interop_port=1234,
             redis_host=redis_host,
-            redis_port=redis_port
+            redis_port=redis_port,
+            max_auto_targets=-1
         )
 
         # Stop and stop, give enough time for tasks to start.

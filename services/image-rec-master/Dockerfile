@@ -1,7 +1,5 @@
-ARG BASE=python:3.7-alpine
-
 # Compile the proto files and fetch pip dependencies.
-FROM ${BASE} AS builder
+FROM python:3.7-alpine AS builder
 
 WORKDIR /builder
 
@@ -25,7 +23,7 @@ COPY common/messages/imagery.proto \
 RUN mkdir dist && protoc --python_out=dist messages/*.proto
 
 # Making the actual image now.
-FROM ${BASE}
+FROM python:3.7-alpine
 
 WORKDIR /app
 
@@ -43,7 +41,8 @@ ENV PORT='8082' \
     INTEROP_PROXY_HOST='interop-proxy' \
     INTEROP_PROXY_PORT='8000' \
     REDIS_HOST='redis' \
-    REDIS_PORT='6379'
+    REDIS_PORT='6379' \
+    MAX_AUTO_TARGETS=''
 
 ENV PYTHONUNBUFFERED=TRUE
 

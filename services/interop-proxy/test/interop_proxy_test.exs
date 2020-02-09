@@ -9,11 +9,11 @@ defmodule InteropProxyTest do
 
   import InteropProxy
 
-  test "get the active mission" do
-    mission = get_active_mission!()
+  test "get the mission" do
+    mission = get_mission!()
 
     assert mission.current_mission === true
-    assert is_float(mission.home_pos.lat)
+    assert is_float(mission.air_drop_pos.lat)
   end
 
   test "get stationary obstacles" do
@@ -142,5 +142,20 @@ defmodule InteropProxyTest do
     delete_odlc! id
 
     assert starting_count === length get_odlcs!().list
+  end
+
+  test "post an odlc with an invalid image" do
+    error_1 = TestHelper.get_image "error.jpg"
+
+    # Post an image with an incorrect image format.
+    %{id: id} = post_odlc! %Odlc{
+      type: :STANDARD, image: error_1
+    }
+
+    error_msg = get_odlc(id, image: true)
+
+    # Make sure odlc is deleted when image submission fails.
+    {:error, {:message, status, _msg}} = error_msg
+    assert status === 404
   end
 end

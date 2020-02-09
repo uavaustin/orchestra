@@ -145,3 +145,28 @@ test('image store gets latest ID', async () => {
 
   expect(await imageStore.getLatestId()).toEqual(latestId);
 });
+
+test('image store works concurrently', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  await Promise.all([
+    imageStore.addImage(
+      shapes[0], imagery.Image.create({ time: 4 })
+    ),
+    imageStore.addImage(
+      shapes[1], imagery.Image.create({ time: 5 })
+    ),
+    imageStore.addImage(
+      shapes[2], imagery.Image.create({ time: 6 })
+    ),
+    imageStore.addImage(
+      shapes[0], imagery.Image.create({ time: 7 })
+    ),
+    imageStore.addImage(
+      shapes[1], imagery.Image.create({ time: 8 })
+    )
+  ]);
+
+  expect(await imageStore.getCount()).toEqual(5);
+});
