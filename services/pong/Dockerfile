@@ -1,5 +1,5 @@
 # Compile our js source.
-FROM node:8-alpine AS builder
+FROM node:12-alpine AS builder
 
 WORKDIR /builder
 
@@ -25,7 +25,7 @@ COPY pong .
 RUN npm run build
 
 # Make the actual image now.
-FROM node:8-alpine
+FROM node:12-alpine
 
 WORKDIR /app
 

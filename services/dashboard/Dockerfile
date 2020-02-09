@@ -1,5 +1,5 @@
 # Compile our js source
-FROM node:8-slim AS builder
+FROM node:12-slim AS builder
 
 WORKDIR /builder
 
@@ -17,7 +17,7 @@ COPY dashboard .
 RUN npm run build
 
 # Making the actual image now
-FROM node:8-slim
+FROM node:12-slim
 
 WORKDIR /app
 
