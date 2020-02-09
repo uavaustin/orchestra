@@ -64,6 +64,7 @@ services:
                       imagery,172.16.238.50:8081
                       image-rec-master,172.16.238.52:8082
       - PING_DEVICES=localhost-pong,127.0.0.1
+                     google.com,8.8.8.8
     ports:
       - '7000:7000'
     networks:
@@ -116,6 +117,30 @@ services:
     networks:
       test_net:
         ipv4_address: 172.16.238.50
+
+  lumberjack:
+    image: uavaustin/lumberjack
+    ports:
+      - '6000:6000'
+    depends_on:
+      - 'forward-interop'
+      - 'pong'
+      - 'telemetry'
+      - 'influx'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.17
+
+  influx:
+    image: influxdb:alpine
+    ports:
+      - '8086:8086'
+    volumes:
+      - './influxdb/data:/var/lib/influxdb'
+      - './influxdb/config/:/etc/influxdb/'
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.18
 
   image-rec-redis:
     image: redis:alpine

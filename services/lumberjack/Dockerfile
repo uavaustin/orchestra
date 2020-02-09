@@ -1,0 +1,73 @@
+ARG BASE=node:8-alpine
+
+# Compile our js source.
+FROM ${BASE} AS builder
+
+WORKDIR /builder
+
+RUN apk --no-cache add \
+    make \
+    g++ \
+    python-dev
+
+COPY common/nodejs/package.json src/common/
+COPY lumberjack/package.json .
+
+RUN npm install
+
+COPY common/messages/stats.proto \
+	 common/messages/telemetry.proto \
+    src/messages/
+
+RUN npm run build-msg
+
+COPY common/nodejs src/common
+COPY lumberjack .
+
+RUN npm run build
+
+# Make the actual image now.
+FROM ${BASE}
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY common/scripts/wait-for-it.sh .
+
+RUN apk --no-cache add \
+    curl
+
+COPY common/nodejs/package.json src/common/
+COPY lumberjack/package.json .
+
+RUN npm install
+
+# Add in the output from the js builder above.
+COPY --from=builder /builder/lib lib
+
+COPY /lumberjack/bin bin
+
+ENV INFLUX_HOST='influx' \
+	INFLUX_PORT=8086 \
+  PING_HOST='pong' \
+	PING_PORT=7000 \
+	FORWARD_INTEROP_HOST='forward-interop' \
+	FORWARD_INTEROP_PORT=4000 \
+	GROUND_TELEMETRY_HOST='telemetry' \
+	GROUND_TELEMETRY_PORT=5000 \
+  PLANE_TELEMETRY_HOST='' \
+  PLANE_TELEMETRY_PORT=5000 \
+	UPLOAD_INTERVAL=1000 \
+	PING_INTERVAL=1000 \
+  TELEM_INTERVAL=1000 \
+  DB_NAME='lumberjack'
+
+EXPOSE 6000
+
+# Wait for response from influx database first.
+CMD ./wait-for-it.sh \
+        "http://$INFLUX_HOST:$INFLUX_PORT/ping" \
+        "influxdb" && \
+    printf 'Starting.\n' && \
+    FORCE_COLOR=1 npm start --silent

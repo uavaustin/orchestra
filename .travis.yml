@@ -18,6 +18,7 @@ jobs:
     - env: SERVICE=forward-interop
     - env: SERVICE=imagery
     - env: SERVICE=dashboard
+    - env: SERVICE=lumberjack
     - env: SERVICE=image-rec-master
     - env: SERVICE=grafana
     - stage: test
@@ -36,9 +37,13 @@ jobs:
     - env: SERVICE_TEST=imagery
       language: node_js
       node_js: '8'
+    - env: SERVICE_TEST=lumberjack
+      language: node_js
+      node_js: '8'
     - env: SERVICE_TEST=image-rec-master
       language: python
       python: '3.7'
+
 notifications:
   email: false
   webhooks:
