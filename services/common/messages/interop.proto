@@ -40,6 +40,7 @@ message Teams {
             AerialPosition pos = 4;
             double yaw = 5;
         }
+        
         uint32 id = 1;
         string username = 2;
         string name = 3;
@@ -47,6 +48,7 @@ message Teams {
         bool in_air = 5;
         TeamTelem telem = 6;
     }
+
     double time = 1;
     repeated Team teams = 2;
 }
