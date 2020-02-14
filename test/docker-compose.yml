@@ -61,7 +61,7 @@ services:
                       interop-proxy,172.16.238.13:8000
                       pong,172.16.238.14:7000
                       forward-interop,172.16.238.15:4000
-                      imagery,172.16.238.50:8081
+                      plane-imagery,172.16.238.50:8081
                       image-rec-master,172.16.238.52:8082
       - PING_DEVICES=localhost-pong,127.0.0.1
     ports:
@@ -88,6 +88,7 @@ services:
       - INTEROP_PROXY_URL=172.16.238.13:8000
       - FORWARD_INTEROP_URL=172.16.238.15:4000
       - PONG_URL=172.16.238.14:7000
+      - PLANE_IMAGERY_URL=172.16.238.50:8081
     networks:
       test_net:
         ipv4_address: 172.16.238.16
