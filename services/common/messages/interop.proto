@@ -30,6 +30,30 @@ message AerialPosition {
     double alt_msl = 3;
 }
 
+// Lists the opponent teams telemetry provided by the interop server
+message Teams {
+    message Team {
+        message Meta {
+            uint32 id = 1;
+            string username = 2;
+            string name = 3;
+            string university = 4;
+        }
+        message TeamTelem {
+            uint32 id = 1;
+            double age_sec = 2;
+            string timestamp = 3;
+            AerialPosition pos = 4;
+            double yaw = 5;
+        }
+        Meta meta = 1;
+        TeamTelem telem = 2;
+        bool in_air = 3;
+    }
+    double time = 1;
+    repeated Team teams = 2;
+}
+
 // Mission on the interop server with the desired mission ID.
 message InteropMission {
     message FlyZone {
