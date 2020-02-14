@@ -3,10 +3,10 @@ TO DO:
 - Import Vehicle Avoidance Process
 - Import Pathfinder Process
 
-- Run VA constantly
 - Run PF with conditionally
 -- VA calls
 -- New WPs
+- Run VA when PF is not running
 
 
 RULES:
@@ -41,37 +41,56 @@ export default class NSFW {
       return await asyncTask();
     }, 1);
 
-    this._overview = null;// what overview do we make for this?
+    this._overview = null; // do we need an overview
 
     this._flyzoneList = null; // list of locations
     this._obstacleList = null; // list of locations
     this._waypointList = null; // list of locations
-    this._planeLocation = null; /// location
 
-    this._enemyLocation = null;
+    this._planeLocation = null; // location
+    this._enemyLocation = null; // location
+
+    this._processCurrent = null;
 
     this._taskQueue.drain = () => {
-      this._getMissionPromise = null;
+      this._processCurrent = null;
     };
 
   }
-// check telem for new WPs
-  // update inhouse waypoint list
 
-// start PF process
-async _startPathfinder() {
-  // start pathfinder process
-  var ffi = require('ffi');
-  var lib = ffi.Library(path.join)
-  // feed waypoint list
+  // getters eventually
 
-}
-// stop PF process
+  async _startNSFW() {
+    // start child
+  }
 
-// start VA process
-// stop VA process
+  async _runPathfinder() {
+    // run PF
+      // feed WP/FZ/OBS/plane
+      // run
+      // return WPs
+      // update WP list
+    }
 
+  async _runVehicleAvoid() {
+    // run VA
+      // feed WP
+      // run
+      // return alert (bool)
+  }
 
-// get adjust path
+  async _addEnemyWaypoint() {
+    // make enemy location to WPs
+  }
 
+  async _removeEnemyWaypoint() {
+    // take enemy location off WPs
+  }
+
+  async _stopNSFW() {
+  // stop child
+  }
+
+  // requests
+  
 }
