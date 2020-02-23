@@ -109,6 +109,8 @@ test('check the service ping response', async () => {
 
   expect(service_pings).toEqual(res.body.list);
 
+  service_pings.sort((a, b) => a.localeCompare(b));
+
   expect(service_pings[0].name).toEqual('meta');
   expect(service_pings[0].host).toEqual('127.0.0.1');
   expect(service_pings[0].port).toEqual('7000');
@@ -156,6 +158,8 @@ test('check the device ping response', async () => {
   expect(res.status).toEqual(200);
 
   let device_pings = res.body.device_pings;
+
+  device_pings.sort((a, b) => a.localeCompare(b));
 
   expect(device_pings[0].name).toEqual('device1');
   expect(device_pings[0].host).toEqual(deviceIP);
