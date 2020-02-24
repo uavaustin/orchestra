@@ -37,6 +37,32 @@ defmodule InteropProxy do
   def get_mission!, do: when_ok get_mission()
 
   @doc """
+  Return list of opponent teams' telemetry from the interop server.
+  """
+  def get_teams do
+    case Request.get_teams url(), cookie() do
+      {:ok, teams} ->
+        message = teams |> Sanitize.sanitize_teams
+
+        {:ok, message}
+
+      # Is this correct? I'm copying the functionality of get_obstacles
+      # but I don't like masking the 404 as 'ok'
+      {:error, {:message, 404, _content}} ->
+        message = [] |> Sanitize.sanitize_teams
+        {:ok, message}
+
+      {:error, _} = other -> other
+    end
+  end
+
+  @doc """
+  Same as `get_teams/0`, but raises an exception on failure.
+  """
+  def get_teams!, do: when_ok get_teams()
+
+
+  @doc """
   Return the stationary on the server from the mission.
   """
   def get_obstacles do

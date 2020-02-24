@@ -5,13 +5,15 @@ defmodule InteropProxy.Sanitize do
 
   # Aliasing the main messages.
   alias InteropProxy.Message.Interop.{
-    Position, AerialPosition, InteropMission, Obstacles, InteropTelem, Odlc,
+    Position, AerialPosition, InteropMission, Teams, Obstacles, InteropTelem, Odlc,
     OdlcList, InteropMessage
   }
 
   # Aliasing the nested messages.
   alias InteropProxy.Message.Interop.InteropMission.FlyZone
   alias InteropProxy.Message.Interop.Obstacles.StationaryObstacle
+  alias InteropProxy.Message.Interop.Teams.Team
+  alias InteropProxy.Message.Interop.Teams.Team.TeamTelem
 
   def sanitize_mission(nil) do
     %InteropMission{
@@ -49,6 +51,34 @@ defmodule InteropProxy.Sanitize do
         |> Map.get("searchGridPoints", %{})
         |> sanitize_aerial_position
     }
+  end
+
+  def sanitize_teams(teams) do
+    %Teams{
+      time: time(),
+      teams:
+        teams
+        |> Enum.map(fn team ->
+          meta = Map.get(team, "team", %{})
+          telemetry = Map.get(team, "telemetry", %{})
+          %Team{
+            id: Map.get(meta, "id", 0),
+            username: Map.get(meta, "username", ""),
+            name: Map.get(meta, "name", ""),
+            university: Map.get(meta, "university", ""),
+            in_air: Map.get(team, "in_air", false),
+            telem:
+              %TeamTelem{
+                id: Map.get(team, "telemetryId", ""),
+                age_sec: Map.get(team, "telemetryAgeSec", 0.0),
+                timestamp: Map.get(team, "telemetryTimestamp", ""),
+                pos: sanitize_aerial_position(telemetry),
+                yaw: Map.get(telemetry, "heading", 0.0)
+              }
+          }
+        end)
+    }
+    
   end
 
   defp sanitize_fly_zones(fly_zones) do

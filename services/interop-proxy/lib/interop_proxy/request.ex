@@ -31,6 +31,15 @@ defmodule InteropProxy.Request do
   end
 
   @doc """
+  Get a list of active teams and their telemetry from the server.
+  """
+  def get_teams(url, cookie) do
+    "http://#{url}/api/teams"
+    |> cookie_get(cookie)
+    |> handle_resp(:json)
+  end
+
+  @doc """
   Post UAS telemetry to the server.
   """
   def post_telemetry(url, cookie, telem) when is_map(telem) do
