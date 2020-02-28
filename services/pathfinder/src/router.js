@@ -18,11 +18,17 @@ const timeout = async (ctx, next) => {
   }
 };
 
+let router = new Router(); // creates new router instance
+
+router.use(koaProtobuf.protobufSender()); // encodes outbound message as protobuff
+
+// need timeout error handling?
 
 /*
 
 get WPs from pixhawk through telemetry
 
+<<<<<<< HEAD
 gets:
 - WPs
 
@@ -34,6 +40,13 @@ set:
 - waypoint
 
 router.get('')
+=======
+
+
+
+
+
+>>>>>>> 32a6d2d0934943806087818f757568df9c96e4a0
 
 
 */

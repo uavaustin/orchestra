@@ -86,6 +86,9 @@ message Obstacles {
         double radius = 2;
     }
 
+    reserved 3;
+    reserved moving;
+
     double time = 1;
     repeated StationaryObstacle stationary = 2;
     // 3 reserved.
