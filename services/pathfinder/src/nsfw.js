@@ -42,16 +42,19 @@ export default class NSFW {
       return await asyncTask();
     }, 1);
 
-    this._overview = null; // do we need an overview?
-
+    // PF proto ins
     this._flyzoneList = null; // list of locations
     this._obstacleList = null; // list of locations
-    this._waypointList = null; // list of locations
-
+    this._inWaypointList = null; // list of locations
     this._planeLocation = null; // location
+    this._pathfinderPromise = null; // bool
 
+    // VA proto ins
     this._enemy = null; // (location, velocity)
+    this._avoidPromise = null;
 
+    // outs
+    this._outWaypointList = null; // list of locations
     this._avoiding = null;
 
     this._processCurrent = null;
@@ -81,7 +84,7 @@ export default class NSFW {
   }
 
   setWaypoints(waypoints) {
-    this._waypointList = waypoints;
+    this._inWayPointList = waypoints;
   }
 
   setPlane(planeLocation) {
@@ -131,31 +134,17 @@ export default class NSFW {
   }
 
 /*
-  // runners
+ TO DO:
+1. Use fields to run PF
 
-  async runPathfinder() {
+2. Spawn PF
 
-  }
-
-
-  // debuggers
-
-  async resetPathfinder() {
-
-  }
+Repeat for VA
 */
 
-
-
-
-
-
-
-
-
-
-
-
+  async runPF() {
+    this._requestPF()
+  }
 
 
 

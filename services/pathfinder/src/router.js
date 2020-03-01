@@ -25,37 +25,57 @@ let timeout = async (ctx, next) => {
 //middleware - the software that connects network-based requests generated
 //by a client to the back-end data the client is requesting
 
-//middleware to parse a request to add an enemy waypoint
-let addEnemyWaypoint = koaProtobuf.protobufParser(pathfinder.Request);
+//middleware to parse a request for Pathfinder or Vehicle Avoid
+let requestPF = koaProtobuf.protobufParser(pathfinder.Request);
+let respondPF = koaProtobuf.protobufParser(pathfinder.Response);
 
-//middleware to parse a request to remove an enemy waypoint
-let removeEnemyWaypoint = koaProtobuf.protobufParser(pathfinder.Request);
+let requestVA = koaProtobuf.protobufParser(interop.Teams.Team.TeamTelem); // need other plane data
+let respondVA = koaProtobuf.protobufParser(interop.Teams);
 
 router.get('/api/alive', (ctx) => { //is this to check somethin?
   ctx.body = 'Yes, I\'m alive\n';
 });
 
-//_runPathfinder
+router.get('api/add-enemy-waypoint', timeout, async (ctx) => {
+  ctx.proto = await ctx.nsfw._getRequestPF();
+});
+
+router.post('api/request-PF', requestPF, timeout, async (ctx) => {
+await ctx.nsfw._setRequestPF(ctx.request.proto);
+ctx.status = 200; //200 means okay
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 router.get('api/run-pathfinder', timeout, async (ctx) => {
   ctx.proto = await ctx.nsfw._runPathfinder();
 });
 
-//_runVehicleAvoid
 router.get('api/run-vehicle-avoid', timeout, async (ctx) => {
   ctx.proto = await ctx.nsfw._runVehicleAvoid();
 });
 
-//_addEnemyWaypoint
 router.get('api/add-enemy-waypoint', timeout, async (ctx) => {
   ctx.proto = await ctx.nsfw._addEnemyWaypoint();
 });
 
-router.post('api/add-enemy-waypoint', addEnemyWaypoint, timeout, async (ctx) => {
-await ctx.nsfw._addEnemyWaypoint(ctx.request.proto);
+router.post('api/request-PF', requestPF, timeout, async (ctx) => {
+await ctx.nsfw._setRequestPF(ctx.request.proto);
 ctx.status = 200; //200 means okay
 });
 
-//_removeEnemyWaypoint
 router.get('api/remove-enemy-waypoint', timeout, async (ctx) => {
   ctx.proto = await ctx.nsfw._removeEnemyWaypoint();
 });
