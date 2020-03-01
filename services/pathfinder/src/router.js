@@ -59,7 +59,7 @@ await ctx.nsfw._setRequestNSFW(ctx.request.proto);
 ctx.status = 200; //200 means okay
 });
 
-//PF
+
 /*
 router.get('api/request-PF', timeout, async (ctx) => {
   ctx.proto = await ctx.nsfw._getRequestPF();
@@ -70,7 +70,6 @@ await ctx.nsfw._setRequestPF(ctx.request.proto);
 ctx.status = 200;
 });
 
-//VA
 router.get('api/request-VA', timeout, async (ctx) => {
   ctx.proto = await ctx.nsfw._getRequestVA();
 });
