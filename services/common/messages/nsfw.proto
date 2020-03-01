@@ -1,0 +1,20 @@
+/*
+ * Messages for nsfw service.
+ *
+ *
+ */
+
+ syntax = 'proto3';
+
+ package pathfinder;
+
+ message Request {
+    // empty - just a ping from front-end
+ }
+
+ message Response {
+    // Augmented Waypoints (needs to be wrapped in mission properly)
+    telemetry.RawMission mission = 1;
+
+    // might add run_time later
+ }
