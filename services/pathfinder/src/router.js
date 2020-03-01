@@ -12,7 +12,7 @@ let router = new Router(); // creates new router instance
 
 router.use(koaProtobuf.protobufSender()); // encodes outbound message as protobuff
 
-//timeout error handling
+// error handler - rename
 let timeout = async (ctx, next) => {
   try {
     await next();
@@ -22,8 +22,14 @@ let timeout = async (ctx, next) => {
   }
 };
 
+// put  real timeout
+
 //middleware - the software that connects network-based requests generated
 //by a client to the back-end data the client is requesting
+
+//middleware for nsfw.proto
+let requestNSFW = koaProtobuf.protobufParser(nsfw.Request);
+let responseNSFW = koaProtobuf.protobufParser(nsfw.Response);
 
 //middleware to parse a request for Pathfinder or Vehicle Avoid
 let requestPF = koaProtobuf.protobufParser(pathfinder.Request);
