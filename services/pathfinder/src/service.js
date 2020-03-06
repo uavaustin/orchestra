@@ -53,9 +53,33 @@ export default class Service {
    logger.debug('Service stopped.');
  }
 
+ //create the koa api, and return the http server
+ async _createApi(nsfw) {
+   let app = new Koa();
+
+   //make nsfw available to the router
+   app.context.nsfw = nsfw;
+
+   app.use(koaLogger());
+
+   //router middleware
+   app.use(router.routes());
+   app.use(router.allowedMethods()); //what is allowedMethods? this is also in plane service code
+
+   //start snd wait until server is up; then, return it!
+   return await new Promise((resolve, reject) => {
+     let server = app.listen(this._port, (err) => {
+       if (err) reject(err);
+       else resolve(server);
+     });
+
+     //add a promisified close method to the server.
+     server.closeAsync = () => new Promise((resolve) => {
+       server.close(() => resolve());
+     });
+   });
+ }
 }
-
-
 
 // find endpoints
 
