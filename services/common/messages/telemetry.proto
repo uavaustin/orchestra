@@ -100,9 +100,9 @@ message RawMission {
         float param_2 = 9;
         float param_3 = 10;
         float param_4 = 11;
-        float x = 12;
-        float y = 13;
-        float z = 14;
+        float x = 12; // lat (deg)
+        float y = 13; // lon (deg)
+        float z = 14; // alt (m)
         uint32 mission_type = 15;
     }
 
