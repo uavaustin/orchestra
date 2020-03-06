@@ -102,6 +102,7 @@ message InteropTelem {
 message Odlc {
     enum Type {
         STANDARD = 0;
+        OFF_AXIS = 1;
         EMERGENT = 2;
     }
 
