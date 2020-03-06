@@ -49,10 +49,19 @@ defmodule InteropProxy.Session do
     case Request.login url, username, password do
       {:ok, _, cookie} ->
         {url, cookie}
+      {:error, {:message, status_code, body}} ->
+        IO.puts "An error occurred while attempting to connect:"
+        IO.puts "HTTP status code: #{status_code}"
+        IO.puts "Username: #{username}"
+        IO.puts "Password: #{password}"
+        IO.puts "--- Error Response Body ---"
+        IO.puts body
+        IO.puts "---------------------------"
+        Process.sleep 3000
+        do_login url, username, password
       _ ->
         IO.puts "Interop server could not be reached... trying again."
         Process.sleep 500
-
         do_login url, username, password
     end
   end

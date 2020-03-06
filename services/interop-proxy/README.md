@@ -8,15 +8,15 @@ with the server.
 
 ## Running the Image
 
-When running the image, make sure to pass in the `INTEROP_URL`, `USERNAME`,
-`PASSWORD`, `MISSION_ID` envrionment variables. They default to `0.0.0.0:8080`,
+When running the image, make sure to pass in the `INTEROP_URL`, `INTEROP_USERNAME`,
+`INTEROP_PASSWORD`, `MISSION_ID` envrionment variables. They default to `0.0.0.0:8080`,
 `testuser`, `testpass`, and `1` respectively.
 
 ```
 $ docker run -it -p 8000:8000 \
     -e INTEROP_URL="192.168.0.5:8080" \
-    -e USERNAME="someuser" \
-    -e PASSWORD="somepass" \
+    -e INTEROP_USERNAME="someuser" \
+    -e INTEROP_PASSWORD="somepass" \
     -e MISSION_ID="1" \
     uavaustin/interop-proxy
 ```
