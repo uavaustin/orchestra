@@ -89,7 +89,7 @@ defmodule InteropProxy.RequestTest do
     assert end_count === starting_count - 1
   end
 
-  test "add an off axis and emergent odlc" do
+  test "add a standard and emergent odlc" do
     {:ok, _, cookie} = Request.login url(), username(), password()
 
     # Getting the reference count (in case the interop server was not
@@ -97,9 +97,9 @@ defmodule InteropProxy.RequestTest do
     get_count = fn ->
       {:ok, all_odlc} = Request.get_odlcs url(), cookie, mission_id()
 
-      off_axis_count = Enum.count(all_odlc, fn
+      standard_count = Enum.count(all_odlc, fn
         %{
-          "type" => "OFF_AXIS", "latitude" => 12.345, "longitude" => 34.567
+          "type" => "STANDARD", "latitude" => 12.345, "longitude" => 34.567
         } -> true
         _ -> false
       end)
@@ -112,13 +112,13 @@ defmodule InteropProxy.RequestTest do
         _ -> false
       end)
 
-      {off_axis_count, emergent_count}
+      {standard_count, emergent_count}
     end
 
     {start_oa, start_e} = get_count.()
 
     {:ok, %{"id" => id_1}} = Request.post_odlc url(), cookie, %{
-      type: "OFF_AXIS", latitude: 12.345, longitude: 34.567
+      type: "STANDARD", latitude: 12.345, longitude: 34.567
     }, mission_id()
 
     image_2 = TestHelper.get_image "image-2.jpg"
