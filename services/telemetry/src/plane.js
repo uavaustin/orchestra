@@ -153,7 +153,7 @@ export default class Plane {
     // If the current mission item hasn't been set, then get the
     // mission. The mission item may be set as a side effect.
     if (this._missionCurrent === null) {
-      await this.getMission();
+      await this.getRawMission();
 
       // If mission current wasn't set since there was no mission
       // item marked as current. The mission current is assumed to be
