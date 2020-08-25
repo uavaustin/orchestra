@@ -1,5 +1,5 @@
 ARG BASE_BUILDER=alpine:3.9
-ARG BASE=python:3.7-slim
+ARG BASE=uavaustin/hawk-eye-arm:0.0.1a
 
 # Compile the proto files (using alpine for easy recent protoc
 # install).
@@ -23,14 +23,22 @@ FROM ${BASE}
 
 WORKDIR /app
 
-# Needed for OpenCV.
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0
+    python3-pip \
+    libopenblas-base \
+    libopenmpi-dev
 
 COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
 
-RUN pip install -r common/requirements.txt -r requirements.txt
+RUN python3 -m pip install -U Cython==0.29.21 
+RUN python3 -m pip install -U numpy==1.19.1 scikit-build==0.11.1 
+#RUN python3 -m pip install -r common/requirements.txt -r requirements.txt -r /hawk_eye/requirements.txt
+
+# Install PyTorch
+RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.whl -O  torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
+    && python3 -m pip install torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
+    && rm torch-1.6.0-cp36-cp36m-linux_aarch64.whl
 
 # Copy the protobuf messages from above.
 COPY --from=builder /builder/dist/messages messages

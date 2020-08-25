@@ -1,5 +1,5 @@
 ARG BASE_BUILDER=alpine:3.9
-ARG BASE=python:3.7-slim
+ARG BASE=uavaustin/hawk-eye-arm:0.0.1a
 
 # Compile the proto files (using alpine for easy recent protoc
 # install).
@@ -25,7 +25,8 @@ WORKDIR /test
 
 # Needed for OpenCV.
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0
+    libglib2.0-0 \ 
+    python3-pip
 
 COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .

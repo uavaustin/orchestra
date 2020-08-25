@@ -7,7 +7,7 @@ import time
 import inflect
 import PIL.Image
 import requests
-import target_finder
+from hawk_eye.inference import find_targets
 
 from common.logger import format_error
 from messages.image_rec_pb2 import PipelineImage, PipelineTarget
@@ -27,6 +27,7 @@ class Service:
         self._imagery_url = f'http://{imagery_host}:{imagery_port}'
         self._master_url = f'http://{master_host}:{master_port}'
         self._fetch_interval = fetch_interval
+        self.clf_model, self.det_model = find_targets.load_models()
 
     def run_iter(self):
         """A single interation of all the steps."""
@@ -51,7 +52,7 @@ class Service:
         logging.info('retreived image in {:d} ms'.format(t_2 - t_1))
 
         # Getting targets in our set of blobs (if there are any).
-        targets = target_finder.find_targets(image)
+        targets = find_targets.find_targets(image, self.clf_model, self.det_model)
 
         t_3 = curr_time()
         logging.info('{:d} targets found in {:d} ms'.format(len(targets),
