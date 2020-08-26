@@ -2,7 +2,7 @@
 # during build. This can take a while, about 2 hours.
 
 ARG BASE_BUILDER=alpine:3.9
-ARG BASE=uavaustin/hawk-eye-arm:hawk_eye_arm_container
+ARG BASE=uavaustin/hawk-eye-arm:0.0.1a
 
 # Compile the proto files (using alpine for easy recent protoc
 # install).
