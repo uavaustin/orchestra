@@ -38,7 +38,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     gfortran \
     libopenblas-dev \
-    liblapack-dev
+    liblapack-dev \
+    libgeos-dev
 
 RUN python3 -m pip install --upgrade pip
 
@@ -47,7 +48,8 @@ COPY image-rec-auto/requirements.txt .
 
 RUN python3 -m pip install -U Cython==0.29.21 
 RUN python3 -m pip install --upgrade pip setuptools wheel
-RUN python3 -m pip install -U numpy==1.19.1 scikit-build==0.11.1
+RUN python3 -m pip install -U numpy==1.19.1 
+RUN python3 -m pip install -U scikit-build==0.11.1 scikit-image==0.14.2
 RUN python3 -m pip install -r common/requirements.txt -r requirements.txt -r /hawk_eye/requirements.txt
 
 # Install PyTorch
