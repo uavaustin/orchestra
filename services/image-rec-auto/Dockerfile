@@ -1,6 +1,5 @@
 # This Dockerfile is built for ARM devices. Therefore, the packages are compiled
-# during build. This can take a while, about 2 hours.
-
+# during build.
 ARG BASE_BUILDER=alpine:3.9
 ARG BASE=uavaustin/hawk-eye-arm:0.0.1a
 
@@ -29,31 +28,21 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     python3-dev \
     python3-pip \
-    libopenblas-base \
-    libopenmpi-dev \
     zlib1g-dev \
-    libjpeg-dev \
-    gcc \
-    cmake \
-    build-essential \
-    gfortran \
-    libopenblas-dev \
-    liblapack-dev \
-    libgeos-dev
+    libjpeg-dev 
 
-RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip 
+RUN python3 -m pip install --upgrade setuptools wheel
 
 COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
 
-RUN python3 -m pip install -U Cython==0.29.21 
-RUN python3 -m pip install --upgrade pip setuptools wheel
-RUN python3 -m pip install -U numpy==1.19.1 
-RUN python3 -m pip install -U scikit-build==0.11.1 scikit-image==0.14.2
-RUN python3 -m pip install -r common/requirements.txt -r requirements.txt -r /hawk_eye/requirements.txt
+RUN python3 -m pip install  -r common/requirements.txt -r requirements.txt \
+    -r /hawk_eye/inference/requirements.txt
 
 # Install PyTorch
-RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.whl -O  torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
+RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.whl \
+    -O  torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
     && python3 -m pip install torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
     && rm torch-1.6.0-cp36-cp36m-linux_aarch64.whl
 
