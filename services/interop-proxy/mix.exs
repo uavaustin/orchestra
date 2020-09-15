@@ -30,6 +30,7 @@ defmodule InteropProxy.Mixfile do
       {:cowboy, "~> 2.6"},
       {:distillery, "~> 1.3", runtime: false},
       {:exprotobuf, "~> 1.2.9"},
+      {:gpb, "~> 4.12.0"},
       {:flasked, "~> 0.4.0"},
       {:httpoison, "~> 1.5"},
       {:phoenix, "~> 1.4"},
