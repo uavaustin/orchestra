@@ -101,12 +101,12 @@ defmodule InteropProxyTest do
 
     # Posting a new odlc.
     %{id: id} = post_odlc! %Odlc{
-      type: :OFF_AXIS, shape: :SQUARE, background_color: :RED, image: image_1
+      type: :STANDARD, shape: :SQUARE, background_color: :RED, image: image_1
     }
 
     # Updating it.
     returned = put_odlc! id, %Odlc{
-      type: :OFF_AXIS, background_color: :BLUE, orientation: :SOUTH
+      type: :STANDARD, background_color: :BLUE, orientation: :SOUTH
     }
 
     # Since we're using structs, the default value of shape will be
@@ -119,7 +119,7 @@ defmodule InteropProxyTest do
     assert get_odlc!(id, image: true).image === image_1
 
     # Updating it with an image as well.
-    returned = put_odlc! id, %Odlc{type: :OFF_AXIS, image: image_2}
+    returned = put_odlc! id, %Odlc{type: :STANDARD, image: image_2}
 
     assert returned.shape === :UNKNOWN_SHAPE
     assert returned.background_color === :UNKNOWN_COLOR

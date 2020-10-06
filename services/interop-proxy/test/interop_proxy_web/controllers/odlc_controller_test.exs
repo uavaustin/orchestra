@@ -12,7 +12,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       image_2 = TestHelper.get_image "image-2.jpg"
 
       odlc = post_odlc! %Odlc{
-        type: :OFF_AXIS,
+        type: :STANDARD,
         pos: %Position{lat: 60, lon: 50},
         image: image_2
       }
@@ -27,7 +27,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
       odlc = Enum.find response.list, &(&1.id === context.id)
 
-      assert odlc.type === :OFF_AXIS
+      assert odlc.type === :STANDARD
       assert odlc.pos.lat == 60
       assert odlc.pos.lon == 50
       assert odlc.image === <<>>
@@ -40,7 +40,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
       odlc = Enum.find response.list, &(&1.id === context.id)
 
-      assert odlc.type === :OFF_AXIS
+      assert odlc.type === :STANDARD
       assert odlc.pos.lat == 60
       assert odlc.pos.lon == 50
       assert odlc.image === context.image
@@ -54,7 +54,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
       odlc = Enum.find response["list"], &(&1["id"] === context.id)
 
-      assert odlc["type"] === "OFF_AXIS"
+      assert odlc["type"] === "STANDARD"
       assert odlc["pos"]["lat"] == 60
       assert odlc["pos"]["lon"] == 50
       assert odlc["image"] === <<>>
@@ -68,7 +68,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
       odlc = Enum.find response["list"], &(&1["id"] === context.id)
 
-      assert odlc["type"] === "OFF_AXIS"
+      assert odlc["type"] === "STANDARD"
       assert odlc["pos"]["lat"] == 60
       assert odlc["pos"]["lon"] == 50
       assert odlc["image"] === Base.encode64(context.image)
@@ -151,13 +151,13 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("content-type", "application/x-protobuf")
       |> post(odlc_path(context.conn, :create), %Odlc{
-        type: :OFF_AXIS,
+        type: :STANDARD,
         shape: :RECTANGLE,
         pos: %Position{lat: -1, lon: 1}
       } |> Odlc.encode)
       |> protobuf_response(Odlc)
 
-      assert response.type === :OFF_AXIS
+      assert response.type === :STANDARD
       assert response.shape === :RECTANGLE
       assert response.pos.lat == -1
       assert response.pos.lon == 1
@@ -169,13 +169,13 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       response = context.conn
       |> put_req_header("content-type", "application/x-protobuf")
       |> post(odlc_path(context.conn, :create), %Odlc{
-        type: :OFF_AXIS,
+        type: :STANDARD,
         shape: :TRAPEZOID,
         image: context.image
       } |> Odlc.encode)
       |> protobuf_response(Odlc)
 
-      assert response.type === :OFF_AXIS
+      assert response.type === :STANDARD
       assert response.shape === :TRAPEZOID
       assert response.image === <<>>
     end
@@ -185,13 +185,13 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       |> put_req_header("accept", "application/json")
       |> put_req_header("content-type", "application/json")
       |> post(odlc_path(context.conn, :create), %{
-        type: "OFF_AXIS",
+        type: "STANDARD",
         shape: "RECTANGLE",
         pos: %{lat: -1, lon: 1}
       })
       |> json_response(200)
 
-      assert response["type"] === "OFF_AXIS"
+      assert response["type"] === "STANDARD"
       assert response["shape"] === "RECTANGLE"
       assert response["pos"]["lat"] == -1
       assert response["pos"]["lon"] == 1
@@ -204,13 +204,13 @@ defmodule InteropProxyWeb.OdlcControllerTest do
       |> put_req_header("accept", "application/json")
       |> put_req_header("content-type", "application/json")
       |> post(odlc_path(context.conn, :create), %{
-        type: "OFF_AXIS",
+        type: "STANDARD",
         shape: "TRAPEZOID",
         image: Base.encode64(context.image) 
       })
       |> json_response(200)
 
-      assert response["type"] === "OFF_AXIS"
+      assert response["type"] === "STANDARD"
       assert response["shape"] === "TRAPEZOID"
       assert response["image"] === <<>>
     end
@@ -300,7 +300,7 @@ defmodule InteropProxyWeb.OdlcControllerTest do
 
   describe "delete/2" do
     setup _context do
-      odlc_1 = post_odlc! %Odlc{type: :OFF_AXIS}
+      odlc_1 = post_odlc! %Odlc{type: :STANDARD}
       odlc_2 = post_odlc! %Odlc{type: :EMERGENT}
 
       {:ok, id_1: odlc_1.id, id_2: odlc_2.id}

@@ -21,7 +21,7 @@ defmodule InteropProxy.SessionTest do
     {:ok, odlcs} = Request.get_odlcs s_url, s_cookie, mission_id()
     start_len = length odlcs
 
-    {:ok, _} = Request.post_odlc s_url, s_cookie, %{type: "OFF_AXIS"}, \
+    {:ok, _} = Request.post_odlc s_url, s_cookie, %{type: "STANDARD"}, \
                                  mission_id()
 
     {:ok, odlcs} = Request.get_odlcs s_url, s_cookie, mission_id()
