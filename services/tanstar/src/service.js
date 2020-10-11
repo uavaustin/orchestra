@@ -84,9 +84,8 @@ export default class Service {
     try {
       const res = await request.get(url)
                   .timeout(this._serviceTimeout)
-                  .ok(res => res.status == 200)
                   .proto(interop.Obstacles);
-      return res;
+      return res.body;
     } catch (_err) {
       logger.error('Unable to get mission data from interop-proxy');
       return null;
