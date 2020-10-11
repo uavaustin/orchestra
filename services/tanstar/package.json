@@ -1,0 +1,24 @@
+{
+  "name": "tanstar",
+  "version": "0.1.0",
+  "main": "lib/service.js",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "local-debug": "node -r esm bin/start-service.js",
+    "start": "node ./bin/start-service",
+    "build": "babel src --out-dir lib",
+    "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
+    "test": "jest",
+    "lint": "eslint src test --ignore-pattern src/messages.js"
+  },
+  "dependencies": {
+    "common-nodejs": "file:../common/nodejs",
+    "esm": "^3.2.25",
+    "koa": "^2.5.1",
+    "koa-protobuf": "^0.1.0",
+    "koa-router": "^7.4.0",
+    "protobufjs": "~6.8.6"
+  },
+  "devDependencies": {}
+}
