@@ -10,18 +10,18 @@ export default class Service {
    * @param {Object}   options
    * @param {number}   options.port
    * @param {number}   options.serviceTimeout
-	 */
-	constructor(options) {
-		this._port = options.port;
-		this._serviceTimeout = options.serviceTimeout;
-	}
+   */
+  constructor(options) {
+    this._port = options.port;
+    this._serviceTimeout = options.serviceTimeout;
+  }
   async start(){
     logger.info('tanstar starting up');
     this._server = await this._createApi();
     logger.info('up and running!');
   }
-	async _createApi(){
-		const app = new Koa();
+  async _createApi(){
+    const app = new Koa();
 
     app.use(koaLogger());
 
@@ -42,5 +42,5 @@ export default class Service {
         server.close(() => resolve());
       })
     });
-	}
+  }
 }
