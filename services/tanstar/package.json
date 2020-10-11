@@ -13,12 +13,15 @@
     "lint": "eslint src test --ignore-pattern src/messages.js"
   },
   "dependencies": {
+    "chai": "^4.2.0",
     "common-nodejs": "file:src/common",
     "esm": "^3.2.25",
     "koa": "^2.5.1",
     "koa-protobuf": "^0.1.0",
     "koa-router": "^7.4.0",
-    "protobufjs": "~6.8.6"
+    "protobufjs": "~6.8.6",
+    "superagent": "^3.8.3",
+    "superagent-protobuf": "^0.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
