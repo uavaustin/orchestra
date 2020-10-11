@@ -17,7 +17,7 @@ import PingStore from './ping-store';
  */
 export default class Service {
   /**
-   * Create a new forward-interop service.
+   * Create a new pong service.
    *
    * @param {Object}   options
    * @param {number}   options.port

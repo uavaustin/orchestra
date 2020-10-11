@@ -1,0 +1,16 @@
+# Ignore things from npm.
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Ignore common directories.
+src/common
+src/messages
+
+# Ignore babel and message output.
+lib/
+src/messages.js
+
+# Ignore coverage output.
+.nyc_output
+coverage
