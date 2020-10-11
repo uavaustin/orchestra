@@ -1,6 +1,6 @@
 import Koa from 'koa';
-import koaLogger from '../../common/nodejs/koa-logger';
-import logger from '../../common/nodejs/logger';
+import koaLogger from './common/koa-logger';
+import logger from './common/logger';
 import router from './router';
 
 export default class Service {
