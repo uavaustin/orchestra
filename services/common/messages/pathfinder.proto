@@ -1,0 +1,67 @@
+/*
+ * Pathfinder message definitions
+ *
+ * All units are in meters, seconds, degrees unless specified
+ *
+ */
+
+syntax = "proto3";
+
+package tanstar;
+
+import "messages/interop.proto";
+import "messages/telemetry.proto";
+
+// TODO: Add all messages
+
+// Verifies adjusted mission is sent to telemetry
+message Response {
+  // message to front-end
+  bool success = 1;
+}
+
+message Request {
+  // flyzones
+  repeated interop.InteropMission.Flyzone flyzones = 1;
+
+  // obstacles
+  interop.Obstacles obstacles = 2;
+
+  // enemy
+  interop.Teams enemy = 3;
+
+  // raw waypoints
+  telemetry.RawMission mission = 4;
+
+  // plane position
+  telemetry.Overview overview = 5;
+
+  // configuration things
+  double buffer_size = 6; // optional
+  uint32 process_time = 7; // optional
+  string algorithm = 8; // optional
+}
+
+message Response {
+  // new waypoints
+  telemetry.RawMission mission = 1;
+
+  // flyzone obstacles
+  interop.Obstacles fz_obstacles = 2;
+
+  // enemy bounds
+  // TODO: Fill, add enemy bound class to telemetry
+
+  // extras
+  double time_to_adjust = 4;
+}
+
+//message UpdateFlyzone {}
+
+//message UpdateObstacles {}
+
+//message UpdateEnemy {}
+
+//message UpdateWaypoints {}
+
+//message UpdatePosition {}

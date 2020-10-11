@@ -14,12 +14,27 @@ export default class Service {
   constructor(options) {
     this._port = options.port;
     this._serviceTimeout = options.serviceTimeout;
+    this._server = null;
   }
+
+  /* Start the service */
   async start(){
     logger.info('tanstar starting up');
     this._server = await this._createApi();
     logger.info('up and running!');
   }
+
+
+  /* Stop the service */
+  async stop(){
+    logger.info('Stopping service.');
+
+    await this._server.closeAsync();
+    this._server = null;
+
+    logger.info('Service stopped.');
+  }
+
   async _createApi(){
     const app = new Koa();
 
