@@ -32,6 +32,7 @@ export default class Service {
    * @param {string} [options.telemetryHost]
    * @param {string} [options.telemetryPort]
    * @param {number} [options.captureInterval] - milliseconds
+   * @param {bool}   [options.extendedConfiguration]
    */
   constructor(options) {
     const backends = ['gphoto2', 'z-cam-e1', 'file', 'sync'];
@@ -60,6 +61,10 @@ export default class Service {
     this._captureInterval = options.captureInterval;
 
     this._maxImages = options.maxImages;
+
+    // If unset, assume true.
+    this._extendedConfiguration =
+        (options.extendedConfiguration === false) ? false : true;
   }
 
   /** Start the service. */
@@ -81,7 +86,7 @@ export default class Service {
     case 'z-cam-e1':
       this._backend = new ZCamE1Backend(
         this._imageStore, this._captureInterval, this._cameraUrl,
-        this._telemetryUrl
+        this._telemetryUrl, this._extendedConfiguration
       );
       break;
     case 'file':
