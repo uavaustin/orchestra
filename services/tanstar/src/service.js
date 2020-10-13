@@ -21,39 +21,19 @@ export default class Service {
   constructor(options) {
     this._port = options.port;
     this._serviceTimeout = options.serviceTimeout;
-<<<<<<< HEAD
-    this._server = null;
-  }
-
-  /* Start the service */
-=======
-    this._interopUrl = 
+    this._interopUrl =
       `http://${options.interopProxyHost}:${options.interopProxyPort}`;
   }
-  
+
   /**
    * Starts all the necessary tasks for the service.
    */
->>>>>>> d8e03e48dc97ef02fb1d15335ca24b3d1a350744
   async start(){
     logger.info('tanstar starting up');
     this._server = await this._createApi();
     logger.info('up and running!');
   }
 
-<<<<<<< HEAD
-
-  /* Stop the service */
-  async stop(){
-    logger.info('Stopping service.');
-
-    await this._server.closeAsync();
-    this._server = null;
-
-    logger.info('Service stopped.');
-  }
-
-=======
   /**
    * Shut down the currently running service
    */
@@ -68,7 +48,6 @@ export default class Service {
   /**
    * Sets up new Koa app using specified routes and port numbers.
    */
->>>>>>> d8e03e48dc97ef02fb1d15335ca24b3d1a350744
   async _createApi(){
     const app = new Koa();
 
@@ -92,14 +71,11 @@ export default class Service {
       })
     });
   }
-<<<<<<< HEAD
-}
-=======
 
   /**
    * Retrieves stationary obstacle information from interop-proxy.
-   * 
-   * @return An interop obstacle message with the time and the 
+   *
+   * @return An interop obstacle message with the time and the
    *         stationary obstacles array. Null if unable get mission
    *         data.
    */
@@ -116,4 +92,3 @@ export default class Service {
     }
   }
 }
->>>>>>> d8e03e48dc97ef02fb1d15335ca24b3d1a350744

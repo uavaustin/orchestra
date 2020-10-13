@@ -55,7 +55,7 @@ router.get('/api/raw-mission', (ctx) => {
 
 // TODO: List of posts
 
-// return reponse
+// return response
 router.post('/api/response', response, timeout, async (ctx) => {
   await ctx.pathfind.getAdjustedMission();
   ctx.status = 200;
