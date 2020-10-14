@@ -16,6 +16,28 @@ let noEndpointApi;
 let device;
 let deviceIP;
 
+/* Contains information for all test services
+[name], [host ip], [port], [online status], [ms lower bound],
+[ms upper bound], [endpoint] */
+let serviceOutputs = [
+  ['test1', 'test1-service', '7001', true, 0, 1000, '/api/alive'],
+  ['test2', 'test2-service', '7002', true, 0, 1000, '/custom'],
+  ['no-endpoint', 'no-endpoint-service', '7003', false, -1, 1, '/no-exist'],
+  ['non-existent', 'non-existent-service', '12345', false, -1, 1, '/'],
+  ['meta', '127.0.0.1', '7000', true, 0, 1000, '/api/alive'],
+];
+
+/* Contains information for all test devices
+[name], [host ip], [online status], [ms lower bound],
+[ms upper bound]*/
+let deviceOutputs = [
+  ['device1', deviceIP, true, 0, 1000],
+  ['device2', '127.0.0.1', true, 0, 1000],
+  ['google', 'google.com', true, 0, 10000],
+  ['non-existent-device', 'no-host', false, -1, 1],
+  ['test', '1.1.1.1', true, 0, 10000],
+];
+
 beforeAll(async () => {
   const docker = new Docker();
   device = await docker.createContainer({ Image: 'alpine' });
@@ -23,62 +45,30 @@ beforeAll(async () => {
 
   deviceIP = (await device.inspect()).NetworkSettings.IPAddress;
 
+  // Sets the properties of each service. Returns array
+  let serviceValues = () => {
+    let serviceIntial = [];
+    for (let serviceNum of serviceOutputs) {
+      serviceIntial.push({name: serviceNum[0], host: serviceNum[1],
+        port: serviceNum[2], endpoint: serviceNum[6]});
+    }
+    return serviceIntial;
+  };
+
+  // Sets the properties of each device. Returns array
+  let deviceValues = () => {
+    let deviceIntial = [];
+    for (let deviceNum of deviceOutputs) {
+      deviceIntial.push({name: deviceNum[0], host: deviceNum[1]});
+    }
+    return deviceIntial;
+  };
+
+  // Creates service
   service = new Service({
     port: 7000,
-    pingServices: [
-      {
-        name: 'test1',
-        host: 'test1-service',
-        port: 7001,
-        endpoint: '/api/alive'
-      },
-      {
-        name: 'test2',
-        host: 'test2-service',
-        port: 7002,
-        endpoint: '/custom'
-      },
-      {
-        name: 'no-endpoint',
-        host: 'no-endpoint-service',
-        port: 7003,
-        endpoint: '/no-exist'
-      },
-      {
-        name: 'non-existent',
-        host: 'non-existent-service',
-        port: 12345,
-        endpoint: '/'
-      },
-      {
-        name: 'meta',
-        host: '127.0.0.1',
-        port: 7000,
-        endpoint: '/api/alive'
-      }
-    ],
-    pingDevices: [
-      {
-        name: 'device1',
-        host: deviceIP
-      },
-      {
-        name: 'device2',
-        host: '127.0.0.1'
-      },
-      {
-        name: 'google' ,
-        host: 'google.com'
-      },
-      {
-        name: 'non-existent-device',
-        host: 'no-host'
-      },
-      {
-        name: 'test' ,
-        host: '1.1.1.1'
-      },
-    ]
+    pingServices: serviceValues(),
+    pingDevices: deviceValues()
   });
 
   aliveApi = nock('http://test1-service:7001')
@@ -109,38 +99,15 @@ test('check the service ping response', async () => {
 
   expect(service_pings).toEqual(res.body.list);
 
-  expect(service_pings[0].name).toEqual('test1');
-  expect(service_pings[0].host).toEqual('test1-service');
-  expect(service_pings[0].port).toEqual('7001');
-  expect(service_pings[0].online).toEqual(true);
-  expect(service_pings[0].ms).toBeGreaterThan(0);
-  expect(service_pings[0].ms).toBeLessThan(1000);
-
-  expect(service_pings[1].name).toEqual('test2');
-  expect(service_pings[1].host).toEqual('test2-service');
-  expect(service_pings[1].port).toEqual('7002');
-  expect(service_pings[1].online).toEqual(true);
-  expect(service_pings[1].ms).toBeGreaterThan(0);
-  expect(service_pings[1].ms).toBeLessThan(1000);
-
-  expect(service_pings[2].name).toEqual('no-endpoint');
-  expect(service_pings[2].host).toEqual('no-endpoint-service');
-  expect(service_pings[2].port).toEqual('7003');
-  expect(service_pings[2].online).toEqual(false);
-  expect(service_pings[2].ms).toEqual(0);
-
-  expect(service_pings[3].name).toEqual('non-existent');
-  expect(service_pings[3].host).toEqual('non-existent-service');
-  expect(service_pings[3].port).toEqual('12345');
-  expect(service_pings[3].online).toEqual(false);
-  expect(service_pings[3].ms).toEqual(0);
-
-  expect(service_pings[4].name).toEqual('meta');
-  expect(service_pings[4].host).toEqual('127.0.0.1');
-  expect(service_pings[4].port).toEqual('7000');
-  expect(service_pings[4].online).toEqual(true);
-  expect(service_pings[4].ms).toBeGreaterThan(0);
-  expect(service_pings[4].ms).toBeLessThan(1000);
+  // Checks returned values with expected values for all services
+  for (let i = 0; i < service_pings.length; i++) {
+    expect(service_pings[i].name).toEqual(serviceOutputs[i][0]);
+    expect(service_pings[i].host).toEqual(serviceOutputs[i][1]);
+    expect(service_pings[i].port).toEqual(serviceOutputs[i][2]);
+    expect(service_pings[i].online).toEqual(serviceOutputs[i][3]);
+    expect(service_pings[i].ms).toBeGreaterThan(serviceOutputs[i][4]);
+    expect(service_pings[i].ms).toBeLessThan(serviceOutputs[i][5]);
+  }
 });
 
 test('check the device ping response', async () => {
@@ -157,34 +124,14 @@ test('check the device ping response', async () => {
 
   let device_pings = res.body.device_pings;
 
-  expect(device_pings[0].name).toEqual('device1');
-  expect(device_pings[0].host).toEqual(deviceIP);
-  expect(device_pings[0].online).toEqual(true);
-  expect(device_pings[0].ms).toBeGreaterThan(0);
-  expect(device_pings[0].ms).toBeLessThan(1000);
-
-  expect(device_pings[1].name).toEqual('device2');
-  expect(device_pings[1].host).toEqual('127.0.0.1');
-  expect(device_pings[1].online).toEqual(true);
-  expect(device_pings[1].ms).toBeGreaterThan(0);
-  expect(device_pings[1].ms).toBeLessThan(1000);
-
-  expect(device_pings[2].name).toEqual('google');
-  expect(device_pings[2].host).toEqual('google.com');
-  expect(device_pings[2].online).toEqual(true);
-  expect(device_pings[2].ms).toBeGreaterThan(0);
-  expect(device_pings[2].ms).toBeLessThan(10000);
-
-  expect(device_pings[3].name).toEqual('non-existent-device');
-  expect(device_pings[3].host).toEqual('no-host');
-  expect(device_pings[3].online).toEqual(false);
-  expect(device_pings[3].ms).toEqual(0);
-
-  expect(device_pings[4].name).toEqual('test');
-  expect(device_pings[4].host).toEqual('1.1.1.1');
-  expect(device_pings[4].online).toEqual(true);
-  expect(device_pings[4].ms).toBeGreaterThan(0);
-  expect(device_pings[4].ms).toBeLessThan(10000);
+  // Checks returned values with expected values for all devices
+  for (let i = 0; i < device_pings.length; i++) {
+    expect(device_pings[i].name).toEqual(deviceOutputs[i][0]);
+    expect(device_pings[i].host).toEqual(deviceOutputs[i][1]);
+    expect(device_pings[i].online).toEqual(deviceOutputs[i][2]);
+    expect(device_pings[i].ms).toBeGreaterThan(deviceOutputs[i][3]);
+    expect(device_pings[i].ms).toBeLessThan(deviceOutputs[i][4]);
+  }
 });
 
 test('mock apis were hit correctly', () => {
