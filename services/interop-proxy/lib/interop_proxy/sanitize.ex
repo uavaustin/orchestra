@@ -88,8 +88,8 @@ defmodule InteropProxy.Sanitize do
     }
   end
 
-  defp sanitize_team_info(team_info) do
-    %TeamInfo{
+  defp sanitize_team_telem(team_info) do
+    %TeamTelem{
       id:
         team_info
         |> Map.get("telemetryId", "")
