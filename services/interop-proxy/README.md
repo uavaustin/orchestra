@@ -54,6 +54,13 @@ If the interop server could not be reached, a `503` status code will be sent.
   On successful response: `200` status code with `interop::Obstacles` Protobuf
   message.
 
+- `GET /api/teams`
+
+  Lists the current teams' info and their telemetry data.
+
+  On successful response: `200` status code with `interop::Teams` Protobuf
+  message.
+
 - `POST /api/telemetry`
 
   Post new telemetry to the server.
