@@ -247,6 +247,7 @@ defmodule InteropProxy do
   Same as `get_teams`, but raises an exception on failure
   """
   def get_teams!, do: when_ok get_teams()
+
   # For the methods which raise errors.
   defp when_ok({:ok, message}), do: message
 

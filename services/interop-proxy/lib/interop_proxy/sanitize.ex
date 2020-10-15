@@ -55,6 +55,61 @@ defmodule InteropProxy.Sanitize do
     }
   end
 
+  def sanitize_teams(teams) do
+    %Teams{
+      time: time(),
+      teams:
+        teams
+        |> Enum.map(fn team ->
+          team_info =
+            team
+            |> Map.get("team", %{})
+          %Team{
+            id:
+              team_info
+              |> Map.get("id", 0),
+            username:
+              team_info
+              |> Map.get("username", 0),
+            name:
+              team_info
+              |> Map.get("name", ""),
+            university:
+              team_info
+              |> Map.get("university", ""),
+            in_air:
+              team_info
+              |> Map.get("inAir", false),
+            telem:
+              team
+              |> sanitize_team_telem
+          }
+        end)
+    }
+  end
+
+  defp sanitize_team_info(team_info) do
+    %TeamInfo{
+      id:
+        team_info
+        |> Map.get("telemetryId", "")
+      age_sec:
+        team_info
+        |> Map.get("telemetryAgeSec", 0.0)
+      timestamp:
+        team_info
+        |> Map.get("telemetryTimestamp", "")
+      pos:
+        team_info
+        |> Map.get("telemetry", %{})
+        |> sanitize_aerial_position
+      yaw:
+        team_info
+        |> Map.get("telemetry", %{})
+        |> Map.get("heading")
+    }
+  end
+
   defp sanitize_fly_zones(fly_zones) do
     fly_zones
     |> Enum.map(fn fly_zone ->
@@ -192,7 +247,7 @@ defmodule InteropProxy.Sanitize do
       case odlc.image do
         nil -> <<>>
         string -> string
-      end 
+      end
 
     {outgoing_odlc, outgoing_image}
   end
@@ -234,7 +289,7 @@ defmodule InteropProxy.Sanitize do
       case odlc.image do
         nil -> <<>>
         string -> string
-      end 
+      end
 
     {outgoing_odlc, outgoing_image}
   end
