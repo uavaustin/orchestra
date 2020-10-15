@@ -44,6 +44,7 @@ beforeAll(async () => {
   await device.start();
 
   deviceIP = (await device.inspect()).NetworkSettings.IPAddress;
+  deviceOutputs[0][1] = deviceIP; //Required because deviceIP is undefined before this
 
   // Sets the properties of each service. Returns array
   let serviceValues = () => {
