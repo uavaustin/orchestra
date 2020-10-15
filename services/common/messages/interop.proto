@@ -71,6 +71,7 @@ message InteropMission {
     Position off_axis_pos = 7;
     Position emergent_pos = 8;
     repeated AerialPosition search_area = 9;
+    Position ugv_drive_pos = 10;
 }
 
 // Lists the stationary and moving obstacles.

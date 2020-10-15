@@ -232,6 +232,23 @@ defmodule InteropProxy do
   """
   def delete_odlc!(id), do: when_ok delete_odlc(id)
 
+  
+  @doc """
+  Returns data about teams
+  """
+  def get_teams do
+    case Request.get_teams url(), cookie() do
+      {:ok, message}      -> {:ok, Sanitize.sanitize_teams(message)}
+      {:error, _} = other -> other
+    end
+  end
+
+  @doc """
+  Same as `get_teams`, but raises an exception on failure
+  """
+  def get_teams!, do: when_ok get_teams()
   # For the methods which raise errors.
   defp when_ok({:ok, message}), do: message
+
+
 end

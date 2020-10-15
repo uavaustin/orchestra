@@ -47,7 +47,11 @@ defmodule InteropProxy.Sanitize do
       search_area:
         mission
         |> Map.get("searchGridPoints", %{})
-        |> sanitize_aerial_position
+        |> sanitize_aerial_position,
+      ugv_drive_pos:
+        mission
+        |> Map.get("ugvDrivePos", %{})
+        |> sanitize_position
     }
   end
 

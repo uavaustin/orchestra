@@ -71,6 +71,15 @@ defmodule InteropProxy.Request do
   end
 
   @doc """
+  Get the teams from the server.
+  """
+  def get_teams(url, cookie) do
+    "http://#{url}/api/teams"
+    |> cookie_get(cookie)
+    |> handle_resp(:json)
+  end
+
+  @doc """
   Update an ODLC on the server.
   """
   def put_odlc(url, cookie, id, odlc, mission_id)

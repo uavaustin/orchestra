@@ -17,6 +17,7 @@ defmodule InteropProxyWeb.Router do
     post "/odlcs",  OdlcController, :create
     put "/odlcs/:id", OdlcController, :update
     delete "/odlcs/:id", OdlcController, :delete
+    get "teams" TeamsController, :index
 
     get "/alive", AliveController, :index
   end
