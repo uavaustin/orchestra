@@ -8,6 +8,7 @@ import router from './router';
 import { telemetry, interop } from './messages';
 
 addProtobuf(request);
+
 export default class Service {
   /**
    * Create a new autopilot (tanstar) service.

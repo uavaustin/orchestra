@@ -27,6 +27,8 @@ let raw = koaProtobuf.protobufParser(X)
 // Middleware to parse a request for the adjusted path.
 let adjusted = koaProtobuf.protobufParser(X)
 
+router.get('/test', funct);
+
 router.get('/api/alive', (ctx) => {
   ctx.body = 'Yep, I am alive.\n';
 });
