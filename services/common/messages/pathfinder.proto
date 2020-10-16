@@ -18,6 +18,7 @@ import "messages/telemetry.proto";
 message Response {
   // message to front-end
   bool success = 1;
+  telemetry.RawMission adjusted = 2;
 }
 
 message Request {
@@ -42,18 +43,9 @@ message Request {
   string algorithm = 8; // optional
 }
 
-message Response {
+message AdjustedPath {
   // new waypoints
   telemetry.RawMission mission = 1;
-
-  // flyzone obstacles
-  interop.Obstacles fz_obstacles = 2;
-
-  // enemy bounds
-  // TODO: Fill, add enemy bound class to telemetry
-
-  // extras
-  double time_to_adjust = 4;
 }
 
 //message UpdateFlyzone {}

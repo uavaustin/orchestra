@@ -27,7 +27,7 @@ let raw = koaProtobuf.protobufParser(X)
 // Middleware to parse a request for the adjusted path.
 let adjusted = koaProtobuf.protobufParser(X)
 
-router.get('/test', funct);
+router.get('/test', funct)
 
 router.get('/api/alive', (ctx) => {
   ctx.body = 'Yep, I am alive.\n';
@@ -36,32 +36,20 @@ router.get('/api/alive', (ctx) => {
 // TODO: List of gets
 // All based on needs from PF
 
-// get request
-router.get('/api/request', (ctx) => {
-  ctx.proto = pathfinder.Request.create({
-      flyzones:
-      obstacles:
-      enemy:
-      mission:
-      overview:
-  })
-});
+// get adjusted mission data
+router.get('/api/adjusted-mission', (ctx) => {
+  const adjusted = await ctx.PathAdjust.getAdjusted();
 
-// get raw mission data
-router.get('/api/raw-mission', (ctx) => {
-  ctx.proto = pathfinder.RawMission.create({
-
-  })
+  ctx.proto = pathfinder.Response.create({
+    success: True,
+    adjusted
+  });
 });
 
 
 // TODO: List of posts
 
-// return response
-router.post('/api/response', response, timeout, async (ctx) => {
-  await ctx.pathfind.getAdjustedMission();
-  ctx.status = 200;
-});
+
 
 
 export default router;

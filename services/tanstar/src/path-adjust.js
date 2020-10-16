@@ -25,7 +25,8 @@ export default class PathAdjust {
 
   /** Sets the flyzone and obstacles */
   async setField() {
-
+    this._flyzone = ???
+    this._obstacles = ???
   }
 
   /** Sets the raw path */
@@ -36,6 +37,9 @@ export default class PathAdjust {
   /** Get the pathfinder adjusted path */
   async getAdjusted() {
 
+    const adjusted_path = await // refer to pathfinder.js
+
+    return adjusted_path;
   }
 
 
