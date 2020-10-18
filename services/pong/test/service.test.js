@@ -16,20 +16,24 @@ let noEndpointApi;
 let device;
 let deviceIP;
 
-/* Contains information for all test services
-[name], [host ip], [port], [online status], [ms lower bound],
-[ms upper bound], [endpoint] */
+/*
+Contains information for all test services
+Service Info: [name], [host ip], [port], [endpoint], 
+Result Info: [online status], [ms lower bound], [ms upper bound]
+*/
 let serviceOutputs = [
-  ['test1', 'test1-service', '7001', true, 0, 1000, '/api/alive'],
-  ['test2', 'test2-service', '7002', true, 0, 1000, '/custom'],
-  ['no-endpoint', 'no-endpoint-service', '7003', false, -1, 1, '/no-exist'],
-  ['non-existent', 'non-existent-service', '12345', false, -1, 1, '/'],
-  ['meta', '127.0.0.1', '7000', true, 0, 1000, '/api/alive'],
+  ['test1', 'test1-service', '7001', '/api/alive', true, 0, 1000],
+  ['test2', 'test2-service', '7002', '/custom', true, 0, 1000],
+  ['no-endpoint', 'no-endpoint-service', '7003', '/no-exist', false, -1, 1],
+  ['non-existent', 'non-existent-service', '12345', '/', false, -1, 1],
+  ['meta', '127.0.0.1', '7000', '/api/alive', true, 0, 1000],
 ];
 
-/* Contains information for all test devices
-[name], [host ip], [online status], [ms lower bound],
-[ms upper bound]*/
+/*
+Contains information for all test devices
+Service Info: [name], [host ip]
+Result Info: [online status], [ms lower bound], [ms upper bound]
+*/
 let deviceOutputs = [
   ['device1', deviceIP, true, 0, 1000],
   ['device2', '127.0.0.1', true, 0, 1000],
@@ -49,21 +53,28 @@ beforeAll(async () => {
 
   // Sets the properties of each service. Returns array
   let serviceValues = () => {
-    let serviceIntial = [];
+    let serviceInitial = [];
     for (let serviceNum of serviceOutputs) {
-      serviceIntial.push({name: serviceNum[0], host: serviceNum[1],
-        port: serviceNum[2], endpoint: serviceNum[6]});
+      serviceInitial.push({
+        name: serviceNum[0],
+        host: serviceNum[1],
+        port: serviceNum[2],
+        endpoint: serviceNum[3]
+      });
     }
-    return serviceIntial;
+    return serviceInitial;
   };
 
   // Sets the properties of each device. Returns array
   let deviceValues = () => {
-    let deviceIntial = [];
+    let deviceInitial = [];
     for (let deviceNum of deviceOutputs) {
-      deviceIntial.push({name: deviceNum[0], host: deviceNum[1]});
+      deviceInitial.push({
+        name: deviceNum[0],
+        host: deviceNum[1]
+      });
     }
-    return deviceIntial;
+    return deviceInitial;
   };
 
   // Creates service
@@ -106,9 +117,9 @@ test('check the service ping response', async () => {
     expect(service_pings[i].name).toEqual(serviceOutputs[i][0]);
     expect(service_pings[i].host).toEqual(serviceOutputs[i][1]);
     expect(service_pings[i].port).toEqual(serviceOutputs[i][2]);
-    expect(service_pings[i].online).toEqual(serviceOutputs[i][3]);
-    expect(service_pings[i].ms).toBeGreaterThan(serviceOutputs[i][4]);
-    expect(service_pings[i].ms).toBeLessThan(serviceOutputs[i][5]);
+    expect(service_pings[i].online).toEqual(serviceOutputs[i][4]);
+    expect(service_pings[i].ms).toBeGreaterThan(serviceOutputs[i][5]);
+    expect(service_pings[i].ms).toBeLessThan(serviceOutputs[i][6]);
   }
 });
 
