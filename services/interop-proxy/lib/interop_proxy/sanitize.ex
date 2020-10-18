@@ -92,17 +92,17 @@ defmodule InteropProxy.Sanitize do
     %TeamTelem{
       id:
         team_info
-        |> Map.get("telemetryId", "")
+        |> Map.get("telemetryId", ""),
       age_sec:
         team_info
-        |> Map.get("telemetryAgeSec", 0.0)
+        |> Map.get("telemetryAgeSec", 0.0),
       timestamp:
         team_info
-        |> Map.get("telemetryTimestamp", "")
+        |> Map.get("telemetryTimestamp", ""),
       pos:
         team_info
         |> Map.get("telemetry", %{})
-        |> sanitize_aerial_position
+        |> sanitize_aerial_position,
       yaw:
         team_info
         |> Map.get("telemetry", %{})
