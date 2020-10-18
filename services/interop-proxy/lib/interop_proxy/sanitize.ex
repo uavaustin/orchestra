@@ -6,12 +6,14 @@ defmodule InteropProxy.Sanitize do
   # Aliasing the main messages.
   alias InteropProxy.Message.Interop.{
     Position, AerialPosition, InteropMission, Obstacles, InteropTelem, Odlc,
-    OdlcList, InteropMessage
+    OdlcList, InteropMessage, Teams
   }
 
   # Aliasing the nested messages.
   alias InteropProxy.Message.Interop.InteropMission.FlyZone
   alias InteropProxy.Message.Interop.Obstacles.StationaryObstacle
+  alias InteropProxy.Message.Interop.Teams.Team
+  alias InteropProxy.Message.Interop.Teams.Team.TeamTelem
 
   def sanitize_mission(nil) do
     %InteropMission{
@@ -81,7 +83,7 @@ defmodule InteropProxy.Sanitize do
               team_info
               |> Map.get("inAir", false),
             telem:
-              team
+              team_info
               |> sanitize_team_telem
           }
         end)
