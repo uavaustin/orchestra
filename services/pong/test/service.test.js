@@ -18,7 +18,7 @@ let deviceIP;
 
 /*
 Contains information for all test services
-Service Info: [name], [host ip], [port], [endpoint], 
+Service Info: [name], [host ip], [port], [endpoint]
 Result Info: [online status], [ms lower bound], [ms upper bound]
 */
 let serviceOutputs = [
