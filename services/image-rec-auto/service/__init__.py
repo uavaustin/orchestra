@@ -1,4 +1,4 @@
-"""Identifies targets as new images come in."""
+""" Identifies targets as new images come in. """
 
 import io
 import logging
@@ -10,10 +10,11 @@ import requests
 from hawk_eye.inference import find_targets
 
 from common.logger import format_error
-from messages.image_rec_pb2 import PipelineImage, PipelineTarget
+from messages.image_rec_pb2 import PipelineImage
+from messages.image_rec_pb2 import PipelineTarget
 from messages.imagery_pb2 import Image
 
-from .util import curr_time, get_odlc
+from . import util
 
 
 # Used for printing in Service._queue_targets().
@@ -35,7 +36,7 @@ class Service:
 
         logging.info(f'processing image {image_id}')
 
-        t_1 = curr_time()
+        t_1 = util.curr_time()
 
         # The image retrieved from the imagery service (note that
         # this is a protobuf message object).
@@ -48,20 +49,20 @@ class Service:
         # Converting the image to a Pillow one.
         image = PIL.Image.open(io.BytesIO(image_proto.image))
 
-        t_2 = curr_time()
+        t_2 = util.curr_time()
         logging.info('retreived image in {:d} ms'.format(t_2 - t_1))
 
         # Getting targets in our set of blobs (if there are any).
         targets = find_targets.find_targets(image, self.clf_model, self.det_model)
 
-        t_3 = curr_time()
+        t_3 = util.curr_time()
         logging.info('{:d} targets found in {:d} ms'.format(len(targets),
                                                             t_3 - t_2))
 
         if targets:
             ret = self._queue_targets(image_id, image_proto, image, targets)
 
-            t_4 = curr_time()
+            t_4 = util.curr_time()
 
             if ret:
                 logging.info('queued targets in {:d} ms'.format(t_4 - t_3))
@@ -139,7 +140,7 @@ class Service:
             image_telem = image_proto.telem if image_proto.has_telem else None
 
             target_proto = PipelineTarget()
-            target_proto.odlc.CopyFrom(get_odlc(image, image_telem, target))
+            target_proto.odlc.CopyFrom(util.get_odlc(image, image_telem, target))
             target_proto.image_id = image_id
 
             data = target_proto.SerializeToString()

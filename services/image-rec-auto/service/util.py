@@ -2,7 +2,7 @@ import io
 from math import pi, sin, cos, tan, atan2, sqrt
 import time
 
-import target_finder
+from hawk_eye.inference import types
 
 from messages.interop_pb2 import Odlc
 
@@ -11,7 +11,7 @@ EARTH_RADIUS = 6378137
 EARTH_ECCEN = 0.0818191
 
 
-def curr_time():
+def curr_time() -> int:
     """Return the current time in ms."""
     return int(time.time() * 1000)
 
@@ -115,7 +115,7 @@ def _convert_orientation(image_telem, orientation):
 
 def _convert_shape(shape):
     """Convert a target_finder shape to a protobuf one."""
-    if shape == target_finder.Shape.NAS:
+    if shape == types.Shape.NAS:
         return Odlc.UNKNOWN_SHAPE
 
     return getattr(Odlc, shape.name.upper())
@@ -123,7 +123,7 @@ def _convert_shape(shape):
 
 def _convert_color(color):
     """Convert a target_finder color to a protobuf one."""
-    if color == target_finder.Color.NONE:
+    if color == types.Color.NONE:
         return Odlc.UNKNOWN_COLOR
 
     return getattr(Odlc, color.name.upper())

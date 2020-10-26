@@ -19,9 +19,6 @@ endif
 
 .PHONY: test
 test:
-ifeq ($(UNAME_P),x86_64)
-	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-endif
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) \
 		-f Dockerfile.test $(DOCKERFLAGS) ..
 	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \

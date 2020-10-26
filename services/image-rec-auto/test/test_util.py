@@ -1,8 +1,9 @@
+import pathlib
 import io
 import os.path
 
 import PIL.Image
-import target_finder
+from hawk_eye.inference import types
 
 from messages.telemetry_pb2 import CameraTelem
 from messages.interop_pb2 import Odlc
@@ -10,19 +11,17 @@ from messages.interop_pb2 import Odlc
 from service.util import get_odlc
 
 
-FIELD_FIXTURE = os.path.abspath(os.path.join(__file__,
-                                             '../fixtures/field.jpg'))
-TARGET_FIXTURE = os.path.abspath(os.path.join(__file__,
-                                              '../fixtures/target.jpg'))
+FIELD_FIXTURE = pathlib.Path(__file__) / "../fixtures/field.jpg"
+TARGET_FIXTURE = pathlib.Path(__file__) / "../fixtures/target.jpg"
 
 
 def test_get_odlc_no_telem():
     image_telem = None
     image = PIL.Image.open(FIELD_FIXTURE)
-    target = target_finder.Target(
-        x=55, y=20, width=50, height=50, shape=target_finder.Shape.CIRCLE,
-        orientation=44.0, background_color=target_finder.Color.BLUE,
-        alphanumeric='A', alphanumeric_color=target_finder.Color.ORANGE,
+    target = types.Target(
+        x=55, y=20, width=50, height=50, shape=types.Shape.CIRCLE,
+        orientation=44.0, background_color=types.Color.BLUE,
+        alphanumeric='A', alphanumeric_color=types.Color.ORANGE,
         image=PIL.Image.open(TARGET_FIXTURE)
     )
 
@@ -50,10 +49,10 @@ def test_get_odlc_with_yaw():
     image_telem.pitch = 0.0
 
     image = PIL.Image.open(FIELD_FIXTURE)
-    target = target_finder.Target(
-        x=55, y=20, width=50, height=50, shape=target_finder.Shape.CIRCLE,
-        orientation=44.0, background_color=target_finder.Color.BLUE,
-        alphanumeric='A', alphanumeric_color=target_finder.Color.ORANGE,
+    target = types.Target(
+        x=55, y=20, width=50, height=50, shape=types.Shape.CIRCLE,
+        orientation=44.0, background_color=types.Color.BLUE,
+        alphanumeric='A', alphanumeric_color=types.Color.ORANGE,
         image=PIL.Image.open(TARGET_FIXTURE)
     )
 
