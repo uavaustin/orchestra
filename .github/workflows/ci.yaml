@@ -5,8 +5,22 @@ on: ["push", "pull_request"]
 jobs:
     build:
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service: [
+                    maxproxy,
+                    interop-proxy,
+                    telemetry,
+                    pong,
+                    forward-interop,
+                    imagery,
+                    image-rec-master,
+                    grafana
+                ]
         steps:
             - uses: actions/checkout@v2
-            - name: making pong
+            - name: Building services
               run: |
-                make pong
+                ./ci/script.sh
+              env:
+                SERVICE: ${{ matrix.service }}
