@@ -8,7 +8,7 @@ jobs:
         strategy:
             matrix:
                 service: [
-                    maxproxy,
+                    mavproxy,
                     interop-proxy,
                     telemetry,
                     pong,
