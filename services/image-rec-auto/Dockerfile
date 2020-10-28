@@ -48,8 +48,6 @@ RUN wget https://github.com/uavaustin/hawk-eye/releases/download/0.0.1a0/hawk_ey
     && python3 -m pip install hawk_eye-0.0.1a0-py3-none-any.whl \
     && rm hawk_eye-0.0.1a0-py3-none-any.whl
 
-RUN python3 -m pip install pillow
-
 # Copy the protobuf messages from above.
 COPY --from=builder /builder/dist/messages messages
 
