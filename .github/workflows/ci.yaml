@@ -24,3 +24,30 @@ jobs:
                 ./ci/script.sh
               env:
                 SERVICE: ${{ matrix.service }}
+            - name: Clean up
+              run: |
+                ./ci/after-script.sh
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service: [
+                    mavproxy,
+                    interop-proxy,
+                    telemetry,
+                    pong,
+                    forward-interop,
+                    imagery,
+                    image-rec-master,
+                    grafa
+                ]
+        steps:
+            - uses: actions/checkout@v2
+            - name: Testing services
+              run: |
+                ./ci/script.sh
+              env:
+                SERVICE_TEST: ${{ matrix.service }}
+            - name: Clean up
+              run: |
+                ./ci/after-script.sh
