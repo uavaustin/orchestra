@@ -32,12 +32,7 @@ jobs:
         strategy:
             matrix:
                 service: [
-                    interop-proxy,
-                    telemetry,
-                    pong,
-                    forward-interop,
-                    imagery,
-                    image-rec-master,
+                    imagery
                 ]
         steps:
             - uses: actions/checkout@v2

@@ -17,7 +17,7 @@ image:
 test:
 	docker build -t $(IMAGERY_TEST_IMAGE) \
 		-f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run -i --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGERY_TEST_IMAGE)
 
 .PHONY: clean
