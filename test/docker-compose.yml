@@ -94,14 +94,13 @@ services:
         ipv4_address: 172.16.238.16
 
   grafana:
-    image: grafana/grafana
+    image: uavaustin/grafana
     ports:
       - '3000:3000'
-    depends_on: 
-      - 'influx'
-    volumes:
-      - ./data:/var/lib/grafana
-      - ../services/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - INFLUX_HOST=influx
+      - INFLUX_PORT=8086
+      - DB_NAME=lumberjack
     networks:
       test_net:
         ipv4_address: 172.16.238.19
