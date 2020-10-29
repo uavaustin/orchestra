@@ -6,6 +6,8 @@ IMAGE_REC_MASTER_TEST_IMAGE := uavaustin/image-rec-master-test
 
 current_dir := $(shell pwd)
 
+OPTIONS ?= -it
+
 .PHONY: all
 all: image
 
@@ -17,7 +19,7 @@ image:
 test:
 	docker build -t $(IMAGE_REC_MASTER_TEST_IMAGE) \
 		-f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run $(OPTIONS) --rm -v $(current_dir)/coverage:/test/coverage \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		$(IMAGE_REC_MASTER_TEST_IMAGE)
 

@@ -4,6 +4,8 @@ DOCKERFLAGS :=
 IMAGERY_IMAGE      := uavaustin/imagery
 IMAGERY_TEST_IMAGE := uavaustin/imagery-test
 
+OPTIONS ?= "-it"
+
 current_dir := $(shell pwd)
 
 .PHONY: all
@@ -17,7 +19,7 @@ image:
 test:
 	docker build -t $(IMAGERY_TEST_IMAGE) \
 		-f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -i --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run $(OPTIONS) --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGERY_TEST_IMAGE)
 
 .PHONY: clean
