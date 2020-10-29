@@ -46,6 +46,7 @@ jobs:
                 ./ci/script.sh
               env:
                 SERVICE_TEST: ${{ matrix.service }}
+                OPTIONS: "-i"
             - name: Clean up
               run: |
                 ./ci/after-script.sh
