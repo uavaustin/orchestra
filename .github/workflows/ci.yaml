@@ -27,26 +27,111 @@ jobs:
             - name: Clean up
               run: |
                 ./ci/after-script.sh
-    test:
+    test-interop-proxy:
         runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                service: [
-                    image-rec-master
-                ]
         steps:
             - uses: actions/checkout@v2
 
-            - name: Setup Python 3.8
-              uses: actions/setup-python@v2
+            - name: Setup environment
+              uses: actions/setup-elixir@v1
               with:
-                python-version: 3.8
-            - name: Testing services
+                elixir-version: '1.8'
+            - name: Testing service
               run: |
                 ./ci/script.sh
               env:
-                SERVICE_TEST: ${{ matrix.service }}
+                SERVICE_TEST: interop-proxy
                 OPTIONS: "-i"
             - name: Clean up
               run: |
                 ./ci/after-script.sh
+    test-telemetry:
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v2
+
+        - name: Setup environment
+          uses: actions/setup-node@v2
+          with:
+            node-version: '12'
+        - name: Testing service
+          run: |
+            ./ci/script.sh
+          env:
+            SERVICE_TEST: telemetry
+            OPTIONS: "-i"
+        - name: Clean up
+          run: |
+            ./ci/after-script.sh
+    test-forward-interop:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-node@v2
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: forward-interop
+              OPTIONS: "-i"
+          - name: Clean up
+            run: |
+              ./ci/after-script.sh
+    test-pong:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-node@v2
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: pong
+              OPTIONS: "-i"
+          - name: Clean up
+            run: |
+              ./ci/after-script.sh
+    test-imagery:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-node@v2
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: imagery
+              OPTIONS: "-i"
+          - name: Clean up
+            run: |
+              ./ci/after-script.sh
+    test-image-rec-master:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-python@v2
+            with:
+              python-version: '3.8'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: pong
+              OPTIONS: "-i"
+          - name: Clean up
+            run: |
+              ./ci/after-script.sh
