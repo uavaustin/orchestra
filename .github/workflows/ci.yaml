@@ -46,23 +46,23 @@ jobs:
               run: |
                 ./ci/after-script.sh
     test-telemetry:
-    runs-on: ubuntu-latest
-    steps:
-        - uses: actions/checkout@v2
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
 
-        - name: Setup environment
-          uses: actions/setup-node@v2
-          with:
-            node-version: '12'
-        - name: Testing service
-          run: |
-            ./ci/script.sh
-          env:
-            SERVICE_TEST: telemetry
-            OPTIONS: "-i"
-        - name: Clean up
-          run: |
-            ./ci/after-script.sh
+          - name: Setup environment
+            uses: actions/setup-node@v2
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: telemetry
+              OPTIONS: "-i"
+          - name: Clean up
+            run: |
+              ./ci/after-script.sh
     test-forward-interop:
       runs-on: ubuntu-latest
       steps:
