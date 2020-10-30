@@ -41,6 +41,9 @@ export default class Service {
       `http://${options.telemetryHost}:${options.telemetryPort}`;
     this._interopProxyUrl =
       `http://${options.interopProxyHost}:${options.interopProxyPort}`;
+
+    this._forwardTask = null;
+    this._teamTask = null;
   }
 
   /** Start the service. */
@@ -49,7 +52,7 @@ export default class Service {
 
     this._monitor = new UploadMonitor();
     this._server = await this._createApi(this._monitor);
-    this._startTask();
+    this._startTasks();
 
     logger.debug('Service started.');
   }
@@ -93,12 +96,19 @@ export default class Service {
     });
   }
 
-  // Start the loop for forwarding telemetry.
-  _startTask() {
+  /** 
+    Start the loop for forwarding telemetry and receiving
+    team information from interop.
+  **/ 
+  _startTasks() {
     this._forwardTask =
       createTimeoutTask(this._forwardTelem.bind(this), this._uploadInterval)
         .on('error', logger.error)
         .start();
+    this._teamTask = 
+      createTimeoutTask(this._receiveTelem.bind(this), this._teamInterval)
+      .on('error', logger.error)
+      .start();
   }
 
   // Get the latest telemetry and send it to the interop server.
@@ -124,5 +134,14 @@ export default class Service {
       alt_msl: telem.pos.alt_msl,
       yaw: telem.yaw
     });
+  }
+
+  async _teamTask(){
+    logger.debug('Fetching teams.');
+    let { body: teams } =
+      await request.get(this._interopProxyUrl + '/api/teams')
+      .proto(interop.Teams)
+      .timeout(1000);
+    
   }
 }
