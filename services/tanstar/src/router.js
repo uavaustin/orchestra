@@ -19,25 +19,28 @@ let timeout = async (ctx, next) => {
   }
 };
 
-// TODO: Add wanted middleware parsers
-
 // Middleware to parse a request for the raw path.
 let raw = koaProtobuf.protobufParser(X)
 
 // Middleware to parse a request for the adjusted path.
 let adjusted = koaProtobuf.protobufParser(X)
 
-router.get('/test', funct)
 
 router.get('/api/alive', (ctx) => {
   ctx.body = 'Yep, I am alive.\n';
 });
 
-// TODO: List of gets
-// All based on needs from PF
+/* Pushes in request data to path-adjust */
+// !! Will deprecate with more robust proto messages later
+router.put('/api/request', Request, timeout, (ctx) => {
+  await ctx.PathAdjust.Set(ctx.request.proto);
+  ctx.status = 200;
+});
 
-// get adjusted mission data
-router.get('/api/adjusted-mission', (ctx) => {
+
+/* Returns response proto from path-adjust, pathfinder */
+// !! Will deprecate with more robust proto messages later
+router.get('/api/response', (ctx) => {
   const adjusted = await ctx.PathAdjust.getAdjusted();
 
   ctx.proto = pathfinder.Response.create({
@@ -46,10 +49,32 @@ router.get('/api/adjusted-mission', (ctx) => {
   });
 });
 
+/* Pushes in flyzones data to path-adjust */
+///router.get('/api/flyzones', (ctx) => {
+//});
 
-// TODO: List of posts
 
+/* Pushes in obstacles data to path-adjust */
+///router.get('/api/obstacles', (ctx) => {
+//});
 
+/* Pushes in plane location data to path-adjust */
+///router.get('/api/plane', (ctx) => {
+//});
 
+/* Pushes in raw mission to path-adjust */
+///router.get('/api/obstacles', (ctx) => {
+//});
+
+/* Returns adjusted mission data proto */
+router.get('/api/adjusted-mission', (ctx) => {
+  const adjusted = await ctx.PathAdjust.getAdjusted();
+
+  // TODO: Update protos for more reponse patterns
+  ctx.proto = pathfinder.Response.create({
+    success: True,
+    adjusted
+  });
+});
 
 export default router;

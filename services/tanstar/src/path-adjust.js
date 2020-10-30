@@ -9,7 +9,7 @@
 2.3 New WP run (keep fz/obs same)
 2.4 Updated field (new fz/obs, WPs)
 
-3. Have way or running PF (WASM vs FFI vs C-mimic)
+3. Channel PF from backend (WASM)
 */
 
 export default class PathAdjust {
@@ -25,13 +25,12 @@ export default class PathAdjust {
 
   /** Sets the flyzone and obstacles */
   async setField() {
-    this._flyzone = ???
-    this._obstacles = ???
+    await Pathfinder.setField(this._flyzone, this._obstacles);
   }
 
   /** Sets the raw path */
   async setRaw() {
-
+    await Pathfinder.setRawPath(this._path);
   }
 
   /** Get the pathfinder adjusted path */
