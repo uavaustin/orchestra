@@ -18,20 +18,28 @@ export default class PathAdjust {
   constructor() {
     this._flyzone = null;
     this._obstacles = null;
+    this._plane = null;
 
     this._rawPath = null;
     this._adjustedPath = null;
   }
 
-  /** Sets the flyzone and obstacles */
-  async setField() {
-    await Pathfinder.setField(this._flyzone, this._obstacles);
+  async set(flyzones, obstacles, plane, raw_path) {
+    this._flyzone = flyzones;
+    this._obstacles = obstacles;
+    this._plane = plane;
+    this._rawPath = raw_path;
   }
 
+  /** Sets the flyzone and obstacles */
+  //async setField() {
+  //  await Pathfinder.setField(this._flyzone, this._obstacles);
+  //}
+
   /** Sets the raw path */
-  async setRaw() {
-    await Pathfinder.setRawPath(this._path);
-  }
+  //async setRaw() {
+  //  await Pathfinder.setRawPath(this._path);
+  //}
 
   /** Get the pathfinder adjusted path */
   async getAdjusted() {
@@ -41,5 +49,8 @@ export default class PathAdjust {
     return adjusted_path;
   }
 
-
+  async pathfind() {
+    this.set()
+    this.getAdjusted()
+  }
 }

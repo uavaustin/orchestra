@@ -32,8 +32,8 @@ router.get('/api/alive', (ctx) => {
 
 /* Pushes in request data to path-adjust */
 // !! Will deprecate with more robust proto messages later
-router.put('/api/request', Request, timeout, (ctx) => {
-  await ctx.PathAdjust.Set(ctx.request.proto);
+router.put('/api/request', request, timeout, (ctx) => {
+  await ctx.PathAdjust.set(ctx.request.proto);
   ctx.status = 200;
 });
 
