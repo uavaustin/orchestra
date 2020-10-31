@@ -58,5 +58,5 @@ COPY image-rec-auto/setup.cfg .
 ENV PYTHONUNBUFFERED=TRUE
 
 CMD pycodestyle --max-line-length=90 service test \
-    && python3 -m pytest --cov=service test \
+    && python3 -m pytest -s --cov=service test \
     && coverage html -d coverage/html
