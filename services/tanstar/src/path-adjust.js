@@ -1,5 +1,7 @@
 // Manages path adjustment at highest level using Pathfinder
 
+import pf from './backend';
+
 /*
 1. Take in routed data for starting PF
 
@@ -29,6 +31,10 @@ export default class PathAdjust {
     this._obstacles = obstacles;
     this._plane = plane;
     this._rawPath = raw_path;
+
+    pf.setField(this._flyzones, this._obstacles);
+    pf.setPlane(this._plane);
+    pf.setRawPath(this._pawPath);
   }
 
   /** Sets the flyzone and obstacles */
@@ -44,8 +50,7 @@ export default class PathAdjust {
   /** Get the pathfinder adjusted path */
   async getAdjusted() {
 
-    const adjusted_path = await // refer to pathfinder.js
-
+    const adjusted_path = pf.getAdjustedPath(); // refer to pathfinder.js
     return adjusted_path;
   }
 
