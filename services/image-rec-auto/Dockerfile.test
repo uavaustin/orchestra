@@ -1,5 +1,5 @@
 ARG BASE_BUILDER=alpine:3.9
-ARG BASE=nvcr.io/nvidia/tensorrt:20.07.1-py3
+ARG BASE=nvcr.io/nvidia/l4t-base:r32.4.3
 
 # Compile the proto files (using alpine for easy recent protoc
 # install).
@@ -35,17 +35,18 @@ COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
 COPY image-rec-auto/requirements-test.txt .
 
-RUN python3 -m pip install dataclasses pyyaml -r common/requirements.txt \
-    -r requirements.txt \
-    -r requirements-test.txt 
+RUN python3 -m pip install  -r common/requirements.txt -r requirements.txt
 
-RUN python3 -m pip install \
-    torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+# Install PyTorch
+RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.whl \
+    -O  torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
+    && python3 -m pip install torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
+    && rm torch-1.6.0-cp36-cp36m-linux_aarch64.whl
 
-RUN python3 -m pip install \
-    https://github.com/uavaustin/hawk-eye/releases/download/v0.0.1a0/hawk_eye-0.0.1a0-py3-none-any.whl
-
-RUN python3 -m pip install pillow
+RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v0.0.1b0/hawk_eye-0.0.1b0-py3-none-any.whl \
+    -O  hawk_eye-0.0.1b0-py3-none-any.whl \
+    && python3 -m pip install hawk_eye-0.0.1b0-py3-none-any.whl \
+    && rm hawk_eye-0.0.1b0-py3-none-any.whl
 
 # Copy the protobuf messages from above.
 COPY --from=builder /builder/dist/messages messages
