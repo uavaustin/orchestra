@@ -35,7 +35,9 @@ COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
 COPY image-rec-auto/requirements-test.txt .
 
-RUN python3 -m pip install  -r common/requirements.txt -r requirements.txt
+RUN python3 -m pip install  -r common/requirements.txt \
+    -r requirements.txt \
+    -r requirements-test.txt
 
 # Install PyTorch
 RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.whl \

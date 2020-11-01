@@ -19,8 +19,7 @@ endif
 
 .PHONY: test
 test:
-	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) \
-		-f Dockerfile.test $(DOCKERFLAGS) ..
+	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
 	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 
