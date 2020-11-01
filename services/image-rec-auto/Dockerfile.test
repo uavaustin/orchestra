@@ -27,7 +27,9 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     python3-pip \
     zlib1g-dev \
-    libjpeg-dev 
+    libjpeg-dev \
+    libopenblas-base \
+    libopenmpi-dev 
 
 RUN python3 -m pip install --upgrade pip
 
@@ -37,9 +39,11 @@ COPY image-rec-auto/requirements-test.txt .
 
 RUN python3 -m pip install  -r common/requirements.txt \
     -r requirements.txt \
-    -r requirements-test.txt
+    -r requirements-test.txt \
+    Cython==0.29.21
 
-# Install PyTorch
+# Install PyTorch. NOTE: here is a thread of the pre-built whls (as of Nov 2020):
+# https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-7-0-now-available/72048
 RUN wget https://nvidia.box.com/shared/static/wa34qwrwtk9njtyarwt5nvo6imenfy26.whl \
     -O torch-1.7.0-cp36-cp36m-linux_aarch64.whl \
     && python3 -m pip install torch-1.7.0-cp36-cp36m-linux_aarch64.whl \
