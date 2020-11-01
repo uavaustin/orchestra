@@ -6,6 +6,7 @@ IMAGE_REC_AUTO_TEST_IMAGE := uavaustin/image-rec-auto-test
 
 current_dir := $(shell pwd)
 UNAME_P := $(shell uname -p)
+L4T ?= false
 
 .PHONY: all
 all: image
@@ -19,9 +20,16 @@ endif
 
 .PHONY: test
 test:
+ifeq ($(L4T), true)
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
 	docker run -it --rm --runtime nvidia -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
+else
+	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) \
+		-f Dockerfile.test_tensorrt $(DOCKERFLAGS) ..
+	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+		$(IMAGE_REC_AUTO_TEST_IMAGE)
+endif
 
 .PHONY: clean
 clean:

@@ -1,0 +1,64 @@
+# Dockerfile used for local debugging, no need for CUDA to be installed
+
+ARG BASE_BUILDER=alpine:3.9
+ARG BASE=nvcr.io/nvidia/tensorrt:20.07.1-py3
+
+# Compile the proto files (using alpine for easy recent protoc
+# install).
+FROM ${BASE_BUILDER} AS builder
+
+WORKDIR /builder
+
+RUN apk --no-cache add \
+    protobuf
+
+COPY common/messages/image_rec.proto \
+    common/messages/imagery.proto \
+    common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    messages/
+
+RUN mkdir dist && protoc --python_out=dist messages/*.proto
+
+# Testing image.
+FROM ${BASE}
+
+WORKDIR /test
+
+RUN apt-get update && apt-get install -y \
+    python3-dev \
+    python3-pip \
+    zlib1g-dev \
+    libjpeg-dev 
+
+RUN python3 -m pip install --upgrade pip
+
+COPY common/python/requirements.txt common/requirements.txt
+COPY image-rec-auto/requirements.txt .
+COPY image-rec-auto/requirements-test.txt .
+
+RUN python3 -m pip install dataclasses pyyaml -r common/requirements.txt \
+    -r requirements.txt \
+    -r requirements-test.txt 
+
+RUN python3 -m pip install \
+    torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+RUN python3 -m pip install \
+    https://github.com/uavaustin/hawk-eye/releases/download/v0.0.1a0/hawk_eye-0.0.1a0-py3-none-any.whl
+
+RUN python3 -m pip install pillow
+
+# Copy the protobuf messages from above.
+COPY --from=builder /builder/dist/messages messages
+
+COPY common/python common
+COPY image-rec-auto/service service
+COPY image-rec-auto/test test
+COPY image-rec-auto/setup.cfg .
+
+ENV PYTHONUNBUFFERED=TRUE
+
+CMD pycodestyle --max-line-length=90 service test \
+    && python3 -m pytest --cov=service test \
+    && coverage html -d coverage/html
