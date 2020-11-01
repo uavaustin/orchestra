@@ -32,6 +32,12 @@ message Position {
     double lon = 2;
 }
 
+message AerialPosition {
+    double lat = 1;
+    double lon = 2;
+    double alt_msl = 3;
+}
+
 // In degrees
 message Rotation {
     // Semantically eqivalent to heading
@@ -114,4 +120,25 @@ message RawMission {
 message MissionCurrent {
     double time = 1;
     uint32 item_number = 2;
+}
+
+message ProcessedTeams {
+    message ProcssedTeam {
+        message TeamTelem {
+            uint32 id = 1;
+            double age_sec = 2;
+            string timestamp = 3;
+            AerialPosition pos = 4;
+            double yaw = 5;
+        }
+        
+        uint32 id = 1;
+        string username = 2;
+        string name = 3;
+        string university = 4;
+        repeated TeamTelem telem_list = 5;
+    }
+
+    double time = 1;
+    repeated Team teams = 2;
 }

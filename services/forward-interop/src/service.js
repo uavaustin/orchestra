@@ -35,7 +35,11 @@ export default class Service {
    */
   constructor(options) {
     this._port = options.port;
+    // For uploading our telemetry data
     this._uploadInterval = options.uploadInterval;
+
+    // For updating other team's telemetry data
+    this._updateInterval = options.updateInterval;
 
     this._telemetryUrl =
       `http://${options.telemetryHost}:${options.telemetryPort}`;
@@ -106,7 +110,7 @@ export default class Service {
         .on('error', logger.error)
         .start();
     this._teamTask = 
-      createTimeoutTask(this._receiveTelem.bind(this), this._teamInterval)
+      createTimeoutTask(this._receiveTelem.bind(this), this._updateInterval)
       .on('error', logger.error)
       .start();
   }
@@ -136,12 +140,14 @@ export default class Service {
     });
   }
 
-  async _teamTask(){
+  // Get the latest telemetry from other teams.
+  async _receiveTelem(){
     logger.debug('Fetching teams.');
     let { body: teams } =
       await request.get(this._interopProxyUrl + '/api/teams')
       .proto(interop.Teams)
       .timeout(1000);
-    
+  
+    updateTeams(teams)  
   }
 }
