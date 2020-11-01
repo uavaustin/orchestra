@@ -8,6 +8,7 @@ import { createTimeoutTask } from './common/task';
 import { interop } from './messages';
 
 import router from './router';
+import TeamMonitor from './teams-monitor';
 import UploadMonitor from './upload-monitor';
 
 addProtobuf(request);
@@ -54,8 +55,9 @@ export default class Service {
   async start() {
     logger.debug('Starting service.');
 
-    this._monitor = new UploadMonitor();
-    this._server = await this._createApi(this._monitor);
+    this._uploadMonitor = new UploadMonitor();
+    this._teamMonitor = new TeamMonitor();
+    this._server = await this._createApi(this._uploadMonitor, teamMonitor);
     this._startTasks();
 
     logger.debug('Service started.');
@@ -67,18 +69,20 @@ export default class Service {
 
     await Promise.all([
       this._server.closeAsync(),
-      this._forwardTask.stop()
+      this._forwardTask.stop(),
+      this._teamTask.stop()
     ]);
 
     logger.debug('Service stopped.');
   }
 
   // Create the koa api and return the http server.
-  async _createApi(monitor) {
+  async _createApi(uploadMonitor, teamMonitor) {
     let app = new Koa();
 
-    // Make the monitor available to the routes.
-    app.context.uploadMonitor = monitor;
+    // Make the monitors available to the routes.
+    app.context.uploadMonitor = uploadMonitor;
+    app.context.teamMonitor = teamMonitor;
 
     app.use(koaLogger());
 
@@ -148,6 +152,6 @@ export default class Service {
       .proto(interop.Teams)
       .timeout(1000);
   
-    updateTeams(teams)  
+    updateTeams(teams);
   }
 }

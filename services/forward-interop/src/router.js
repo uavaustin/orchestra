@@ -15,7 +15,7 @@ router.get('/api/upload-rate', (ctx) => {
 });
 
 router.get('/api/teams', (ctx) => {
-  ctx.proto = null;
+  ctx.proto = ctx.teamMonitor.getTeams();
 });
 
 export default router;
