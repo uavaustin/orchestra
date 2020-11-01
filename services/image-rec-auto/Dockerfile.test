@@ -40,7 +40,8 @@ COPY image-rec-auto/requirements-test.txt .
 RUN python3 -m pip install  -r common/requirements.txt \
     -r requirements.txt \
     -r requirements-test.txt \
-    Cython==0.29.21
+    Cython==0.29.21 \
+    pyyaml==5.3.1
 
 # Install PyTorch. NOTE: here is a thread of the pre-built whls (as of Nov 2020):
 # https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-7-0-now-available/72048
