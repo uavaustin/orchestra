@@ -40,15 +40,7 @@ COPY image-rec-auto/requirements-test.txt .
 RUN python3 -m pip install  -r common/requirements.txt \
     -r requirements.txt \
     -r requirements-test.txt \
-    Cython==0.29.21 \
     pyyaml==5.3.1
-
-# Install PyTorch. NOTE: here is a thread of the pre-built whls (as of Nov 2020):
-# https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-7-0-now-available/72048
-RUN wget https://nvidia.box.com/shared/static/wa34qwrwtk9njtyarwt5nvo6imenfy26.whl \
-    -O torch-1.7.0-cp36-cp36m-linux_aarch64.whl \
-    && python3 -m pip install torch-1.7.0-cp36-cp36m-linux_aarch64.whl \
-    && rm torch-1.7.0-cp36-cp36m-linux_aarch64.whl
 
 ARG HAWK_EYE_VERSION=0.0.1b0
 RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v${HAWK_EYE_VERSION}/hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
