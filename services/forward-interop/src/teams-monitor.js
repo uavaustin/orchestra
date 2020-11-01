@@ -1,5 +1,5 @@
 import { interop, stats } from './messages';
-
+import LinkedList from 'linkedlist';
 
 /**
  * Provides team telemetry information for the tanstar service.
@@ -13,14 +13,75 @@ export default class TeamMonitor {
     /**
      * Create a new TeamMonitor.
      */
-    constructor() {
-      this._times1 = [];
-      this._fresh1 = [];
-  
-      this._times5 = [];
-      this._fresh5 = [];
-  
-      this._last = null;
+    constructor(telemLength) {
+      this._teams = Map();
+      this._telemLength = telemLength;
+    }
+
+    updateTeams(interopTeams) {
+      let mapping = this._teams;
+      for (let interopTeam of interopTeams) {
+        
+        // Generalized function for assigning, in case
+        // we want to add more stuff to keep track of
+        const assignProps = (obj, ...props) => {
+          let assignee = {};
+          for (let prop of props) {
+            assignee[prop] = obj[prop];
+          }
+          return assignee;
+        };
+        
+        let teamID = assignProps(
+          interopTeam, 
+          'id', 
+          'username', 
+          'name', 
+          'university'
+        );
+        
+        let telemDeque;
+        // Hash key using stringified JSON, do not track if not in air
+        if (mapping.has(JSON.stringify(teamID) && interopTeam.in_air)) {
+          // Not the first time receiving info about the team, update
+          telemDeque = mapping.get(teamID.toString());
+          this._addTelem(telemDeque, interopTeams.telem);
+        } else if (interopTeam.in_air) {
+          // First time receiving info, new list
+          telemDeque = new LinkedList();
+          telemDeque.push(interopTeams.telem);
+          mapping.set(teamID.toString(), telemDeque);
+        }
+      }
+    }
+
+    _addTelem(telemDeque, teamTelem){
+      // Check for uniqueness
+      const checkUnique = (obj1, obj2, ...props) => {
+        for (let prop of props){
+          if (obj1[prop] == obj2[prop])
+            return false;
+        }
+        return true;
+      }
+
+      // Check between this teamTelem and the most recent teamTelem
+      // which is always at the head of the linked list.
+      fresh = checkUnique(
+        teamTelem, 
+        telemDeque.head, 
+        'id', 
+        'age_sec', 
+        'timestamp'
+      );
+      if (!fresh)
+        return;
+    
+      // Check if telemetry data is too long, if so, then trim
+      if (telemDeque.length > this._telemLength)
+        telemDeque.pop();
+      telemDeque.shift(teamTelem);
+
     }
   
     /**
