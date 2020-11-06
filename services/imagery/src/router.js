@@ -15,20 +15,22 @@ router.get('/api/alive', (ctx) => {
 router.get('/api/start-capture', async (ctx) => {
   if(!ctx.backend.getActive()){
     await ctx.backend.start();
-    ctx.body = 'Image capture started.\n'
+    ctx.body = 'Image capture started.\n';
   }
   else{
-    ctx.body = 'Image capture is already running.\n'
+    ctx.status = 100;
+    ctx.body = 'Image capture is already running.\n';
   }
 });
 
 router.get('/api/stop-capture', async (ctx) => {
   if(ctx.backend.getActive()){
     await ctx.backend.stop();
-    ctx.body = 'Image capture stopped.\n'
+    ctx.body = 'Image capture stopped.\n';
   }
   else{
-    ctx.body = 'Image capture is not running.\n'
+    ctx.status = 100;
+    ctx.body = 'Image capture is not running.\n';
   }
 });
 
