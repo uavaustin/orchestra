@@ -91,10 +91,8 @@ export default class Service {
       this._backend = new SyncBackend(this._imageStore, this._imagerySyncUrl);
     }
 
-    // Start up the backend.
-    await this._backend.start();
-
-    this._server = await this._createApi(this._imageStore);
+    //Start the server
+    this._server = await this._createApi(this._imageStore, this._backend);
 
     logger.debug('Service started.');
   }
@@ -103,7 +101,6 @@ export default class Service {
   async stop() {
     logger.debug('Stopping service.');
 
-    await this._backend.stop();
     await this._server.closeAsync();
 
     this._server = null;
@@ -112,11 +109,12 @@ export default class Service {
   }
 
   // Create the koa api and return the http server.
-  async _createApi(imageStore) {
+  async _createApi(imageStore, backend) {
     let app = new Koa();
 
     // Make the image store available to the routes.
     app.context.imageStore = imageStore;
+    app.context.backend = backend;
 
     app.use(koaLogger());
 

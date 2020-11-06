@@ -164,4 +164,8 @@ export default class CameraBaseBackend {
     // from rotating it.
     return await removeOrientation(photo);
   }
+
+  getActive() {
+    return this._active;
+  }
 }
