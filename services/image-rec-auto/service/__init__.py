@@ -3,6 +3,7 @@
 import io
 import logging
 import time
+import pathlib
 
 import inflect
 import PIL.Image
@@ -53,8 +54,8 @@ class Service:
         logging.info('retreived image in {:d} ms'.format(t_2 - t_1))
 
         # Getting targets in our set of blobs (if there are any).
-        targets = find_targets.find_targets(image, self.clf_model, self.det_model)
-
+        targets, _tiles = \
+            find_targets.find_targets(image, self.clf_model, self.det_model)
         t_3 = util.curr_time()
         logging.info('{:d} targets found in {:d} ms'.format(len(targets),
                                                             t_3 - t_2))
