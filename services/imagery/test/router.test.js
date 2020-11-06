@@ -36,7 +36,8 @@ test('turn image capture on with GET /api/start-capture', async () => {
   try {
     // Subtest: 200 OK when image capture is off
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(false)
+      getActive: jest.fn().mockReturnValueOnce(false),
+      start: jest.fn()
     };
     await request(server)
       .get('/api/start-capture')
@@ -44,7 +45,8 @@ test('turn image capture on with GET /api/start-capture', async () => {
 
     // Subtest: 100 Continue when image capture is already on
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(true)
+      getActive: jest.fn().mockReturnValueOnce(false),
+      start: jest.fn()
     };
     await request(server)
       .get('api/start-capture')
@@ -65,7 +67,8 @@ test('turn image capture off with GET /api/stop-capture', async () => {
   try {
     // Subtest: 200 OK when image capture is on
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(true)
+      getActive: jest.fn().mockReturnValueOnce(false),
+      start: jest.fn()
     };
     await request(server)
       .get('/api/stop-capture')
@@ -73,7 +76,8 @@ test('turn image capture off with GET /api/stop-capture', async () => {
 
     // Subtest: 100 Continue when image capture is already off
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(false)
+      getActive: jest.fn().mockReturnValueOnce(false),
+      start: jest.fn()
     };
     await request(server)
       .get('api/stop-capture')
