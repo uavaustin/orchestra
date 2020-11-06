@@ -12,25 +12,25 @@ router.get('/api/alive', (ctx) => {
   ctx.body = 'Howdy.\n';
 });
 
-router.get('/api/start-capture', async (ctx) => {
-  if(!ctx.backend.getActive()){
+router.post('/api/start-capture', async (ctx) => {
+  if (!ctx.backend.getActive()) {
     await ctx.backend.start();
-    ctx.body = 'Image capture started.\n';
-  }
-  else{
-    ctx.status = 100;
-    ctx.body = 'Image capture is already running.\n';
+    ctx.body = 'Automatic image capture started.\n';
+    ctx.status = 200;
+  } else {
+    ctx.body = 'Automatic image capture already running.\n';
+    ctx.status = 200;
   }
 });
 
-router.get('/api/stop-capture', async (ctx) => {
-  if(ctx.backend.getActive()){
+router.post('/api/stop-capture', async (ctx) => {
+  if (ctx.backend.getActive()) {
     await ctx.backend.stop();
-    ctx.body = 'Image capture stopped.\n';
-  }
-  else{
-    ctx.status = 100;
-    ctx.body = 'Image capture is not running.\n';
+    ctx.body = 'Automatic image capture stopped.\n';
+    ctx.status = 200;
+  } else {
+    ctx.body = 'Automatic image capture not running.\n';
+    ctx.status = 200;
   }
 });
 

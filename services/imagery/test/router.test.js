@@ -25,7 +25,7 @@ test('get text with GET /api/alive', async () => {
   }
 });
 
-test('turn image capture on with GET /api/start-capture', async () => {
+test('turn image capture on with POST /api/start-capture', async () => {
   const app = new Koa();
 
   app.use(router.routes());
@@ -36,27 +36,26 @@ test('turn image capture on with GET /api/start-capture', async () => {
   try {
     // Subtest: 200 OK when image capture is off
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(false),
-      start: jest.fn()
+      getActive: jest.fn().mockReturnValue(false),
+      start: jest.fn().mockResolvedValue()
     };
     await request(server)
-      .get('/api/start-capture')
+      .post('/api/start-capture')
       .expect(200, /.+\.\n/);
 
     // Subtest: 100 Continue when image capture is already on
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(false),
-      start: jest.fn()
+      getActive: jest.fn().mockReturnValue(true)
     };
     await request(server)
-      .get('api/start-capture')
-      .expect(100, /.+\.\n/);
+      .post('/api/start-capture')
+      .expect(200, /.+\.\n/);
   } finally {
     await new Promise(resolve => server.close(() => resolve()));
   }
 });
 
-test('turn image capture off with GET /api/stop-capture', async () => {
+test('turn image capture off with POST /api/stop-capture', async () => {
   const app = new Koa();
 
   app.use(router.routes());
@@ -67,21 +66,20 @@ test('turn image capture off with GET /api/stop-capture', async () => {
   try {
     // Subtest: 200 OK when image capture is on
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(false),
-      start: jest.fn()
+      getActive: jest.fn().mockReturnValue(true),
+      stop: jest.fn().mockResolvedValue()
     };
     await request(server)
-      .get('/api/stop-capture')
+      .post('/api/stop-capture')
       .expect(200, /.+\.\n/);
 
     // Subtest: 100 Continue when image capture is already off
     app.context.backend = {
-      getActive: jest.fn().mockReturnValueOnce(false),
-      start: jest.fn()
+      getActive: jest.fn().mockReturnValue(false)
     };
     await request(server)
-      .get('api/stop-capture')
-      .expect(100, /.+\.\n/);
+      .post('/api/stop-capture')
+      .expect(200, /.+\.\n/);
   } finally {
     await new Promise(resolve => server.close(() => resolve()));
   }
