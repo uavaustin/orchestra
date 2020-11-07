@@ -1,26 +1,29 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
+JETSON ?= "true"
 
 IMAGE_REC_AUTO_IMAGE      := uavaustin/image-rec-auto
 IMAGE_REC_AUTO_TEST_IMAGE := uavaustin/image-rec-auto-test
 
 current_dir := $(shell pwd)
-UNAME_P := $(shell uname -p)
 
 .PHONY: all
 all: image
 
 .PHONY: image
 image:
-ifeq ($(UNAME_P),x86_64)
-	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-endif
 	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
 
 .PHONY: test
 test:
-	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -it --rm --runtime nvidia -v $(current_dir)/coverage:/test/coverage \
+ifeq "$(JETSON)" "true"
+	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
+		--build-arg BASE=vcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3  $(DOCKERFLAGS) ..
+else
+	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
+		--build-arg BASE=nvcr.io/nvidia/pytorch:20.10-py3  $(DOCKERFLAGS) ..
+endif
+	docker run -it --ipc=host --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 
 .PHONY: clean

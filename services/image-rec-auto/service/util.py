@@ -13,7 +13,7 @@ EARTH_ECCEN = 0.0818191
 
 def curr_time() -> int:
     """Return the current time in ms."""
-    return int(time.time() * 1000)
+    return int(time.perf_counter() * 1000)
 
 
 def get_odlc(image, image_telem, target):
@@ -94,8 +94,11 @@ def _get_fov(pillow_image):
 
 def _get_earth_radii(lat):
     """Earth radii north/south and east/west."""
-    r_1 = (EARTH_RADIUS * (1 - EARTH_ECCEN ** 2) /
-           (1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2) ** (3 / 2))
+    r_1 = (
+        EARTH_RADIUS
+        * (1 - EARTH_ECCEN ** 2)
+        / (1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2) ** (3 / 2)
+    )
     r_2 = EARTH_RADIUS / sqrt(1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2)
 
     return r_1, r_2
@@ -108,8 +111,16 @@ def _convert_orientation(image_telem, orientation):
     else:
         value = orientation
 
-    directions = [Odlc.NORTH, Odlc.NORTHEAST, Odlc.EAST, Odlc.SOUTHEAST,
-                  Odlc.SOUTH, Odlc.SOUTHWEST, Odlc.WEST, Odlc.NORTHWEST]
+    directions = [
+        Odlc.NORTH,
+        Odlc.NORTHEAST,
+        Odlc.EAST,
+        Odlc.SOUTHEAST,
+        Odlc.SOUTH,
+        Odlc.SOUTHWEST,
+        Odlc.WEST,
+        Odlc.NORTHWEST,
+    ]
     return directions[round(value / 45) % 8]
 
 
@@ -132,9 +143,9 @@ def _convert_color(color):
 def _image_to_bytes(image):
     """Convert a Pillow image to bytes."""
     if image is None:
-        return b''
+        return b""
 
     buffer = io.BytesIO()
-    image.save(buffer, format='JPEG')
+    image.save(buffer, format="JPEG")
 
     return buffer.getvalue()

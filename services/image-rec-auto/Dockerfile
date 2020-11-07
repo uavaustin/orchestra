@@ -27,9 +27,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
     python3-dev \
-    python3-pip \
-    zlib1g-dev \
-    libjpeg-dev 
+    python3-pip
 
 RUN python3 -m pip install --upgrade pip 
 
@@ -37,11 +35,6 @@ COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
 
 RUN python3 -m pip install  -r common/requirements.txt -r requirements.txt
-# Install PyTorch
-RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.whl \
-    -O  torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
-    && python3 -m pip install torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
-    && rm torch-1.6.0-cp36-cp36m-linux_aarch64.whl
 
 RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v0.0.1b0/hawk_eye-0.0.1b0-py3-none-any.whl \
     -O  hawk_eye-0.0.1b0-py3-none-any.whl \

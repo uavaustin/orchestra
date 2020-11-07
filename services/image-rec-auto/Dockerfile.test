@@ -24,14 +24,9 @@ FROM ${BASE}
 WORKDIR /test
 
 RUN apt-get update && apt-get install -y \
-    python3-dev \
-    python3-pip \
-    zlib1g-dev \
-    libjpeg-dev \
-    libopenblas-base \
-    libopenmpi-dev 
+    python3-dev
 
-RUN python3 -m pip install --upgrade pip
+RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && python3 get-pip.py
 
 COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
@@ -44,7 +39,7 @@ RUN python3 -m pip install  -r common/requirements.txt \
 
 ARG HAWK_EYE_VERSION=0.0.1b0
 RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v${HAWK_EYE_VERSION}/hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
-    -O  hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
+    -O hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
     && python3 -m pip install hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
     && rm hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl
 
@@ -58,6 +53,6 @@ COPY image-rec-auto/setup.cfg .
 
 ENV PYTHONUNBUFFERED=TRUE
 
-CMD pycodestyle --max-line-length=90 service test \
+CMD flake8 --max-line-length=90 service test \
     && python3 -m pytest --cov=service test \
     && coverage html -d coverage/html
