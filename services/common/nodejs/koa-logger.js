@@ -10,6 +10,9 @@ export default function koaLogger() {
     await next();
 
     let time = Date.now() - start;
+    let timeStamp = new Date(Date.now());
+    timeStamp = timeStamp.toString().
+    substring(0, timeStamp.toString().indexOf("GMT")) + "CST";
 
     let statusColor;
 
@@ -23,6 +26,6 @@ export default function koaLogger() {
 
     let status = statusColor(ctx.status.toString());
 
-    logger.info(`${ctx.method} ${ctx.originalUrl} - ${status} in ${time} ms`);
+    logger.info(`${ctx.method} ${ctx.originalUrl} - ${status} in ${time} ms on ${timeStamp}`);
   };
 }
