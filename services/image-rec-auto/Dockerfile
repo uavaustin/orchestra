@@ -43,10 +43,10 @@ RUN wget https://nvidia.box.com/shared/static/9eptse6jyly1ggt9axbja2yrmj6pbarc.w
     && python3 -m pip install torch-1.6.0-cp36-cp36m-linux_aarch64.whl \
     && rm torch-1.6.0-cp36-cp36m-linux_aarch64.whl
 
-RUN wget https://github.com/uavaustin/hawk-eye/releases/download/0.0.1a0/hawk_eye-0.0.1a0-py3-none-any.whl \
-    -O  hawk_eye-0.0.1a0-py3-none-any.whl \
-    && python3 -m pip install hawk_eye-0.0.1a0-py3-none-any.whl \
-    && rm hawk_eye-0.0.1a0-py3-none-any.whl
+RUN wget https://github.com/uavaustin/hawk-eye/releases/download/0.0.2a0/hawk_eye-0.0.2a0-py3-none-any.whl \
+    -O  hawk_eye-0.0.2a0-py3-none-any.whl \
+    && python3 -m pip install hawk_eye-0.0.2a0-py3-none-any.whl \
+    && rm hawk_eye-0.0.2a0-py3-none-any.whl
 
 # Copy the protobuf messages from above.
 COPY --from=builder /builder/dist/messages messages
