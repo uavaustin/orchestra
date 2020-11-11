@@ -58,7 +58,8 @@ class Service:
         logging.info(f"retreived image in {t_2 - t_1:d} ms")
 
         # Getting targets in our set of blobs (if there are any).
-        targets = find_targets.find_targets(image, self.clf_model, self.det_model)
+        targets, tiles = \
+            find_targets.find_targets(image, self.clf_model, self.det_model)
 
         t_3 = util.curr_time()
         logging.info(f"{len(targets)} targets found in {t_3 - t_2:d} ms")
