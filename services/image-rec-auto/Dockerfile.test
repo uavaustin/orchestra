@@ -43,7 +43,7 @@ RUN python3 -m pip install \
     torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 RUN python3 -m pip install \
-    https://github.com/uavaustin/hawk-eye/releases/download/v0.0.1a0/hawk_eye-0.0.1a0-py3-none-any.whl
+    https://github.com/uavaustin/hawk-eye/releases/download/v0.0.2a0/hawk_eye-0.0.2a0-py3-none-any.whl
 
 RUN python3 -m pip install pillow
 
