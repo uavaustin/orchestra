@@ -39,17 +39,20 @@ test('turn image capture on with POST /api/start-capture', async () => {
       getActive: jest.fn().mockReturnValue(false),
       start: jest.fn().mockResolvedValue()
     };
-    await request(server)
-      .post('/api/start-capture')
-      .expect(200, /.+\.\n/);
 
-    // Subtest: 100 Continue when image capture is already on
+    let res = await request(server).post('/api/start-capture');
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual('Automatic image capture started.\n');
+
+    // Subtest: 200 OK when image capture is already on
     app.context.backend = {
       getActive: jest.fn().mockReturnValue(true)
     };
-    await request(server)
-      .post('/api/start-capture')
-      .expect(200, /.+\.\n/);
+
+    res = await request(server).post('/api/start-capture');
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual('Automatic image capture already running.\n');
+
   } finally {
     await new Promise(resolve => server.close(() => resolve()));
   }
@@ -69,17 +72,20 @@ test('turn image capture off with POST /api/stop-capture', async () => {
       getActive: jest.fn().mockReturnValue(true),
       stop: jest.fn().mockResolvedValue()
     };
-    await request(server)
-      .post('/api/stop-capture')
-      .expect(200, /.+\.\n/);
 
-    // Subtest: 100 Continue when image capture is already off
+    let res = await request(server).post('/api/stop-capture');
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual('Automatic image capture stopped.\n');
+
+    // Subtest: 200 OK when image capture is already off
     app.context.backend = {
       getActive: jest.fn().mockReturnValue(false)
     };
-    await request(server)
-      .post('/api/stop-capture')
-      .expect(200, /.+\.\n/);
+
+    res = await request(server).post('/api/stop-capture');
+    expect(res.status).toEqual(200);
+    expect(res.text).toEqual('Automatic image capture not running.\n');
+
   } finally {
     await new Promise(resolve => server.close(() => resolve()));
   }

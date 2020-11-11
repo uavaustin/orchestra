@@ -22,11 +22,13 @@ export default class SyncBackend {
     this._imageStore = imageStore;
     this._syncUrl = syncUrl;
     this._task = null;
+    this._active = false;
   }
 
   /** Start the sync loop in the background. */
   async start() {
     await this._runLoop();
+    this._active = true;
   }
 
   async stop() {
@@ -34,6 +36,7 @@ export default class SyncBackend {
       throw Error('backend is not running');
 
     await this._task.stop();
+    this._active = false;
     this._task = null;
   }
 
@@ -95,5 +98,9 @@ export default class SyncBackend {
         .timeout(5000);
 
     return image;
+  }
+
+  getActive() {
+    return this._active;
   }
 }

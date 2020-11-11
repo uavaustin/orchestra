@@ -94,6 +94,11 @@ export default class Service {
     //Start the server
     this._server = await this._createApi(this._imageStore, this._backend);
 
+    //If backend is a file or sync backend, start backend immediately
+    if (this._backendType == 'file' || this._backendType == 'sync') {
+      this._backend.start();
+    }
+
     logger.debug('Service started.');
   }
 
@@ -101,6 +106,9 @@ export default class Service {
   async stop() {
     logger.debug('Stopping service.');
 
+    if (this._backend.getActive()) {
+      await this._backend.stop();
+    }
     await this._server.closeAsync();
 
     this._server = null;

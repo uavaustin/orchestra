@@ -23,13 +23,14 @@ export default class FileBackend {
   /** Create a new file backend. */
   constructor(imageStore) {
     this._imageStore = imageStore;
+    this._active = false;
   }
 
   /** Watches a folder and adds new images to the image store. */
   async start() {
     // Creates an empty directory to watch if it doesn't exist.
     await fs.mkdirp(WATCH_FOLDER_NAME);
-
+    this._active = true;
     this._watcher = chokidar.watch(WATCH_FOLDER_NAME)
       .on('add', async (path) => {
         try {
@@ -43,7 +44,8 @@ export default class FileBackend {
 
   /** Stop watching files. */
   async stop() {
-    this._watcher.close();
+    await this._watcher.close();
+    this._active = false;
   }
 
   async _handleFile(path) {
@@ -73,5 +75,9 @@ export default class FileBackend {
 
     // Add it to the image store.
     await this._imageStore.addImage(data, metadata);
+  }
+
+  getActive() {
+    return this._active;
   }
 }
