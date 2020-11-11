@@ -16,16 +16,11 @@ def test_target_rec():
 
     def mock_queue(image_id, _image_proto, _image, targets):
         assert image_id == 0
-        print('')
-        pprint(targets)
-        # assert len(targets) == 1
+        assert len(targets) == 1
 
-        # target = targets[0]
-        # assert target is not None
-        # assert target.alphanumeric == 'A'
-        # assert target.background_color == types.Color.BLUE
-        # assert target.alphanumeric_color == types.Color.ORANGE
-        # assert target.shape == types.Shape.CIRCLE
+        target = targets[0]
+        assert target is not None
+        assert target.shape == types.Shape.QUARTER_CIRCLE
 
     with patch('service.Service._get_next_id') as task_1, \
             patch('service.Service._get_image') as task_2, \
