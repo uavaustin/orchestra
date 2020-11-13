@@ -1,5 +1,3 @@
-// NOTE: This is copied from the Rust pathfinder.
-
 // A wrapper for transferring location data between Rust and Wasm/JS.
 module.exports.LocationWrapper = class LocationWrapper {
   /**
