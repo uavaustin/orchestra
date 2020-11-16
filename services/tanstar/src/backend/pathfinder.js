@@ -2,7 +2,7 @@
 
 // TODO: Find a better way to reference this stuff
 const pf = require('./pkg'); // Pathfinder
-const pfWraps = require('./pkg/snippets/pathfinder-c95de41a900aea80/src/wrap/pfwrapper.js'); // Pathfinder wrappers
+const pfWraps = require('./pfwrapper.js'); // Pathfinder wrappers
 
 // DEBUG
 // Allows viewing of Rust panics

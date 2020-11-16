@@ -18,7 +18,6 @@ try {
     new pfWraps.ObstacleWrapper(new pfWraps.LocationWrapper(-5, -5, 0), 5, 10),
     new pfWraps.ObstacleWrapper(new pfWraps.LocationWrapper(5.5, 5.5, 0.0), 3.5, 50.5)
   ];
-  console.log("Obstacles: ", obstacles);
   // Create a plane utilizing defaults for most of its telemetry
   console.log("  Testing creation of PlaneWrapper.");
   var plane = new pfWraps.PlaneWrapper(new pfWraps.LocationWrapper(0, 0, 0));
@@ -28,7 +27,6 @@ try {
 
   console.log();
 
-  // TODO: Lots of the data is getting converted to NaN on the Rust side, which needs to be fixed
   console.log("Testing methods.");
   // Pathfinder#setField
   console.log("  Testing Pathfinder#setField.");
@@ -44,11 +42,10 @@ try {
     new pfWraps.WaypointWrapper(new pfWraps.LocationWrapper(8, 0, 5), 0.1),
     new pfWraps.WaypointWrapper(new pfWraps.LocationWrapper(5.2, -5, 8), 0.1)
   ];
-//  console.log("rawPath: ", rawPath); // DEBUG
   var adjustedPath = pathfinder.getAdjustedPath(rawPath);
 //  console.log("    Unchanged valid path: ", rawPath == adjustedPath); TODO: Test if correct path is outputted
 
-  console.log("Done.");
+  console.log("\nDone.");
 } catch (e) {
   console.log(e);
 }

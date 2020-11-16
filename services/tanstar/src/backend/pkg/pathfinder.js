@@ -45,35 +45,8 @@ function addHeapObject(obj) {
     const idx = heap_next;
     heap_next = heap[idx];
 
-    if (typeof(heap_next) !== 'number') throw new Error('corrupt heap');
-
     heap[idx] = obj;
     return idx;
-}
-
-function logError(f) {
-    return function () {
-        try {
-            return f.apply(this, arguments);
-
-        } catch (e) {
-            let error = (function () {
-                try {
-                    return e instanceof Error ? `${e.message}\n\nStack:\n${e.stack}` : e.toString();
-                } catch(_) {
-                    return "<failed to stringify thrown value>";
-                }
-            }());
-            console.error("wasm-bindgen: imported JS function that was not marked as `catch` threw an error:", error);
-            throw e;
-        }
-    };
-}
-
-function _assertBoolean(n) {
-    if (typeof(n) !== 'boolean') {
-        throw new Error('expected a boolean argument');
-    }
 }
 
 function _assertClass(instance, klass) {
@@ -81,44 +54,6 @@ function _assertClass(instance, klass) {
         throw new Error(`expected instance of ${klass.name}`);
     }
     return instance.ptr;
-}
-
-function _assertNum(n) {
-    if (typeof(n) !== 'number') throw new Error('expected a number argument');
-}
-/**
-*/
-module.exports.init_panic_hook = function() {
-    wasm.init_panic_hook();
-};
-
-let WASM_VECTOR_LEN = 0;
-
-let cachegetNodeBufferMemory0 = null;
-function getNodeBufferMemory0() {
-    if (cachegetNodeBufferMemory0 === null || cachegetNodeBufferMemory0.buffer !== wasm.memory.buffer) {
-        cachegetNodeBufferMemory0 = Buffer.from(wasm.memory.buffer);
-    }
-    return cachegetNodeBufferMemory0;
-}
-
-function passStringToWasm0(arg, malloc) {
-
-    if (typeof(arg) !== 'string') throw new Error('expected a string argument');
-
-    const len = Buffer.byteLength(arg);
-    const ptr = malloc(len);
-    getNodeBufferMemory0().write(arg, ptr, len);
-    WASM_VECTOR_LEN = len;
-    return ptr;
-}
-
-let cachegetInt32Memory0 = null;
-function getInt32Memory0() {
-    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
-        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
-    }
-    return cachegetInt32Memory0;
 }
 /**
 * A wrapper for `wasm-bindgen` to interact with
@@ -149,9 +84,6 @@ class PathfinderWrapper {
     */
     constructor(algo, config, flyzones, obstacles) {
         _assertClass(algo, Tanstar);
-        if (algo.ptr === 0) {
-            throw new Error('Attempt to use a moved value');
-        }
         var ptr0 = algo.ptr;
         algo.ptr = 0;
         var ret = wasm.pathfinderwrapper_new(ptr0, addHeapObject(config), addHeapObject(flyzones), addHeapObject(obstacles));
@@ -163,60 +95,46 @@ class PathfinderWrapper {
     * @returns {Array<any>}
     */
     getAdjustPath(plane, wp_list) {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
         var ret = wasm.pathfinderwrapper_getAdjustPath(this.ptr, addHeapObject(plane), addHeapObject(wp_list));
         return takeObject(ret);
     }
     /**
     * @param {any} config
     */
-    set config(config) {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
-        wasm.pathfinderwrapper_set_config(this.ptr, addHeapObject(config));
+    setConfig(config) {
+        wasm.pathfinderwrapper_setConfig(this.ptr, addHeapObject(config));
     }
     /**
     * @param {Array<any>} flyzone
     */
-    set flyzone(flyzone) {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
-        wasm.pathfinderwrapper_set_flyzone(this.ptr, addHeapObject(flyzone));
+    setFlyzone(flyzone) {
+        wasm.pathfinderwrapper_setFlyzone(this.ptr, addHeapObject(flyzone));
     }
     /**
     * @param {Array<any>} obstacles
     */
-    set obstacles(obstacles) {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
-        wasm.pathfinderwrapper_set_obstacles(this.ptr, addHeapObject(obstacles));
+    setObstacles(obstacles) {
+        wasm.pathfinderwrapper_setObstacles(this.ptr, addHeapObject(obstacles));
     }
     /**
     * @returns {any}
     */
-    get get_config() {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
-        var ret = wasm.pathfinderwrapper_get_config(this.ptr);
+    get getConfig() {
+        var ret = wasm.pathfinderwrapper_getConfig(this.ptr);
         return takeObject(ret);
     }
     /**
     * @returns {Array<any>}
     */
-    get get_flyzone() {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
-        var ret = wasm.pathfinderwrapper_get_flyzone(this.ptr);
+    getFlyzone() {
+        var ret = wasm.pathfinderwrapper_getFlyzone(this.ptr);
         return takeObject(ret);
     }
     /**
     * @returns {Array<any>}
     */
-    get get_obstacle() {
-        if (this.ptr == 0) throw new Error('Attempt to use a moved value');
-        _assertNum(this.ptr);
-        var ret = wasm.pathfinderwrapper_get_obstacle(this.ptr);
+    getObstacle() {
+        var ret = wasm.pathfinderwrapper_getObstacle(this.ptr);
         return takeObject(ret);
     }
 }
@@ -224,10 +142,6 @@ module.exports.PathfinderWrapper = PathfinderWrapper;
 /**
 */
 class Tanstar {
-
-    constructor() {
-        throw new Error('cannot invoke `new` directly');
-    }
 
     static __wrap(ptr) {
         const obj = Object.create(Tanstar.prototype);
@@ -263,178 +177,154 @@ class Tanstar {
 }
 module.exports.Tanstar = Tanstar;
 
-module.exports.__wbg_newlocationwrapper_2aa3cd4e7b2493ec = logError(function(arg0, arg1, arg2) {
-    var ret = new LocationWrapper(arg0, arg1, arg2);
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_getlat_711eb4305bc9ce6e = logError(function(arg0) {
-    var ret = getObject(arg0).get_lat;
+module.exports.__wbg_getLat_711eb4305bc9ce6e = function(arg0) {
+    var ret = getObject(arg0).getLat();
     return ret;
-});
+};
 
-module.exports.__wbg_getlon_bd5f57f9bd021eb7 = logError(function(arg0) {
-    var ret = getObject(arg0).get_lon;
+module.exports.__wbg_getLon_bd5f57f9bd021eb7 = function(arg0) {
+    var ret = getObject(arg0).getLon();
     return ret;
-});
+};
 
-module.exports.__wbg_getalt_7eb108d851f99ebc = logError(function(arg0) {
-    var ret = getObject(arg0).get_alt;
+module.exports.__wbg_getAlt_7eb108d851f99ebc = function(arg0) {
+    var ret = getObject(arg0).getAlt();
     return ret;
-});
-
-module.exports.__wbg_newobstaclewrapper_6625bc8225196bec = logError(function(arg0, arg1, arg2) {
-    var ret = new ObstacleWrapper(getObject(arg0), arg1, arg2);
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_location_acb4d002c6256261 = logError(function(arg0) {
-    var ret = getObject(arg0).location;
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_radius_4e3b19e9e7f5d873 = logError(function(arg0) {
-    var ret = getObject(arg0).radius;
-    return ret;
-});
-
-module.exports.__wbg_getheight_de080252c226accb = logError(function(arg0) {
-    var ret = getObject(arg0).get_height;
-    return ret;
-});
-
-module.exports.__wbg_location_7105d9dbe1904c04 = logError(function(arg0) {
-    var ret = getObject(arg0).location;
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_getyaw_9831d31e91fe3748 = logError(function(arg0) {
-    var ret = getObject(arg0).get_yaw;
-    return ret;
-});
-
-module.exports.__wbg_getpitch_72337219bc2967e0 = logError(function(arg0) {
-    var ret = getObject(arg0).get_pitch;
-    return ret;
-});
-
-module.exports.__wbg_getroll_9a252f7ff3a6db22 = logError(function(arg0) {
-    var ret = getObject(arg0).get_roll;
-    return ret;
-});
-
-module.exports.__wbg_getairspeed_c0e3c1ab2d9af9ae = logError(function(arg0) {
-    var ret = getObject(arg0).get_airspeed;
-    return ret;
-});
-
-module.exports.__wbg_getgroundspeed_f900cb327243e6e0 = logError(function(arg0) {
-    var ret = getObject(arg0).get_groundspeed;
-    return ret;
-});
-
-module.exports.__wbg_windDir_ca84b18a6503665a = logError(function(arg0) {
-    var ret = getObject(arg0).windDir;
-    return ret;
-});
-
-module.exports.__wbg_newtconfigwrapper_5a6f8dca35c8f7bb = logError(function(arg0, arg1, arg2, arg3, arg4) {
-    var ret = new TConfigWrapper(arg0, arg1, arg2, arg3, arg4 !== 0);
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_bufferSize_104973b4831e1fe3 = logError(function(arg0) {
-    var ret = getObject(arg0).bufferSize;
-    return ret;
-});
-
-module.exports.__wbg_maxProcessTime_2490b8fcc951a320 = logError(function(arg0) {
-    var ret = getObject(arg0).maxProcessTime;
-    return ret;
-});
-
-module.exports.__wbg_turningRadius_6b56a698e93f971d = logError(function(arg0) {
-    var ret = getObject(arg0).turningRadius;
-    return ret;
-});
-
-module.exports.__wbg_vertexMergeThreshold_c610bcaf3fcc5975 = logError(function(arg0) {
-    var ret = getObject(arg0).vertexMergeThreshold;
-    return ret;
-});
-
-module.exports.__wbg_virtualizeFlyzone_54e264050501732c = logError(function(arg0) {
-    var ret = getObject(arg0).virtualizeFlyzone;
-    _assertBoolean(ret);
-    return ret;
-});
-
-module.exports.__wbg_newwaypointwrapper_aa834bd0d9211732 = logError(function(arg0, arg1) {
-    var ret = new WaypointWrapper(getObject(arg0), arg1);
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_location_45306164486525e1 = logError(function(arg0) {
-    var ret = getObject(arg0).location;
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_radius_9e24b0143cefcdf0 = logError(function(arg0) {
-    var ret = getObject(arg0).radius;
-    return ret;
-});
-
-module.exports.__wbg_new_e13110f81ae347cf = logError(function() {
-    var ret = new Array();
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_get_27693110cb44e852 = logError(function(arg0, arg1) {
-    var ret = getObject(arg0)[arg1 >>> 0];
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_from_2a5d647e62275bfd = logError(function(arg0) {
-    var ret = Array.from(getObject(arg0));
-    return addHeapObject(ret);
-});
-
-module.exports.__wbg_length_079c4e509ec6d375 = logError(function(arg0) {
-    var ret = getObject(arg0).length;
-    _assertNum(ret);
-    return ret;
-});
-
-module.exports.__wbg_push_b46eeec52d2b03bb = logError(function(arg0, arg1) {
-    var ret = getObject(arg0).push(getObject(arg1));
-    _assertNum(ret);
-    return ret;
-});
+};
 
 module.exports.__wbindgen_object_drop_ref = function(arg0) {
     takeObject(arg0);
 };
 
-module.exports.__wbg_error_4bb6c2a97407129a = logError(function(arg0, arg1) {
-    try {
-        console.error(getStringFromWasm0(arg0, arg1));
-    } finally {
-        wasm.__wbindgen_free(arg0, arg1);
-    }
-});
-
-module.exports.__wbg_new_59cb74e423758ede = logError(function() {
-    var ret = new Error();
+module.exports.__wbg_getLocation_acb4d002c6256261 = function(arg0) {
+    var ret = getObject(arg0).getLocation();
     return addHeapObject(ret);
-});
+};
 
-module.exports.__wbg_stack_558ba5917b466edd = logError(function(arg0, arg1) {
-    var ret = getObject(arg1).stack;
-    var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    var len0 = WASM_VECTOR_LEN;
-    getInt32Memory0()[arg0 / 4 + 1] = len0;
-    getInt32Memory0()[arg0 / 4 + 0] = ptr0;
-});
+module.exports.__wbg_getRadius_4e3b19e9e7f5d873 = function(arg0) {
+    var ret = getObject(arg0).getRadius();
+    return ret;
+};
+
+module.exports.__wbg_getHeight_de080252c226accb = function(arg0) {
+    var ret = getObject(arg0).getHeight();
+    return ret;
+};
+
+module.exports.__wbg_getLocation_45306164486525e1 = function(arg0) {
+    var ret = getObject(arg0).getLocation();
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_getRadius_9e24b0143cefcdf0 = function(arg0) {
+    var ret = getObject(arg0).getRadius();
+    return ret;
+};
+
+module.exports.__wbg_newtconfigwrapper_5a6f8dca35c8f7bb = function(arg0, arg1, arg2, arg3, arg4) {
+    var ret = new TConfigWrapper(arg0, arg1, arg2, arg3, arg4 !== 0);
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_newlocationwrapper_2aa3cd4e7b2493ec = function(arg0, arg1, arg2) {
+    var ret = new LocationWrapper(arg0, arg1, arg2);
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_newwaypointwrapper_aa834bd0d9211732 = function(arg0, arg1) {
+    var ret = new WaypointWrapper(takeObject(arg0), arg1);
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_newobstaclewrapper_6625bc8225196bec = function(arg0, arg1, arg2) {
+    var ret = new ObstacleWrapper(takeObject(arg0), arg1, arg2);
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_getLocation_7105d9dbe1904c04 = function(arg0) {
+    var ret = getObject(arg0).getLocation();
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_getYaw_9831d31e91fe3748 = function(arg0) {
+    var ret = getObject(arg0).getYaw();
+    return ret;
+};
+
+module.exports.__wbg_getPitch_72337219bc2967e0 = function(arg0) {
+    var ret = getObject(arg0).getPitch();
+    return ret;
+};
+
+module.exports.__wbg_getRoll_9a252f7ff3a6db22 = function(arg0) {
+    var ret = getObject(arg0).getRoll();
+    return ret;
+};
+
+module.exports.__wbg_getAirspeed_c0e3c1ab2d9af9ae = function(arg0) {
+    var ret = getObject(arg0).getAirspeed();
+    return ret;
+};
+
+module.exports.__wbg_getGroundspeed_f900cb327243e6e0 = function(arg0) {
+    var ret = getObject(arg0).getGroundspeed();
+    return ret;
+};
+
+module.exports.__wbg_getWindDir_ca84b18a6503665a = function(arg0) {
+    var ret = getObject(arg0).getWindDir();
+    return ret;
+};
+
+module.exports.__wbg_getBufferSize_104973b4831e1fe3 = function(arg0) {
+    var ret = getObject(arg0).getBufferSize();
+    return ret;
+};
+
+module.exports.__wbg_getMaxProcessTime_2490b8fcc951a320 = function(arg0) {
+    var ret = getObject(arg0).getMaxProcessTime();
+    return ret;
+};
+
+module.exports.__wbg_getTurningRadius_6b56a698e93f971d = function(arg0) {
+    var ret = getObject(arg0).getTurningRadius();
+    return ret;
+};
+
+module.exports.__wbg_getVertexMergeThreshold_c610bcaf3fcc5975 = function(arg0) {
+    var ret = getObject(arg0).getVertexMergeThreshold();
+    return ret;
+};
+
+module.exports.__wbg_getVirtualizeFlyzone_54e264050501732c = function(arg0) {
+    var ret = getObject(arg0).getVirtualizeFlyzone();
+    return ret;
+};
+
+module.exports.__wbg_get_27693110cb44e852 = function(arg0, arg1) {
+    var ret = getObject(arg0)[arg1 >>> 0];
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_length_079c4e509ec6d375 = function(arg0) {
+    var ret = getObject(arg0).length;
+    return ret;
+};
+
+module.exports.__wbg_new_e13110f81ae347cf = function() {
+    var ret = new Array();
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_from_2a5d647e62275bfd = function(arg0) {
+    var ret = Array.from(getObject(arg0));
+    return addHeapObject(ret);
+};
+
+module.exports.__wbg_push_b46eeec52d2b03bb = function(arg0, arg1) {
+    var ret = getObject(arg0).push(getObject(arg1));
+    return ret;
+};
 
 module.exports.__wbindgen_throw = function(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));

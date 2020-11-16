@@ -1,9 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
-*/
-export function init_panic_hook(): void;
-/**
 * A wrapper for `wasm-bindgen` to interact with
 *
 * Due to `wasm-bindgen`'s current inability to handle generic structures, the `pathfinder`
@@ -27,27 +24,27 @@ export class PathfinderWrapper {
 /**
 * @param {any} config
 */
-  config: any;
+  setConfig(config: any): void;
 /**
 * @param {Array<any>} flyzone
 */
-  flyzone: Array<any>;
-/**
-* @returns {any}
-*/
-  readonly get_config: any;
-/**
-* @returns {Array<any>}
-*/
-  readonly get_flyzone: Array<any>;
-/**
-* @returns {Array<any>}
-*/
-  readonly get_obstacle: Array<any>;
+  setFlyzone(flyzone: Array<any>): void;
 /**
 * @param {Array<any>} obstacles
 */
-  obstacles: Array<any>;
+  setObstacles(obstacles: Array<any>): void;
+/**
+* @returns {Array<any>}
+*/
+  getFlyzone(): Array<any>;
+/**
+* @returns {Array<any>}
+*/
+  getObstacle(): Array<any>;
+/**
+* @returns {any}
+*/
+  readonly getConfig: any;
 }
 /**
 */
