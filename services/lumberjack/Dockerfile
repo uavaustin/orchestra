@@ -69,5 +69,8 @@ EXPOSE 6000
 CMD ./wait-for-it.sh \
         "http://$INFLUX_HOST:$INFLUX_PORT/ping" \
         "influxdb" && \
+    ./wait-for-it.sh \
+        "http://${FORWARD_INTEROP_HOST}:${FORWARD_INTEROP_PORT}" \
+        "forward-interop" && \
     printf 'Starting.\n' && \
     FORCE_COLOR=1 npm start --silent
