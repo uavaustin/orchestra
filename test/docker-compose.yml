@@ -97,6 +97,10 @@ services:
     image: grafana/grafana
     ports:
       - '3000:3000'
+    environment:
+      - INFLUX_HOST=influx
+      - INFLUX_PORT=8086
+      - DB_NAME=lumberjack
     depends_on: 
       - 'influx'
     volumes:
