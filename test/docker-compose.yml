@@ -22,12 +22,33 @@ services:
         ipv4_address: 172.16.238.10
 
   interop-server:
-    image: uavaustin/interop-server:2019.05
+    image: akevinli/interop-final:1
     ports:
       - '8080:80'
+    environment:
+      - DB_HOST=172.16.238.53
+      - DB_PORT=5432
+    volumes:
+      - ./interop-volumes/mount:/mount
+      - ./interop-volumes/logs/uwsgi:/var/log/uwsgi
+      - ./interop-volumes/var/www/media/objects:/var/www/media/objects
+    depends_on:
+      - interop-db
     networks:
       test_net:
         ipv4_address: 172.16.238.11
+
+  interop-db:
+    image: postgres:12.3
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./interop-volumes/var/lib.postgresql/data:/var/lib/postgresql/data
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.53
+  
 
   telemetry:
     image: uavaustin/telemetry
