@@ -12,7 +12,7 @@ cd $SERVER
 
 # Creates the database and loads test data. Only needs to be done once.
 # Groups together "create_db" and "load_test_data"
-if ["$1 == create_load"]
+if ["$1" == create_load]
 then
     docker-compose run interop-server ./healthcheck.py --postgres_host interop-db --check_postgres
     docker-compose run interop-server psql "postgresql://postgres:postgres@interop-db" -c "CREATE DATABASE auvsi_suas_db;"
