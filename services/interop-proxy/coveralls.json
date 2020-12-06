@@ -1,0 +1,5 @@
+{
+    "coverage_options": {
+        "output_dir": "/coverage/"
+    }
+}
