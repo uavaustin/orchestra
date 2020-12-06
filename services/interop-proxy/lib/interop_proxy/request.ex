@@ -178,6 +178,10 @@ defmodule InteropProxy.Request do
   defp handle_resp({:error, _reason} = value, _type, _opts), do: value
 
   # If our cookie is not working, we'll handle it seperately.
+  defp handle_resp({:ok, %{status_code: 401}}, _type, _opts),
+    do: {:error, :unauthorized}
+
+  # For software-in-the-loop testing
   defp handle_resp({:ok, %{status_code: 403}}, _type, _opts),
     do: {:error, :forbidden}
 
