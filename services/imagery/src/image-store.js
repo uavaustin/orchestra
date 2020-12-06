@@ -27,17 +27,17 @@ export default class ImageStore extends EventEmitter {
    * The rate at which images are added is also stored. Note that
    * this does not take in consideration the timestamp of the images.
    *
-   * A limit can be placed on the maximum number of images stored by
-   * setting the maxImages parameter. When the limit is reached,
+   * A limit can be placed on the maximum size of images stored by
+   * setting the maxStorage parameter. When the limit is reached,
    * the store will begin deleting old images.
    */
 
   /** Create a new image store. */
-  constructor(clearExisting = false, maxImages = undefined) {
+  constructor(clearExisting = false, maxStorage = undefined) {
     super();
 
     this._clearExisting = clearExisting;
-    this._maxImages = maxImages;
+    this._maxStorage = maxStorage;
 
     // The time of the last images in the store.
     this._times = [];
@@ -68,10 +68,12 @@ export default class ImageStore extends EventEmitter {
       destroy: (db) => db.close()
     }, { max: 1, min: 0 });
 
+    // Added a size column to store the size of the images
     await this._withDb(async (db) => {
       await db.run('CREATE TABLE IF NOT EXISTS ' +
         'images(id INTEGER PRIMARY KEY AUTOINCREMENT, ' +
-               'deleted BOOLEAN DEFAULT FALSE)');
+               'deleted BOOLEAN DEFAULT FALSE,' +
+               'size REAL)');
     });
   }
 
@@ -133,6 +135,13 @@ export default class ImageStore extends EventEmitter {
     )))['id'];
   }
 
+  /** Get the total size of all the images in the database */
+  async getTotalSize() {
+    return (await this._withDb(async(db) => await db.get(
+      'SELECT SUM(size) FROM images WHERE NOT deleted'
+    )))['SUM(size)'];
+  }
+
   /**
    * Return whether or not an image ID exists (regardless of
    * whether or not it was deleted).
@@ -180,10 +189,13 @@ export default class ImageStore extends EventEmitter {
     await this._withDb(async (db) => {
       if (id === undefined) {
         id = (await db.run('INSERT INTO images DEFAULT VALUES')).lastID;
+        // Can we simplify this to just one insert statement?
+        await db.run('UPDATE images SET size = ? WHERE id = ?',
+          [metadata.size, id]);
       } else {
-        await db.run('INSERT INTO images(id) VALUES (?)', id);
+        await db.run('INSERT INTO images(id, size) VALUES (?, ?)',
+          [id, metadata.size]);
       }
-
       // Set the id number in the metadata.
       metadata.id = id;
 
@@ -233,17 +245,17 @@ export default class ImageStore extends EventEmitter {
   /** Remove old images such that the image store is no longer
       above the limit. */
   async purgeImages() {
-    if (!this._maxImages) return;
+    if (!this._maxStorage) return;
 
     await this._withDb(async (db) => {
-      // We cannot use this.getCount because it uses a new connection
+      // We cannot use this.getSize because it uses a new connection
       // from the connection pool, so it will not work while we are
       // performing a transaction.
-      let getCount = async () => (await db.get(
-        'SELECT COUNT(id) FROM images WHERE NOT DELETED'
-      ))['COUNT(id)'];
+      let getSize = async () => (await db.get(
+        'SELECT SUM(size) FROM images WHERE NOT deleted'
+      ))['SUM(size)'];
 
-      while (await getCount() > this._maxImages) {
+      while (await getSize() > this._maxStorage) {
         let id = (await db.get(
           'SELECT id FROM images WHERE NOT DELETED ORDER BY id ASC'
         ))['id'];
