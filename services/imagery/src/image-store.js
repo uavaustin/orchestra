@@ -43,6 +43,8 @@ export default class ImageStore extends EventEmitter {
     this._times = [];
 
     this._dbPool = null;
+
+    this._cleared = false;
   }
 
   /** Creates an empty directory for the image store if needed. */
@@ -251,6 +253,19 @@ export default class ImageStore extends EventEmitter {
         this.deleteImage(id, db);
       }
     }, true);
+  }
+
+  /** CLears all images by removing the directory. */
+  async clearImages() {
+    if (this._cleared)
+      return;
+
+    this._cleared = true;
+    // Wait for all resources to be drained
+    await this._dbPool.drain();
+    this._dbPool.clear();
+
+    await fs.remove(FOLDER_NAME);
   }
 
   /** Return the image for the id. */

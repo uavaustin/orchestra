@@ -170,3 +170,28 @@ test('image store works concurrently', async () => {
 
   expect(await imageStore.getCount()).toEqual(5);
 });
+
+test('image store able to clear images', async () => {
+  const imageStore = new ImageStore(true);
+  await imageStore.setup();
+
+  // Concurrent requests to test for draining.
+  await Promise.all([
+    imageStore.addImage(
+      shapes[0], imagery.Image.create({ time: 4 })
+    ),
+    imageStore.addImage(
+      shapes[1], imagery.Image.create({ time: 5 })
+    )
+  ]);
+
+  await imageStore.clearImages();
+
+  // Create a second image store to see if database persisted.
+  const secondImageStore = new ImageStore(false);
+  await secondImageStore.setup();
+
+  let count = await secondImageStore.getCount();
+  expect(count).toEqual(0);
+
+});

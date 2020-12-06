@@ -85,6 +85,11 @@ router.delete('/api/image/:id', async (ctx) => {
   }
 });
 
+router.delete('/api/clear', async (ctx) => {
+  await ctx.imageStore.clearImages();
+  ctx.status = 200;
+});
+
 async function getImageMessage(imageStore, id) {
   const msg = await imageStore.getMetadata(id);
   msg.image = await imageStore.getImage(id);
