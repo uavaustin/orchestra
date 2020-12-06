@@ -77,7 +77,7 @@ defmodule InteropProxy.Session do
         Agent.update session, &Map.put(&1, :cookie, cookie)
       {:error, :forbidden} ->
         {^url, cookie} = do_login url, username, password
-        Agent.update session, &Map.put(&1m :cookie, cookie)
+        Agent.update session, &Map.put(&1, :cookie, cookie)
       _ ->
         nil
     end
