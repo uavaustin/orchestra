@@ -8,6 +8,7 @@ ENV MIX_ENV=test
 RUN mix local.hex --force && mix local.rebar --force
 
 COPY interop-proxy/mix.exs .
+COPY interop-proxy/coveralls.json .
 
 # Fetching and then compiling our deps first.
 RUN mix deps.get && mix deps.compile
@@ -17,4 +18,4 @@ COPY common/messages lib/messages
 
 RUN mix compile
 
-CMD mix test
+CMD mix test && MIX_ENV=test mix coveralls.html

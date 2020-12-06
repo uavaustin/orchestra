@@ -5,6 +5,8 @@
 
 docker network create --subnet=172.37.0.0/16 interop-proxy-test-net > /dev/null
 
+current_dir=$(pwd)
+
 if [ "$?" -ne 0 ]; then
     printf "\033[31mCould not create test network\033[0m\n" 1>&2
     exit 1
@@ -68,7 +70,8 @@ if [ "$built" -eq 0 ]; then
     printf "\n\033[34mStarting tests...\033[0m\n\n"
 
     docker run -it --rm --net=interop-proxy-test-net \
-            -e INTEROP_URL=172.37.0.2 $INTEROP_PROXY_TEST_IMAGE
+            -e INTEROP_URL=172.37.0.2 -v $current_dir/coverage:/coverage \
+            $INTEROP_PROXY_TEST_IMAGE
 
     result=$?
 else

@@ -9,7 +9,8 @@ defmodule InteropProxy.Mixfile do
       elixirc_paths: elixirc_paths(Mix.env),
       compilers: [:phoenix] ++ Mix.compilers,
       start_permanent: Mix.env == :prod,
-      deps: deps()
+      deps: deps(),
+      test_coverage: [tool: ExCoveralls]
     ]
   end
 
@@ -36,7 +37,9 @@ defmodule InteropProxy.Mixfile do
       {:phoenix, "~> 1.4"},
       {:phoenix_pubsub, "~> 1.1"},
       {:plug_cowboy, "~> 2.0"},
-      {:poison, "~> 3.1.0"}
+      {:poison, "~> 3.1.0"},
+
+      {:excoveralls, "~> 0.13.3", only: :test}
     ]
   end
 end
