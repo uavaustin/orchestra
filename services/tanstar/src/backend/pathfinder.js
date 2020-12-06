@@ -1,34 +1,53 @@
-// wrapper node file for PF library functionality
+// Wrapper node file for PF library functionality
 
-// This is tentative! This setup is subject to change depending on the auto-generated
-// porting code on the Rust side, especially the types returned and parameters.
+// TODO: Find a better way to reference this stuff
+const pf = require('./pkg'); // Pathfinder
+const pfWraps = require('./pfwrapper.js'); // Pathfinder wrappers
 
-export default class Pathfinder {
-  // Creates a blank Pathfinder
-  constructor(/*flyzone, obstacles, plane, rawPath*/) {
-    throw new Error("Not implemented.");
+// DEBUG
+// Allows viewing of Rust panics
+//pf.init_panic_hook();
+
+module.exports.Pathfinder = class Pathfinder {
+  /**
+   * Creates an internal pathfinder (Rust).
+   *
+   * @param {Object} flyzones         - Array of arrays of LocationWrappers for the flyzone vertices.
+   * @param {Object} obstacles        - Array of ObstacleWrappers.
+   * @param {Object} plane            - As PlaneWrapper.
+   * @param {Object} [config=default] - As TConfigWrapper
+   */
+  constructor(flyzones, obstacles, plane, config = new pfWraps.TConfigWrapper()) {
+	var tanstar = pf.Tanstar.untimed();
+
+    this.pathfinder = new pf.PathfinderWrapper(tanstar, config, flyzones, obstacles);
   }
 
-  // Sets the flyzones and obstacles
-  setField(/*flyzones, obstacles*/) {
-    throw new Error("Not implemented.");
+  /**
+   * Sets the flyzone and obstacles if any are given.
+   *
+   * @param {Object} flyzones  - Array of arrays of LocationWrappers for the flyzone vertices.
+   * @param {Object} obstacles - Array of ObstacleWrappers.
+   */
+  setField(flyzones, obstacles) {
+    if (flyzones !== undefined)
+      this.pathfinder.flyzone = flyzones;
+    if (obstacles !== undefined)
+      this.pathfinder.obstacles = obstacles;
   }
 
-  // Sets the plane telemetry
-  // getAdjustedPath must be run for the path to be updated.
-  setPlane(/*plane*/) {
-    throw new Error("Not implemented.");
+  /**
+   * @param {Object} plane - As PlaneWrapper.
+   */
+  setPlane(plane) {
+    this.pathfinder.plane = plane;
   }
 
-  // Sets the raw path
-  // getAdjustedPath must be run for the path to be optimized.
-  setRawPath(/*path*/) {
-    throw new Error("Not implemented.");
-  }
-
-  // Runs the pathfinder and returns the adjusted path
-  // Might return Error if no raw path is provided.
-  getAdjustedPath() {
-    throw new Error("Not implemented.");
+  /**
+   * Runs the pathfinder and returns the adjusted path from the given raw path.
+   * @param {Object} rawPath - Path to be adjusted as an Array of WaypointWrappers.
+   */
+  getAdjustedPath(rawPath) {
+    return this.pathfinder.getAdjustPath(this.pathfinder.plane, rawPath);
   }
 }
