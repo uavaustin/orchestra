@@ -36,10 +36,11 @@ COPY image-rec-auto/requirements.txt .
 
 RUN python3 -m pip install  -r common/requirements.txt -r requirements.txt
 
-RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v0.0.1b0/hawk_eye-0.0.1b0-py3-none-any.whl \
-    -O  hawk_eye-0.0.1b0-py3-none-any.whl \
-    && python3 -m pip install hawk_eye-0.0.1b0-py3-none-any.whl \
-    && rm hawk_eye-0.0.1b0-py3-none-any.whl
+ARG HAWK_EYE_VERSION=0.0.1b0
+RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v${HAWK_EYE_VERSION}/hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
+    -O hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
+    && python3 -m pip install hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
+    && rm hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl
 
 # Copy the protobuf messages from above.
 COPY --from=builder /builder/dist/messages messages

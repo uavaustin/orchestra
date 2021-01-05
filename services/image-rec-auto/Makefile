@@ -1,6 +1,6 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
-JETSON ?= "true"
+JETSON ?= "false"
 
 IMAGE_REC_AUTO_IMAGE      := uavaustin/image-rec-auto
 IMAGE_REC_AUTO_TEST_IMAGE := uavaustin/image-rec-auto-test
@@ -12,7 +12,13 @@ all: image
 
 .PHONY: image
 image:
-	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile $(DOCKERFLAGS) ..
+ifeq "$(JETSON)" "true"
+	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
+		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 $(DOCKERFLAGS) ..
+else
+	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
+		--build-arg BASE=nvcr.io/nvidia/pytorch:20.10-py3 $(DOCKERFLAGS) ..
+endif
 
 .PHONY: test
 test:
