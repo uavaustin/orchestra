@@ -1,3 +1,6 @@
+
+__author__ = "Alex Witt"
+
 import os
 import sys
 

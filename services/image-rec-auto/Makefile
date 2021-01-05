@@ -30,7 +30,7 @@ ifeq "$(JETSON)" "true"
 else
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
 		--build-arg BASE=nvcr.io/nvidia/pytorch:20.10-py3  $(DOCKERFLAGS) ..
-	docker run -it --ipc=host --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run -it --ipc=host --gpus all --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 endif
 

@@ -1,4 +1,6 @@
-""" Identifies targets as new images come in. """
+"""Identifies targets as new images come in."""
+
+__author__ = "Alex Witt"
 
 import io
 import logging
@@ -10,7 +12,7 @@ import PIL.Image
 import requests
 
 from . import util
-from common.logger import format_error
+from common import logger
 from messages.image_rec_pb2 import PipelineImage
 from messages.image_rec_pb2 import PipelineTarget
 from messages.imagery_pb2 import Image
@@ -58,8 +60,9 @@ class Service:
         logging.info(f"retreived image in {t_2 - t_1:d} ms")
 
         # Getting targets in our set of blobs (if there are any).
-        targets, tiles = \
-            find_targets.find_targets(image, self.clf_model, self.det_model)
+        targets, tiles = find_targets.find_targets(
+            image, self.clf_model, self.det_model
+        )
 
         t_3 = util.curr_time()
         logging.info(f"{len(targets)} targets found in {t_3 - t_2:d} ms")
@@ -103,7 +106,7 @@ class Service:
                 elif resp.status_code != 409 and not resp.ok:
                     resp.raise_for_status()
             except requests.RequestException as e:
-                logging.error(format_error("request error", str(e)))
+                logging.error(logger.format_error("request error", str(e)))
 
             # Sleep a little when we get 409 or any other error.
             time.sleep(self._fetch_interval / 1000)
@@ -128,7 +131,7 @@ class Service:
                 else:
                     resp.raise_for_status()
             except requests.RequestException as e:
-                logging.error(format_error("request error", str(e)))
+                logging.error(logger.format_error("request error", str(e)))
 
             # Sleep a little for the next try.
             time.sleep(self._fetch_interval / 1000)
@@ -167,8 +170,8 @@ class Service:
                             "target " + resp.headers.get("location").split("/")[-1]
                         )
 
-                        # If there's more than one target, specify
-                        # which, otherwise, just say 'target'.
+                        # If there's more than one target, specify which, otherwise,
+                        # just say 'target'.
                         if len(targets) > 1:
                             # Equal to 'first', 'second', etc.
                             order = p.number_to_words(p.ordinal(target_num))
@@ -178,7 +181,7 @@ class Service:
 
                         logging.warn(f"{target_name} was similar to {similar}")
                 except requests.RequestException as e:
-                    logging.error(format_error("request error", str(e)))
+                    logging.error(logger.format_error("request error", str(e)))
                 else:
                     break
 
@@ -211,7 +214,7 @@ class Service:
                 else:
                     resp.raise_for_status()
             except requests.RequestException as e:
-                logging.error(format_error("request error", str(e)))
+                logging.error(logger.format_error("request error", str(e)))
 
             # Sleep a little for the next try.
             time.sleep(self._fetch_interval / 1000)

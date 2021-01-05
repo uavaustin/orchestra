@@ -1,3 +1,6 @@
+
+__author__ = "Alex Witt"
+
 import io
 from math import pi, sin, cos, tan, atan2, sqrt
 import time

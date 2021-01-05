@@ -53,6 +53,6 @@ COPY image-rec-auto/setup.cfg .
 
 ENV PYTHONUNBUFFERED=TRUE
 
-CMD flake8 --max-line-length=89 service test \
-    && python3 -m pytest --cov=service test \
-    && coverage html -d coverage/html
+CMD python3 -m pytest --cov=service test \
+    && coverage html -d coverage/html \
+    flake8 --max-line-length=89 service test
