@@ -30,7 +30,7 @@ ifeq "$(JETSON)" "true"
 else
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
 		--build-arg BASE=pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime  $(DOCKERFLAGS) ..
-	docker run -it --ipc=host --gpus all --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run -it --ipc=host --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 endif
 

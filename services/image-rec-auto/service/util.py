@@ -107,7 +107,9 @@ def _get_earth_radii(lat):
         * (1 - EARTH_ECCEN ** 2)
         / (1 - EARTH_ECCEN ** 2 * math.sin(lat * math.pi / 180) ** 2) ** (3 / 2)
     )
-    r_2 = EARTH_RADIUS / math.sqrt(1 - EARTH_ECCEN ** 2 * math.sin(lat * math.pi / 180) ** 2)
+    r_2 = EARTH_RADIUS / math.sqrt(
+        1 - EARTH_ECCEN ** 2 * math.sin(lat * math.pi / 180) ** 2
+    )
 
     return r_1, r_2
 
@@ -135,7 +137,7 @@ def _convert_orientation(image_telem, orientation):
 def _convert_shape(shape):
     """Convert a target_finder shape to a protobuf one."""
     if shape == types.Shape.NAS:
-        return Odlc.UNKNOWN_SHAPE
+        return interop_pb2.Odlc.UNKNOWN_SHAPE
 
     return getattr(interop_pb2.Odlc, shape.name.upper())
 

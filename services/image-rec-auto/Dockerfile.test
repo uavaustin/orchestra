@@ -59,4 +59,4 @@ ENV PYTHONUNBUFFERED=TRUE
 
 CMD python3 -m pytest --cov=service test \
     && coverage html -d coverage/html \
-    flake8 --max-line-length=89 service test
+    && flake8 --max-line-length=89 service test

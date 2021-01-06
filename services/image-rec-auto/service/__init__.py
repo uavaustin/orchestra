@@ -13,6 +13,7 @@ import requests
 
 from common import logger
 from messages import image_rec_pb2
+from messages import imagery_pb2
 from . import util
 
 
@@ -83,7 +84,7 @@ class Service:
 
     def _get_next_id(self) -> None:
         """Get the next unprocessed image id from redis."""
-        url = f"{self._master_url}/api/pipeline/images/" + "start-processing-next-auto"
+        url = f"{self._master_url}/api/pipeline/images/start-processing-next-auto"
 
         # Keep trying until it's successful.
         while True:
@@ -124,6 +125,7 @@ class Service:
                 resp = requests.get(url)
 
                 if resp.status_code == 200:
+
                     return imagery_pb2.Image.FromString(resp.content)
                 else:
                     resp.raise_for_status()
