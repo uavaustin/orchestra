@@ -27,16 +27,20 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
     python3-dev \
-    python3-pip
+    python3-pip  \
+    wget
 
-RUN python3 -m pip install --upgrade pip 
+RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && python3 get-pip.py
+
+RUN python3 -m pip install --upgrade pip \
+    torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .
 
 RUN python3 -m pip install  -r common/requirements.txt -r requirements.txt
 
-ARG HAWK_EYE_VERSION=0.0.1b0
+ARG HAWK_EYE_VERSION=0.0.2a0
 RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v${HAWK_EYE_VERSION}/hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
     -O hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
     && python3 -m pip install hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \

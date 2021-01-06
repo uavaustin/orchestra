@@ -1,4 +1,3 @@
-
 __author__ = "Alex Witt"
 
 import pathlib

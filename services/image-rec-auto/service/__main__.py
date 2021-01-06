@@ -1,16 +1,15 @@
-
 __author__ = "Alex Witt"
 
 import os
 import sys
 
-from common.logger import configure_logger
+from common import logger
 
 from . import Service
 
 
 if __name__ == "__main__":
-    configure_logger()
+    logger.configure_logger()
 
     service = Service(
         imagery_host=os.environ.get("IMAGERY_HOST"),

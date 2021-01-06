@@ -1,13 +1,12 @@
-
 __author__ = "Alex Witt"
 
 import io
-from math import pi, sin, cos, tan, atan2, sqrt
+import math
 import time
 
 from hawk_eye.inference import types
 
-from messages.interop_pb2 import Odlc
+from messages import interop_pb2
 
 
 EARTH_RADIUS = 6378137
@@ -21,9 +20,9 @@ def curr_time() -> int:
 
 def get_odlc(image, image_telem, target):
     """Convert a target into a odlc message."""
-    odlc = Odlc()
+    odlc = interop_pb2.Odlc()
 
-    odlc.type = Odlc.STANDARD
+    odlc.type = interop_pb2.Odlc.STANDARD
     odlc.pos.lat, odlc.pos.lon = _get_lat_lon(image, image_telem, target)
     odlc.orientation = _convert_orientation(image_telem, target.orientation)
     odlc.shape = _convert_shape(target.shape)
@@ -62,24 +61,30 @@ def _get_lat_lon(image, image_telem, target):
     lat = image_telem.lat
     lon = image_telem.lon
     alt = image_telem.alt
-    yaw = image_telem.yaw * pi / 180
+    yaw = image_telem.yaw * math.pi / 180
     pitch = image_telem.pitch + fov / w * (h / 2 - y)
     roll = image_telem.roll + fov / w * (w / 2 - x)
 
     # If the target appears to be in the air, or too heavy of an
     # angle, return back the plane position since this is unexpected
     # behavior.
-    if abs(pitch) >= 2 * pi / 3 or abs(roll) >= 2 * pi / 3:
+    if abs(pitch) >= 2 * math.pi / 3 or abs(roll) >= 2 * math.pi / 3:
         return lat, lon
 
     # Getting the distance in meters east and north.
-    dist_x = alt * (tan(pitch) * sin(yaw) - tan(roll) / cos(pitch) * sin(yaw))
-    dist_y = alt * (tan(pitch) * cos(yaw) + tan(roll) / cos(pitch) * sin(yaw))
+    dist_x = alt * (
+        math.tan(pitch) * math.sin(yaw)
+        - math.tan(roll) / math.cos(pitch) * math.sin(yaw)
+    )
+    dist_y = alt * (
+        math.tan(pitch) * math.cos(yaw)
+        + math.tan(roll) / math.cos(pitch) * math.sin(yaw)
+    )
 
     # Convert this to a new lat, lon pair.
     e_radii = _get_earth_radii(lat)
-    new_lat = dist_y / e_radii[0] / pi * 180 + lat
-    new_lon = dist_x / e_radii[1] / cos(lat * pi / 180) + lon
+    new_lat = dist_y / e_radii[0] / math.pi * 180 + lat
+    new_lon = dist_x / e_radii[1] / math.cos(lat * math.pi / 180) + lon
 
     return new_lat, new_lon
 
@@ -92,7 +97,7 @@ def _get_fov(pillow_image):
 
     # FOV calculation, note 36 is the horizontal frame size for 35mm
     # film.
-    return 2 * atan2(36, 2 * focal_length)
+    return 2 * math.atan2(36, 2 * focal_length)
 
 
 def _get_earth_radii(lat):
@@ -100,9 +105,9 @@ def _get_earth_radii(lat):
     r_1 = (
         EARTH_RADIUS
         * (1 - EARTH_ECCEN ** 2)
-        / (1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2) ** (3 / 2)
+        / (1 - EARTH_ECCEN ** 2 * math.sin(lat * math.pi / 180) ** 2) ** (3 / 2)
     )
-    r_2 = EARTH_RADIUS / sqrt(1 - EARTH_ECCEN ** 2 * sin(lat * pi / 180) ** 2)
+    r_2 = EARTH_RADIUS / math.sqrt(1 - EARTH_ECCEN ** 2 * math.sin(lat * math.pi / 180) ** 2)
 
     return r_1, r_2
 
@@ -115,14 +120,14 @@ def _convert_orientation(image_telem, orientation):
         value = orientation
 
     directions = [
-        Odlc.NORTH,
-        Odlc.NORTHEAST,
-        Odlc.EAST,
-        Odlc.SOUTHEAST,
-        Odlc.SOUTH,
-        Odlc.SOUTHWEST,
-        Odlc.WEST,
-        Odlc.NORTHWEST,
+        interop_pb2.Odlc.NORTH,
+        interop_pb2.Odlc.NORTHEAST,
+        interop_pb2.Odlc.EAST,
+        interop_pb2.Odlc.SOUTHEAST,
+        interop_pb2.Odlc.SOUTH,
+        interop_pb2.Odlc.SOUTHWEST,
+        interop_pb2.Odlc.WEST,
+        interop_pb2.Odlc.NORTHWEST,
     ]
     return directions[round(value / 45) % 8]
 
@@ -132,15 +137,15 @@ def _convert_shape(shape):
     if shape == types.Shape.NAS:
         return Odlc.UNKNOWN_SHAPE
 
-    return getattr(Odlc, shape.name.upper())
+    return getattr(interop_pb2.Odlc, shape.name.upper())
 
 
 def _convert_color(color):
     """Convert a target_finder color to a protobuf one."""
     if color == types.Color.NONE:
-        return Odlc.UNKNOWN_COLOR
+        return interop_pb2.Odlc.UNKNOWN_COLOR
 
-    return getattr(Odlc, color.name.upper())
+    return getattr(interop_pb2.Odlc, color.name.upper())
 
 
 def _image_to_bytes(image):

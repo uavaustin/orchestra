@@ -8,14 +8,12 @@ import time
 
 from hawk_eye.inference import find_targets
 import inflect
-import PIL.Image
+from PIL import Image
 import requests
 
-from . import util
 from common import logger
-from messages.image_rec_pb2 import PipelineImage
-from messages.image_rec_pb2 import PipelineTarget
-from messages.imagery_pb2 import Image
+from messages import image_rec_pb2
+from . import util
 
 
 # Used for printing in Service._queue_targets().
@@ -31,7 +29,7 @@ class Service:
         master_port: str,
         fetch_interval: int,
     ) -> None:
-        """ Create a new image-rec-auto service. """
+        """Create a new image-rec-auto service."""
         self._imagery_url = f"http://{imagery_host}:{imagery_port}"
         self._master_url = f"http://{master_host}:{master_port}"
         self._fetch_interval = fetch_interval
@@ -54,7 +52,7 @@ class Service:
             return
 
         # Converting the image to a Pillow one.
-        image = PIL.Image.open(io.BytesIO(image_proto.image))
+        image = Image.open(io.BytesIO(image_proto.image))
 
         t_2 = util.curr_time()
         logging.info(f"retreived image in {t_2 - t_1:d} ms")
@@ -69,7 +67,6 @@ class Service:
 
         if targets:
             ret = self._queue_targets(image_id, image_proto, image, targets)
-
             t_4 = util.curr_time()
 
             if ret:
@@ -95,7 +92,7 @@ class Service:
 
                 if resp.status_code == 200:
                     # Extract the id from the response.
-                    return PipelineImage.FromString(resp.content).id
+                    return image_rec_pb2.PipelineImage.FromString(resp.content).id
                 elif resp.ok:
                     logging.warn(
                         "unexpected successful status code "
@@ -127,7 +124,7 @@ class Service:
                 resp = requests.get(url)
 
                 if resp.status_code == 200:
-                    return Image.FromString(resp.content)
+                    return imagery_pb2.Image.FromString(resp.content)
                 else:
                     resp.raise_for_status()
             except requests.RequestException as e:
@@ -148,7 +145,7 @@ class Service:
         for target_num, target in enumerate(targets, start=1):
             image_telem = image_proto.telem if image_proto.has_telem else None
 
-            target_proto = PipelineTarget()
+            target_proto = image_rec_pb2.PipelineTarget()
             target_proto.odlc.CopyFrom(util.get_odlc(image, image_telem, target))
             target_proto.image_id = image_id
 
