@@ -104,6 +104,38 @@ class TestImageRec(TestBase):
         self.assertTrue(mock_queue_targets.called)
         self.assertTrue(mock_finish_processing.called)
 
+    @mock.patch.object(service.Service, "_get_next_id")
+    @mock.patch.object(service.Service, "_get_image")
+    @mock.patch.object(service.Service, "_queue_targets")
+    @mock.patch.object(service.Service, "_finish_processing")
+    def test_empty_target_rec(
+        self,
+        mock_finish_processing,
+        mock_queue_targets,
+        mock_get_image,
+        mock_get_next_id
+    ):
+        mock_get_next_id.return_value = 0
+
+        # Empty target image
+        image_msg = imagery_pb2.Image()
+        image_msg.id = 0
+        byteIO = io.BytesIO()
+        empty_image = Image.open(test_util.FIELD_FIXTURE)
+        empty_image.save(byteIO, format="JPEG")
+        image_msg.image = byteIO.getvalue()
+
+        mock_get_image.return_value = image_msg
+        mock_queue_targets.return_value = False
+        mock_finish_processing.return_value = True
+
+        self.auto_service.run_iter()
+
+        self.assertTrue(mock_get_next_id.called)
+        self.assertTrue(mock_get_image.called)
+        self.assertFalse(mock_queue_targets.called)
+        self.assertTrue(mock_finish_processing.called)
+
 
 class TestGetImage(TestBase):
     image_msg = TestBase.image_msg.SerializeToString()

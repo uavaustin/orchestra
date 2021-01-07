@@ -9,13 +9,13 @@ from messages import telemetry_pb2
 from messages import interop_pb2
 from service import util
 
-_FIELD_FIXTURE = pathlib.Path(__file__) / "../fixtures/field.jpg"
+FIELD_FIXTURE = pathlib.Path(__file__) / "../fixtures/field.jpg"
 TARGET_FIXTURE = pathlib.Path(__file__) / "../fixtures/target.jpg"
 
 
 def test_get_odlc_no_telem() -> None:
     image_telem = None
-    image = Image.open(_FIELD_FIXTURE)
+    image = Image.open(FIELD_FIXTURE)
     target = types.Target(
         x=55,
         y=20,
@@ -52,7 +52,7 @@ def test_get_odlc_with_yaw() -> None:
     image_telem.pitch = 0.0
     image_telem.pitch = 0.0
 
-    image = Image.open(_FIELD_FIXTURE)
+    image = Image.open(FIELD_FIXTURE)
     target = types.Target(
         x=55,
         y=20,
