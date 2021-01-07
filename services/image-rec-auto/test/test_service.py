@@ -1,4 +1,4 @@
-"""Basic test to ensure service functionality."""
+"""Basic tests to ensure service functionality."""
 
 __author__ = "Kevin Li and Alex Witt"
 
@@ -47,14 +47,14 @@ class TestBase(unittest.TestCase):
         ok=True
     ) -> mock.Mock:
         mock_resp = mock.Mock()
-        # mock raise_for_status call w/optional error
+        # Mock raise_for_status call w/optional error.
         mock_resp.raise_for_status = mock.Mock()
         if raise_for_status:
             mock_resp.raise_for_status.side_effect = raise_for_status
-        # set status code and content
+        # Set status code and content.
         mock_resp.status_code = status
         mock_resp.content = content
-        # add json data if provided
+        # Add json data if provided.
         if json_data:
             mock_resp.json = mock.Mock(return_value=json_data)
         return mock_resp
@@ -117,7 +117,7 @@ class TestImageRec(TestBase):
     ):
         mock_get_next_id.return_value = 0
 
-        # Empty target image
+        # Empty target image message.
         image_msg = imagery_pb2.Image()
         image_msg.id = 0
         byteIO = io.BytesIO()
@@ -224,7 +224,6 @@ class TestTargetQueue(TestBase):
 
         self.assertTrue(mock_post.called)
         self.assertTrue(retval)
-        # data is in the second positional argument
         self.assertEqual(
             mock_post.call_args_list[0][1].get('data'), target_proto.SerializeToString()
         )

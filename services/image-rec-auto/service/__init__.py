@@ -5,12 +5,12 @@ __author__ = "Alex Witt"
 import io
 import logging
 import time
-
-from hawk_eye.inference import find_targets
-import inflect
-from PIL import Image
 import requests
+import inflect
 
+from PIL import Image
+from typing import List
+from hawk_eye.inference import find_targets, types
 from common import logger
 from messages import image_rec_pb2
 from messages import imagery_pb2
@@ -59,7 +59,7 @@ class Service:
         logging.info(f"retreived image in {t_2 - t_1:d} ms")
 
         # Getting targets in our set of blobs (if there are any).
-        targets, tiles = find_targets.find_targets(
+        targets, _ = find_targets.find_targets(
             image, self.clf_model, self.det_model
         )
 
@@ -109,11 +109,13 @@ class Service:
             # Sleep a little when we get 409 or any other error.
             time.sleep(self._fetch_interval / 1000)
 
-    def _get_image(self, image_id):
-        """Get the image from the imagery service by id.
+    def _get_image(self, image_id: int) -> imagery_pb2.Image:
+        """
+        Get the image from the imagery service by id.
 
         Returns None if the status code is not 200 or if the request
-        fails for other reasons after 3 tries.
+        fails for other reasons after 3 tries. Returns a image_rec::Image
+        protobuf message if successful.
         """
         url = f"{self._imagery_url}/api/image/{image_id}"
 
@@ -137,8 +139,15 @@ class Service:
         else:
             return None
 
-    def _queue_targets(self, image_id, image_proto, image, targets):
-        """Queue the target in the image rec pipeline.
+    def _queue_targets(
+        self,
+        image_id: int,
+        image_proto: imagery_pb2.Image,
+        image: Image,
+        targets: List[types.Target]
+    ) -> bool:
+        """
+        Queue the target in the image rec pipeline.
 
         Returns if the operation was succesful.
         """
@@ -193,8 +202,9 @@ class Service:
             # All succeeded.
             return True
 
-    def _finish_processing(self, image_id):
-        """End the processing window for an image.
+    def _finish_processing(self, image_id: int) -> bool:
+        """
+        End the processing window for an image.
 
         Returns if the operation was succesful.
         """
