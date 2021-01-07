@@ -228,3 +228,23 @@ class TestTargetQueue(TestBase):
         self.assertEqual(
             mock_post.call_args_list[0][1].get('data'), target_proto.SerializeToString()
         )
+
+
+class TestFinishProcessing(TestBase):
+
+    @mock.patch("service.requests.post")
+    def test_successful_procesing(self, mock_post):
+
+        image_id = 2
+
+        mock_resp = self._mock_response()
+        mock_post.return_value = mock_resp
+        ret = self.auto_service._finish_processing(image_id)
+
+        url = (
+            f"http://{self.master_host}:{self.master_port}"
+            + "/api/pipeline/images/"
+            + f"{image_id}/finish-processing-auto"
+        )
+        self.assertTrue(ret)
+        self.assertEqual(mock_post.call_args[0][0], url)
