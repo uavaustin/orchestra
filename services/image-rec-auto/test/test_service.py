@@ -179,3 +179,62 @@ class TestGetNextId(unittest.TestCase):
         self.assertTrue(mock_post.called)
         self.assertTrue(isinstance(retval, int))
         self.assertEqual(retval, self.image_id)
+
+
+class TestRunIter(unittest.TestCase):
+    imagery_host = "imagery"
+    imagery_port = 1234
+    master_host = "image-rec-master"
+    master_port = 1234
+    image_id = 0
+    url = f"http://{imagery_host}:{imagery_port}/api/image/{image_id}"
+
+    auto_service = service.Service(
+        imagery_host=imagery_host,
+        imagery_port=imagery_port,
+        master_host=master_host,
+        master_port=master_port,
+        fetch_interval=1,
+    )
+    image_id = 0
+    image_msg = imagery_pb2.Image()
+    image_msg.id = image_id
+    byteIO = io.BytesIO()
+    field_image = Image.open(test_util.TARGET_FIXTURE)
+    field_image.save(byteIO, format="JPEG")
+    image_msg.image = byteIO.getvalue()
+
+    def _mock_response(
+        self,
+        status=200,
+        content="CONTENT",
+        raise_for_status=None,
+        ok=True
+    ) -> mock.Mock:
+        mock_resp = mock.Mock()
+        # mock raise_for_status call w/optional error
+        mock_resp.raise_for_status = mock.Mock()
+        if raise_for_status:
+            mock_resp.raise_for_status.side_effect = raise_for_status
+        # set status code and content
+        mock_resp.status_code = status
+        mock_resp.content = content
+        mock_resp.ok = ok
+
+        return mock_resp
+
+    @mock.patch.object(service.Service, "_get_next_id")
+    @mock.patch.object(service.Service, "_get_image")
+    def test_run_iter(
+        self,
+        mock_get_next_id,
+        mock_get_image,
+    ):
+
+        mock_get_next_id.return_value = self.image_id
+        mock_get_image.return_value = self.image_msg
+
+        self.auto_service.run_iter()
+
+        self.assertTrue(mock_get_next_id.called)
+        self.assertTrue(mock_get_image.called)
