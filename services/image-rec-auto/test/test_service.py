@@ -60,58 +60,49 @@ class TestBase(unittest.TestCase):
         return mock_resp
 
 
-def test_target_rec():
-    def _mock_queue(image_id, _image_proto, _image, targets):
-        assert image_id == 0
-        assert len(targets) == 1
+class TestImageRec(TestBase):
 
-        target = targets[0]
-        assert target is not None
-        assert target.shape == types.Shape.TRAPEZOID
-        assert target.background_color == types.Color.NONE
-        assert target.alphanumeric == ""
-        assert target.alphanumeric_color == types.Color.NONE
-        assert 215.0 <= target.x <= 230.0
-        assert 265.0 <= target.y <= 300.0
-        assert 68.0 <= target.width <= 72.5
-        assert 70.0 <= target.height <= 75.0
-        assert 0.0 <= target.orientation <= 36.0
-        assert 0.0 <= target.confidence <= 1.0
+    @mock.patch.object(service.Service, "_get_next_id")
+    @mock.patch.object(service.Service, "_get_image")
+    @mock.patch.object(service.Service, "_queue_targets")
+    @mock.patch.object(service.Service, "_finish_processing")
+    def test_target_rec(
+        self,
+        mock_finish_processing,
+        mock_queue_targets,
+        mock_get_image,
+        mock_get_next_id,
+    ):
+        mock_get_next_id.return_value = 0
+        mock_get_image.return_value = self.image_msg
 
-    with mock.patch("service.Service._get_next_id") as task_1, mock.patch(
-        "service.Service._get_image"
-    ) as task_2, mock.patch("service.Service._queue_targets") as task_3, mock.patch(
-        "service.Service._finish_processing"
-    ) as task_4:
+        def _queue_side_effect(image_id, _image_proto, _image, targets):
+            self.assertEqual(image_id, 0)
+            self.assertEqual(len(targets), 1)
 
-        task_1.return_value = 0
+            target = targets[0]
+            self.assertNotEqual(target, None)
+            self.assertEqual(target.shape, types.Shape.TRAPEZOID)
+            self.assertEqual(target.background_color, types.Color.NONE)
+            self.assertEqual(target.alphanumeric, "")
+            self.assertEqual(target.alphanumeric_color, types.Color.NONE)
+            self.assertTrue(215 <= target.x <= 230.0)
+            self.assertTrue(265.0 <= target.y <= 300.0)
+            self.assertTrue(68.0 <= target.width <= 72.5)
+            self.assertTrue(70.0 <= target.height <= 75.0)
+            self.assertTrue(0.0 <= target.orientation <= 36.0)
+            self.assertTrue(0.0 <= target.confidence <= 1.0)
 
-        # Mock an 'image' protobuf message
-        image_msg = imagery_pb2.Image()
-        byteIO = io.BytesIO()
-        field_image = Image.open(test_util.TARGET_FIXTURE)
-        field_image.save(byteIO, format="JPEG")
-        image_msg.image = byteIO.getvalue()
-        # image = Image.open(io.BytesIO(image_msg.image))
+        mock_queue_targets.side_effect = _queue_side_effect
+        mock_queue_targets.return_value = True
+        mock_finish_processing.return_value = True
 
-        task_2.return_value = image_msg
-        task_3.return_value = 1
-        task_3.side_effect = _mock_queue
-        task_4.return_value = 1
+        self.auto_service.run_iter()
 
-        auto_service = service.Service(
-            imagery_host="imagery",
-            imagery_port=1234,
-            master_host="image-rec-master",
-            master_port=1234,
-            fetch_interval=1,
-        )
-        auto_service.run_iter()
-
-        assert task_1.called
-        assert task_2.called
-        assert task_3.called
-        assert task_4.called
+        self.assertTrue(mock_get_next_id.called)
+        self.assertTrue(mock_get_image.called)
+        self.assertTrue(mock_queue_targets.called)
+        self.assertTrue(mock_finish_processing.called)
 
 
 class TestGetImage(TestBase):
@@ -160,8 +151,8 @@ class TestRunIter(TestBase):
     @mock.patch.object(service.Service, "_get_image")
     def test_run_iter(
         self,
-        mock_get_next_id,
         mock_get_image,
+        mock_get_next_id
     ):
         mock_get_next_id.return_value = self.image_id
         mock_get_image.return_value = self.image_msg
