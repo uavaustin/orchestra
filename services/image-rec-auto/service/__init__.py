@@ -82,7 +82,7 @@ class Service:
         else:
             logging.error(f"could not mark image {image_id} as finished")
 
-    def _get_next_id(self) -> None:
+    def _get_next_id(self) -> int:
         """Get the next unprocessed image id from redis."""
         url = f"{self._master_url}/api/pipeline/images/start-processing-next-auto"
 
@@ -95,7 +95,7 @@ class Service:
                     # Extract the id from the response.
                     return image_rec_pb2.PipelineImage.FromString(resp.content).id
                 elif resp.ok:
-                    logging.warn(
+                    logging.warning(
                         "unexpected successful status code "
                         f"{resp.status_code} when getting next image"
                     )
@@ -187,7 +187,7 @@ class Service:
                         else:
                             target_name = "target"
 
-                        logging.warn(f"{target_name} was similar to {similar}")
+                        logging.warning(f"{target_name} was similar to {similar}")
                 except requests.RequestException as e:
                     logging.error(logger.format_error("request error", str(e)))
                 else:

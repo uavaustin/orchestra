@@ -3,16 +3,18 @@
 __author__ = "Kevin Li and Alex Witt"
 
 import io
-from unittest import mock
+import service
 import unittest
 
+from copy import deepcopy
+from unittest import mock
 from hawk_eye.inference import types
 from PIL import Image
-
 from messages import imagery_pb2
 from messages import image_rec_pb2
-import service
+
 from . import test_util
+
 
 
 class TestBase(unittest.TestCase):
@@ -44,6 +46,7 @@ class TestBase(unittest.TestCase):
         content="CONTENT",
         json_data=None,
         raise_for_status=None,
+        headers=None,
         ok=True
     ) -> mock.Mock:
         mock_resp = mock.Mock()
@@ -57,6 +60,8 @@ class TestBase(unittest.TestCase):
         # Add json data if provided.
         if json_data:
             mock_resp.json = mock.Mock(return_value=json_data)
+        if headers:
+            mock_resp.headers = deepcopy(headers)
         return mock_resp
 
 
@@ -197,29 +202,30 @@ class TestRunIter(TestBase):
 
 class TestTargetQueue(TestBase):
 
+    mock_target = types.Target(
+        x=215,
+        y=265,
+        width=68,
+        height=70,
+        shape=types.Shape.TRAPEZOID,
+        alphanumeric="K",
+        image=TestBase.field_image
+    )
+
     @mock.patch("service.requests.post")
     def test_successful_queue(self, mock_post):
 
-        mock_target = types.Target(
-            x=215,
-            y=265,
-            width=68,
-            height=70,
-            shape=types.Shape.TRAPEZOID,
-            alphanumeric="K",
-            image=TestBase.field_image
-        )
         mock_resp = self._mock_response(status=201)
         mock_post.return_value = mock_resp
 
         target_proto = image_rec_pb2.PipelineTarget()
         target_proto.odlc.CopyFrom(
-            service.util.get_odlc(self.field_image, None, mock_target)
+            service.util.get_odlc(self.field_image, None, self.mock_target)
         )
         target_proto.image_id = 0
 
         retval = self.auto_service._queue_targets(
-            0, imagery_pb2.Image(), self.field_image, [mock_target]
+            0, imagery_pb2.Image(), self.field_image, [self.mock_target]
         )
 
         self.assertTrue(mock_post.called)
@@ -227,7 +233,32 @@ class TestTargetQueue(TestBase):
         self.assertEqual(
             mock_post.call_args_list[0][1].get('data'), target_proto.SerializeToString()
         )
+    
+    @mock.patch("service.requests.post")
+    def test_repeat_target(self, mock_post):
 
+        repeat_id = 0
+        image_id = 1
+        mock_resp = self._mock_response(
+            status=303,
+            headers={
+                "location": 
+                f"{self.master_host}:{self.master_port}/api/pipeline/images/{repeat_id}"
+            }
+        )
+        mock_post.return_value = mock_resp
+
+        target_proto = image_rec_pb2.PipelineTarget()
+        target_proto.odlc.CopyFrom(
+            service.util.get_odlc(self.field_image, None, self.mock_target)
+        )
+        target_proto.image_id = image_id
+
+        retval = self.auto_service._queue_targets(
+            image_id, imagery_pb2.Image(), self.field_image, [self.mock_target]
+        )
+
+        self.assertTrue(retval)
 
 class TestFinishProcessing(TestBase):
 
