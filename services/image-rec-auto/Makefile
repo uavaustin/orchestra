@@ -14,7 +14,7 @@ all: image
 image:
 ifeq "$(JETSON)" "true"
 	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
-		--build-arg BASE=nvcr.io/nvidia/pytorch:20.10-py3 \
+		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 \
 		$(DOCKERFLAGS) .. 
 else
 	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
