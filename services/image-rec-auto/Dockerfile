@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && python3 get-pip.py
 
 ARG install_pytorch
-RUN if [ -z "$arg" ] ; then \
+RUN if [ -n "$install_pytorch" ] ; then \
         python3 -m pip install torch==1.7.1+cpu torchvision==0.8.2+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
     fi
 
