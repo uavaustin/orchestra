@@ -61,4 +61,4 @@ ENV IMAGERY_HOST='imagery' \
 
 ENV PYTHONUNBUFFERED=TRUE
 
-CMD python -m service
+CMD python3 -m service

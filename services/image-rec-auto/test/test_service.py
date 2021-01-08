@@ -151,7 +151,7 @@ class TestGetImage(TestBase):
 
         self.assertTrue(mock_get.called)
         self.assertTrue(isinstance(retval, imagery_pb2.Image))
-        self.assertEqual(mock_get.call_args.args[0], self.url)
+        mock_get.assert_has_calls([mock.call(self.url)])
 
     @unittest.mock.patch("service.requests.get")
     def test_get_next_id_fail(self, mock_get: mock.MagicMock) -> None:
@@ -162,7 +162,16 @@ class TestGetImage(TestBase):
 
         self.assertTrue(mock_get.called)
         self.assertIsNone(retval)
-        self.assertEqual(mock_get.call_args.args[0], self.url)
+        mock_get.assert_has_calls(
+            [
+                mock.call(self.url),
+                mock.call().raise_for_status(),
+                mock.call(self.url),
+                mock.call().raise_for_status(),
+                mock.call(self.url),
+                mock.call().raise_for_status()
+            ]
+        )
 
 
 class TestGetNextId(TestBase):
