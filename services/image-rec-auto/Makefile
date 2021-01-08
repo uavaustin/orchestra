@@ -14,22 +14,30 @@ all: image
 image:
 ifeq "$(JETSON)" "true"
 	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
-		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 $(DOCKERFLAGS) ..
+		--build-arg BASE=pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime  \
+		$(DOCKERFLAGS) .. 
 else
 	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
-		--build-arg BASE=nvcr.io/nvidia/pytorch:20.10-py3 $(DOCKERFLAGS) ..
+		--build-arg BASE=nvcr.io/nvidia/pytorch:20.10-py3 \
+		--build-arg install_pytorch=TRUE \
+		$(DOCKERFLAGS) ..
 endif
 
 .PHONY: test
 test:
 ifeq "$(JETSON)" "true"
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
-		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3  $(DOCKERFLAGS) ..
+		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 \
+		 $(DOCKERFLAGS) ..
+
 	docker run -it --ipc=host --rm --runtime nvidia -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 else
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
-		--build-arg BASE=pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime  $(DOCKERFLAGS) ..
+		--build-arg BASE=pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime  \
+		--build-arg install_pytorch=TRUE \
+		$(DOCKERFLAGS) ..
+	
 	docker run -it --ipc=host --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 endif

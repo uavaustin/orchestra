@@ -1,7 +1,5 @@
-# This Dockerfile is built for ARM devices. Therefore, the packages are compiled
-# during build.
 ARG BASE_BUILDER=alpine:3.9
-ARG BASE=nvcr.io/nvidia/l4t-base:r32.4.3
+ARG BASE
 
 # Compile the proto files (using alpine for easy recent protoc
 # install).
@@ -32,8 +30,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && python3 get-pip.py
 
-RUN python3 -m pip install --upgrade pip \
-    torch==1.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+ARG install_pytorch
+RUN if [ -z "$arg" ] ; then \
+        python3 -m pip install torch==1.7.1+cpu torchvision==0.8.2+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+    fi
 
 COPY common/python/requirements.txt common/requirements.txt
 COPY image-rec-auto/requirements.txt .

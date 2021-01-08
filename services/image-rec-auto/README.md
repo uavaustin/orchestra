@@ -18,7 +18,7 @@ make image-rec-auto
 
 To build for ARM:
 ```
-make image-rec-auto jetson=true
+make image-rec-auto JETSON=true
 ```
 
 To test:
@@ -31,10 +31,10 @@ make image-rec-auto-test
 To build:
 
 ```
-make image-rec-auto jetson=true
+make image-rec-auto JETSON=true
 ```
 
 To test:
 ```
-make image-rec-auto-test jetson=true
+make image-rec-auto-test JETSON=true
 ```

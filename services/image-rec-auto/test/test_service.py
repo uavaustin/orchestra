@@ -2,22 +2,24 @@
 
 __author__ = "Kevin Li and Alex Witt"
 
+import copy
 import io
 import service
+from typing import Optional
 import unittest
-
-from copy import deepcopy
 from unittest import mock
+
 from hawk_eye.inference import types
 from PIL import Image
+
 from messages import imagery_pb2
 from messages import image_rec_pb2
-
 from . import test_util
 
 
-
 class TestBase(unittest.TestCase):
+    """Form a class which intializes the shared items across the service tests."""
+
     imagery_host = "imagery"
     imagery_port = 1234
     master_host = "image-rec-master"
@@ -32,7 +34,6 @@ class TestBase(unittest.TestCase):
         master_port=master_port,
         fetch_interval=1,
     )
-    image_id = 0
     image_msg = imagery_pb2.Image()
     image_msg.id = image_id
     byteIO = io.BytesIO()
@@ -42,26 +43,21 @@ class TestBase(unittest.TestCase):
 
     def _mock_response(
         self,
-        status=200,
-        content="CONTENT",
-        json_data=None,
-        raise_for_status=None,
-        headers=None,
-        ok=True
+        status: Optional[int] = 200,
+        content: Optional[str] = None,
+        headers: Optional[dict] = None,
+        ok: Optional[bool] = True
     ) -> mock.Mock:
+        """Generalize function to mock the get/post calls in the service."""
+
         mock_resp = mock.Mock()
-        # Mock raise_for_status call w/optional error.
-        mock_resp.raise_for_status = mock.Mock()
-        if raise_for_status:
-            mock_resp.raise_for_status.side_effect = raise_for_status
         # Set status code and content.
         mock_resp.status_code = status
         mock_resp.content = content
-        # Add json data if provided.
-        if json_data:
-            mock_resp.json = mock.Mock(return_value=json_data)
+
         if headers:
-            mock_resp.headers = deepcopy(headers)
+            mock_resp.headers = copy.deepcopy(headers)
+
         return mock_resp
 
 
@@ -73,11 +69,12 @@ class TestImageRec(TestBase):
     @mock.patch.object(service.Service, "_finish_processing")
     def test_target_rec(
         self,
-        mock_finish_processing,
-        mock_queue_targets,
-        mock_get_image,
-        mock_get_next_id,
-    ):
+        mock_finish_processing: mock.MagicMock,
+        mock_queue_targets: mock.MagicMock,
+        mock_get_image: mock.MagicMock,
+        mock_get_next_id: mock.MagicMock,
+    ) -> None:
+
         mock_get_next_id.return_value = 0
         mock_get_image.return_value = self.image_msg
 
@@ -115,11 +112,12 @@ class TestImageRec(TestBase):
     @mock.patch.object(service.Service, "_finish_processing")
     def test_empty_target_rec(
         self,
-        mock_finish_processing,
-        mock_queue_targets,
-        mock_get_image,
-        mock_get_next_id
-    ):
+        mock_finish_processing: mock.MagicMock,
+        mock_queue_targets: mock.MagicMock,
+        mock_get_image: mock.MagicMock,
+        mock_get_next_id: mock.MagicMock
+    ) -> None:
+
         mock_get_next_id.return_value = 0
 
         # Empty target image message.
@@ -146,7 +144,7 @@ class TestGetImage(TestBase):
     image_msg = TestBase.image_msg.SerializeToString()
 
     @unittest.mock.patch("service.requests.get")
-    def test_get_next_id(self, mock_get):
+    def test_get_next_id(self, mock_get) -> None:
         mock_resp = self._mock_response(content=self.image_msg)
         mock_get.return_value = mock_resp
         retval = self.auto_service._get_image(0)
@@ -156,7 +154,7 @@ class TestGetImage(TestBase):
         self.assertEqual(mock_get.call_args.args[0], self.url)
 
     @unittest.mock.patch("service.requests.get")
-    def test_get_next_id_fail(self, mock_get):
+    def test_get_next_id_fail(self, mock_get: mock.MagicMock) -> None:
         # Wrong status
         mock_resp = self._mock_response(status=100, content=self.image_msg)
         mock_get.return_value = mock_resp
@@ -172,13 +170,12 @@ class TestGetNextId(TestBase):
     image_msg = TestBase.image_msg.SerializeToString()
 
     @unittest.mock.patch("service.requests.post")
-    def test_get_next_id(self, mock_post):
+    def test_get_next_id(self, mock_post: mock.MagicMock) -> None:
         mock_resp = self._mock_response(content=self.image_msg)
         mock_post.return_value = mock_resp
         retval = self.auto_service._get_next_id()
 
         self.assertTrue(mock_post.called)
-        self.assertTrue(isinstance(retval, int))
         self.assertEqual(retval, self.image_id)
 
 
@@ -188,9 +185,9 @@ class TestRunIter(TestBase):
     @mock.patch.object(service.Service, "_get_image")
     def test_run_iter(
         self,
-        mock_get_image,
-        mock_get_next_id
-    ):
+        mock_get_image: mock.MagicMock,
+        mock_get_next_id: mock.MagicMock
+    ) -> None:
         mock_get_next_id.return_value = self.image_id
         mock_get_image.return_value = self.image_msg
 
@@ -213,7 +210,7 @@ class TestTargetQueue(TestBase):
     )
 
     @mock.patch("service.requests.post")
-    def test_successful_queue(self, mock_post):
+    def test_successful_queue(self, mock_post: mock.MagicMock) -> None:
 
         mock_resp = self._mock_response(status=201)
         mock_post.return_value = mock_resp
@@ -233,16 +230,16 @@ class TestTargetQueue(TestBase):
         self.assertEqual(
             mock_post.call_args_list[0][1].get('data'), target_proto.SerializeToString()
         )
-    
+
     @mock.patch("service.requests.post")
-    def test_repeat_target(self, mock_post):
+    def test_repeat_target(self, mock_post: mock.MagicMock) -> None:
 
         repeat_id = 0
         image_id = 1
         mock_resp = self._mock_response(
             status=303,
             headers={
-                "location": 
+                "location":
                 f"{self.master_host}:{self.master_port}/api/pipeline/images/{repeat_id}"
             }
         )
@@ -260,10 +257,11 @@ class TestTargetQueue(TestBase):
 
         self.assertTrue(retval)
 
+
 class TestFinishProcessing(TestBase):
 
     @mock.patch("service.requests.post")
-    def test_successful_procesing(self, mock_post):
+    def test_successful_procesing(self, mock_post: mock.MagicMock) -> None:
 
         image_id = 2
 
@@ -273,8 +271,7 @@ class TestFinishProcessing(TestBase):
 
         url = (
             f"http://{self.master_host}:{self.master_port}"
-            + "/api/pipeline/images/"
-            + f"{image_id}/finish-processing-auto"
+            + f"/api/pipeline/images/{image_id}/finish-processing-auto"
         )
         self.assertTrue(ret)
         self.assertEqual(mock_post.call_args[0][0], url)
