@@ -20,6 +20,7 @@ jobs:
     - env: SERVICE=dashboard
     - env: SERVICE=image-rec-master
     - env: SERVICE=grafana
+    - env: SERVICE=image-rec-auto
     - stage: test
       env: SERVICE_TEST=telemetry
       language: node_js
