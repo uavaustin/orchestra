@@ -64,7 +64,7 @@ class Service:
         t_3 = util.curr_time()
         logging.info(f"{len(targets)} targets found in {t_3 - t_2:d} ms")
 
-        if targets:
+        if targets and len(targets) > 0:
             ret = self._queue_targets(image_id, image_proto, image, targets)
             t_4 = util.curr_time()
 

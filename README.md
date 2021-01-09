@@ -31,7 +31,11 @@ This repository heavily depends on Docker. Make sure both Docker and Docker
 Compose (which is used for testing) are installed on your machine.
 
 To build all the images at once, simply run `make` in the top-level directory.
-If you would like to build specific images, you can either pass the name of the
+*NOTE*: by default, top-level `make` creates the `uavaustin/image-rec-auto` image
+for x86 devices. If you would like to build for the Jetson, initialize the `JETSON`
+environment variable and build in the specific directory.
+
+For building specific images, you can either pass the name of the
 service (e.g. `make interop-proxy`) or you can call `make` from inside the
 service's directory. Note that calling `make` from the service directory does
 not ensure that build-time prerequisites are satisfied.

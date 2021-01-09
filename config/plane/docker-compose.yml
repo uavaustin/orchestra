@@ -55,6 +55,18 @@ services:
     volumes:
       - './imagery:/opt/imagery'
     restart: unless-stopped
+  
+  image-rec-auto:
+    image: uavaustin/image-rec-auto-l4t
+    environment:
+      - IMAGERY_HOST=imagery-plane
+      - IMAGERY_PORT=8081
+      - IMAGE_REC_MASTER_HOST=image-rec-master
+      - IMAGE_REC_MASTER_PORT=8082
+      - FETCH_INTERVAL=1000
+    networks:
+      - plane-net
+    restart: unless-stopped
 
 networks:
   plane-net:
