@@ -19,37 +19,37 @@ export function cleanupAfter(cleanup, limit, message) {
 
   let earlyCall = false;
   let earlyErr = null;
+  let cleanupObj = {};
 
   // Store if there was an error or not in the case that the finish
   // function is called before it is overrided below.
-  let finish = (err) => {
+  cleanupObj.finish = (err) => {
     earlyCall = true;
     earlyErr = err;
   };
 
-  // Resolves after the cleanup is finished.
-  let done = new Promise((resolve, reject) => {
-    // Call the finish function if the timeout is reached.
-    let waitTimeout = setTimeout(() => {
-      finish(Error(timeoutMessage));
-    }, limit);
+  cleanupObj.wait = async () => {
+    // Resolves after the cleanup is finished.
+    let done = new Promise((resolve, reject) => {
+      // Call the finish function if the timeout is reached.
+      let waitTimeout = setTimeout(() => {
+        cleanupObj.finish(Error(timeoutMessage));
+      }, limit);
 
-    // Cancel the timeout, cleanup, and mark the operation as
-    // complete.
-    finish = (err, result) => {
-      clearTimeout(waitTimeout);
-      cleanup();
+      // Cancel the timeout, cleanup, and mark the operation as
+      // complete.
+      cleanupObj.finish = (err, result) => {
+        clearTimeout(waitTimeout);
+        cleanup();
 
-      if (err) reject(err);
-      else resolve(result);
-    };
+        if (err) reject(err);
+        else resolve(result);
+      };
 
-    if (earlyCall) finish(earlyErr);
-  });
+      if (earlyCall) cleanupObj.finish(earlyErr);
+    });
+    return await done;
+  };
 
-  // Async function to wait for the operation to be over and cleaned
-  // up.
-  let wait = async () => await done;
-
-  return { finish, wait };
+  return cleanupObj;
 }

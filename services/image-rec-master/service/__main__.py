@@ -17,7 +17,8 @@ if __name__ == '__main__':
         interop_host=os.environ.get('INTEROP_PROXY_HOST'),
         interop_port=os.environ.get('INTEROP_PROXY_PORT'),
         redis_host=os.environ.get('REDIS_HOST'),
-        redis_port=int(os.environ.get('REDIS_PORT'))
+        redis_port=int(os.environ.get('REDIS_PORT')),
+        max_auto_targets=int(os.environ.get('MAX_AUTO_TARGETS') or -1)
     )
 
     loop = asyncio.get_event_loop()

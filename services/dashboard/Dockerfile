@@ -1,7 +1,5 @@
-ARG BASE=node:8-slim
-
 # Compile our js source
-FROM ${BASE} AS builder
+FROM node:12-slim AS builder
 
 WORKDIR /builder
 
@@ -19,7 +17,7 @@ COPY dashboard .
 RUN npm run build
 
 # Making the actual image now
-FROM ${BASE}
+FROM node:12-slim
 
 WORKDIR /app
 

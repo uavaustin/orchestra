@@ -5,7 +5,7 @@ defmodule InteropProxy.Mixfile do
     [
       app: :interop_proxy,
       version: "0.1.0",
-      elixir: "~> 1.5",
+      elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env),
       compilers: [:phoenix] ++ Mix.compilers,
       start_permanent: Mix.env == :prod,
@@ -27,14 +27,15 @@ defmodule InteropProxy.Mixfile do
 
   defp deps do
     [
-      {:cowboy, "~> 1.0"},
+      {:cowboy, "~> 2.6"},
       {:distillery, "~> 1.3", runtime: false},
       {:exprotobuf, "~> 1.2.9"},
+      {:gpb, "~> 4.12.0"},
       {:flasked, "~> 0.4.0"},
-      {:httpoison, "~> 0.13.0"},
-      {:phoenix, "~> 1.3.0"},
-      {:phoenix_pubsub, "~> 1.0"},
-      {:plug_cowboy, "~> 1.0"},
+      {:httpoison, "~> 1.5"},
+      {:phoenix, "~> 1.4"},
+      {:phoenix_pubsub, "~> 1.1"},
+      {:plug_cowboy, "~> 2.0"},
       {:poison, "~> 3.1.0"}
     ]
   end

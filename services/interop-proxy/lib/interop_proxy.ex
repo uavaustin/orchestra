@@ -11,35 +11,45 @@ defmodule InteropProxy do
   alias InteropProxy.Request
   alias InteropProxy.Sanitize
 
-  import InteropProxy.Session, only: [url: 0, cookie: 0]
+  import InteropProxy.Session, only: [url: 0, cookie: 0, mission_id: 0]
 
   @doc """
-  Return the active mission on the server.
+  Return the mission on the server.
   """
-  def get_active_mission do
-    case Request.get_missions url(), cookie() do
-      {:ok, missions} ->
-        message = missions
-        |> Enum.find(fn mission -> mission["active"] === true end)
-        |> Sanitize.sanitize_mission
-
+  def get_mission do
+    case Request.get_mission url(), cookie(), mission_id() do
+      {:ok, mission} ->
+        message = mission |> Sanitize.sanitize_mission
         {:ok, message}
+
+      {:error, {:message, 404, _content}} ->
+        message = nil |> Sanitize.sanitize_mission
+        {:ok, message}
+
       {:error, _} = other ->
         other
     end
   end
 
   @doc """
-  Same as `get_active_mission/0`, but raises an exception on failure.
+  Same as `get_mission/0`, but raises an exception on failure.
   """
-  def get_active_mission!, do: when_ok get_active_mission()
+  def get_mission!, do: when_ok get_mission()
 
   @doc """
-  Return the stationary and moving obstacles on the server.
+  Return the stationary on the server from the mission.
   """
   def get_obstacles do
-    case Request.get_obstacles url(), cookie() do
-      {:ok, obstacles}    -> {:ok, Sanitize.sanitize_obstacles(obstacles)}
+    case Request.get_mission url(), cookie(), mission_id() do
+      {:ok, mission} ->
+        message = mission |> Sanitize.sanitize_obstacles
+
+        {:ok, message}
+
+      {:error, {:message, 404, _content}} ->
+        message = [] |> Sanitize.sanitize_mission
+        {:ok, message}
+
       {:error, _} = other -> other
     end
   end
@@ -75,14 +85,19 @@ defmodule InteropProxy do
   def post_odlc(%Odlc{} = odlc) do
     {outgoing_odlc, image} = Sanitize.sanitize_outgoing_odlc odlc
 
-    case Request.post_odlc url(), cookie(), outgoing_odlc do
+    case Request.post_odlc url(), cookie(), outgoing_odlc, mission_id() do
       {:ok, returned} ->
         returned = Sanitize.sanitize_odlc returned
 
         if image !== <<>> do
           case Request.post_odlc_image url(), cookie(), returned.id, image do
-            {:ok, _}            -> {:ok, returned}
-            {:error, _} = other -> other
+            {:ok, _}    -> {:ok, returned}
+            {:error, _} ->
+              # Delete odlc that was submitted if image submission fails
+              case Request.delete_odlc url(), cookie(), returned.id do
+                {:ok, _}            -> {:ok, returned}
+                {:error, _} = other -> other
+              end
           end
         else
           {:ok, returned}
@@ -104,7 +119,7 @@ defmodule InteropProxy do
   the images, pass in `image: true` with the options.
   """
   def get_odlcs(opts \\ []) do
-    case Request.get_odlcs url(), cookie() do
+    case Request.get_odlcs url(), cookie(), mission_id() do
       {:ok, odlcs} ->
         image_resp_list = Enum.map odlcs, fn odlc ->
           case Keyword.get opts, :image, false do
@@ -180,7 +195,7 @@ defmodule InteropProxy do
   def put_odlc(id, %Odlc{} = odlc) do
     {outgoing_odlc, image} = Sanitize.sanitize_outgoing_odlc odlc
 
-    case Request.put_odlc url(), cookie(), id, outgoing_odlc do
+    case Request.put_odlc url(), cookie(), id, outgoing_odlc, mission_id() do
       {:ok, returned} ->
         returned = Sanitize.sanitize_odlc returned
 

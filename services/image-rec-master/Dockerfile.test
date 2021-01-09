@@ -1,6 +1,4 @@
-ARG BASE=python:3.7-alpine
-
-FROM ${BASE}
+FROM python:3.7-alpine
 
 WORKDIR /test
 

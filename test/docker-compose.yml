@@ -22,7 +22,7 @@ services:
         ipv4_address: 172.16.238.10
 
   interop-server:
-    image: auvsisuas/interop-server:2018.12
+    image: uavaustin/interop-server:2019.05
     ports:
       - '8080:80'
     networks:
@@ -91,6 +91,18 @@ services:
     networks:
       test_net:
         ipv4_address: 172.16.238.16
+
+  grafana:
+    image: uavaustin/grafana
+    ports:
+      - '3000:3000'
+    environment:
+      - INFLUX_HOST=influx
+      - INFLUX_PORT=8086
+      - DB_NAME=lumberjack
+    networks:
+      test_net:
+        ipv4_address: 172.16.238.19
 
   imagery:
     image: uavaustin/imagery

@@ -11,10 +11,10 @@ defmodule InteropProxyWeb.ConnCase do
 
       def protobuf_response(conn, status_code \\ 200, module) do
         content_type = get_resp_header conn, "content-type"
+        resp = response conn, status_code
 
         assert content_type === ["application/x-protobuf"]
-
-        conn |> response(status_code) |> module.decode
+        module.decode resp
       end
     end
   end
