@@ -244,7 +244,9 @@ class TestTargetQueue(TestBase):
         mock_resp = self._mock_response(
             status=303,
             headers={
-                "location": f"{self.master_host}:{self.master_port}/api/pipeline/images/{repeat_id}"
+                "location": f"""
+                    {self.master_host}:{self.master_port}/api/pipeline/images/{repeat_id}
+                """
             },
         )
         mock_post.return_value = mock_resp

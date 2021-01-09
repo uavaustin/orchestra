@@ -82,3 +82,4 @@ clean:
 	$(MAKE) -C services/imagery clean
 	$(MAKE) -C services/dashboard clean
 	$(MAKE) -C services/image-rec-master clean
+	$(MAKE) -C services/image-rec-auto clean

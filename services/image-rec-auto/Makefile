@@ -3,8 +3,10 @@ DOCKERFLAGS :=
 JETSON ?= "false"
 HAWK_EYE_VERSION := 0.0.2b0
 
-IMAGE_REC_AUTO_IMAGE      := uavaustin/image-rec-auto
-IMAGE_REC_AUTO_TEST_IMAGE := uavaustin/image-rec-auto-test
+IMAGE_REC_AUTO_IMAGE            := uavaustin/image-rec-auto
+IMAGE_REC_AUTO_IMAGE_L4T        := uavaustin/image-rec-auto-l4t
+IMAGE_REC_AUTO_TEST_IMAGE       := uavaustin/image-rec-auto-test
+IMAGE_REC_AUTO_TEST_IMAGE_L4T   := uavaustin/image-rec-auto-test-l4t
 
 current_dir := $(shell pwd)
 
@@ -14,7 +16,7 @@ all: image
 .PHONY: image
 image:
 ifeq "$(JETSON)" "true"
-	docker build -t $(IMAGE_REC_AUTO_IMAGE) -f Dockerfile \
+	docker build -t $(IMAGE_REC_AUTO_IMAGE_L4T) -f Dockerfile \
 		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 \
 		--build-arg HAWK_EYE_VERSION=$(HAWK_EYE_VERSION) \
 		$(DOCKERFLAGS) .. 
@@ -29,7 +31,7 @@ endif
 .PHONY: test
 test:
 ifeq "$(JETSON)" "true"
-	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
+	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE_L4T) -f Dockerfile.test \
 		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 \
 		--build-arg HAWK_EYE_VERSION=$(HAWK_EYE_VERSION)
 		 $(DOCKERFLAGS) ..
@@ -51,4 +53,6 @@ endif
 clean:
 	rm -rf __pycache__ *.pyc messages .tox .pytest_cache .coverage
 	docker rmi -f $(IMAGE_REC_AUTO_IMAGE)
+	docker rmi -f $(IMAGE_REC_AUTO_IMAGE_L4T)
 	docker rmi -f $(IMAGE_REC_AUTO_TEST_IMAGE)
+	docker rmi -f $(IMAGE_REC_AUTO_TEST_IMAGE_L4T)
