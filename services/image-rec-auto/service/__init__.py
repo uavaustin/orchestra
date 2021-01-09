@@ -1,21 +1,21 @@
 """Identifies targets as new images come in."""
 
-__author__ = "Alex Witt"
+__author__ = "Alex Witt, Kevin Li, Bradley Bridges, Shrivu Shankar"
 
+import inflect
 import io
 import logging
-import time
 import requests
-import inflect
+import time
+from typing import List
 
 from PIL import Image
-from typing import List
 from hawk_eye.inference import find_targets, types
+
 from common import logger
 from messages import image_rec_pb2
 from messages import imagery_pb2
 from . import util
-
 
 # Used for printing in Service._queue_targets().
 p = inflect.engine()

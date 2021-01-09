@@ -1,10 +1,9 @@
-__author__ = "Alex Witt"
+__author__ = "Alex Witt, Kevin Li, Bradley Bridges, Shrivu Shankar"
 
 import os
 import sys
 
 from common import logger
-
 from . import Service
 
 

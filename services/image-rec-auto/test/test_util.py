@@ -1,4 +1,4 @@
-__author__ = "Alex Witt"
+__author__ = "Alex Witt, Kevin Li, Bradley Bridges, Shrivu Shankar"
 
 import pathlib
 

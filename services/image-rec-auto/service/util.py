@@ -1,13 +1,16 @@
-__author__ = "Alex Witt"
+"""Basic utilities to manages shape objects and determine target
+location."""
+
+__author__ = "Alex Witt, Bradley Bridges, and Shrivu Shankar"
 
 import io
 import math
 import time
+from typing import Tuple
 
 from hawk_eye.inference import types
 
 from messages import interop_pb2
-
 
 EARTH_RADIUS = 6378137
 EARTH_ECCEN = 0.0818191
@@ -18,7 +21,7 @@ def curr_time() -> int:
     return int(time.perf_counter() * 1000)
 
 
-def get_odlc(image, image_telem, target):
+def get_odlc(image, image_telem, target) -> interop_pb2.Odlc:
     """Convert a target into a odlc message."""
     odlc = interop_pb2.Odlc()
 
@@ -35,7 +38,7 @@ def get_odlc(image, image_telem, target):
     return odlc
 
 
-def _get_lat_lon(image, image_telem, target):
+def _get_lat_lon(image, image_telem, target) -> Tuple[float, float]:
     """Return the lat and lon of a target from the original image."""
     # If we don't have any telemetry, then just return 0, 0.
     if not image_telem:
@@ -89,7 +92,7 @@ def _get_lat_lon(image, image_telem, target):
     return new_lat, new_lon
 
 
-def _get_fov(pillow_image):
+def _get_fov(pillow_image) -> float:
     """Get the horizontal FOV of an image in radians."""
     exif_data = pillow_image.getexif()
     # 41989 is for 'FocalLengthIn35mmFilm'.
@@ -100,7 +103,7 @@ def _get_fov(pillow_image):
     return 2 * math.atan2(36, 2 * focal_length)
 
 
-def _get_earth_radii(lat):
+def _get_earth_radii(lat) -> Tuple[float, float]:
     """Earth radii north/south and east/west."""
     r_1 = (
         EARTH_RADIUS
