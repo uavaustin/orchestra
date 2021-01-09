@@ -46,7 +46,7 @@ class TestBase(unittest.TestCase):
         status: Optional[int] = 200,
         content: Optional[str] = None,
         headers: Optional[dict] = None,
-        ok: Optional[bool] = True
+        ok: Optional[bool] = True,
     ) -> mock.Mock:
         """Generalize function to mock the get/post calls in the service."""
 
@@ -62,7 +62,6 @@ class TestBase(unittest.TestCase):
 
 
 class TestImageRec(TestBase):
-
     @mock.patch.object(service.Service, "_get_next_id")
     @mock.patch.object(service.Service, "_get_image")
     @mock.patch.object(service.Service, "_queue_targets")
@@ -115,7 +114,7 @@ class TestImageRec(TestBase):
         mock_finish_processing: mock.MagicMock,
         mock_queue_targets: mock.MagicMock,
         mock_get_image: mock.MagicMock,
-        mock_get_next_id: mock.MagicMock
+        mock_get_next_id: mock.MagicMock,
     ) -> None:
 
         mock_get_next_id.return_value = 0
@@ -169,7 +168,7 @@ class TestGetImage(TestBase):
                 mock.call(self.url),
                 mock.call().raise_for_status(),
                 mock.call(self.url),
-                mock.call().raise_for_status()
+                mock.call().raise_for_status(),
             ]
         )
 
@@ -189,13 +188,10 @@ class TestGetNextId(TestBase):
 
 
 class TestRunIter(TestBase):
-
     @mock.patch.object(service.Service, "_get_next_id")
     @mock.patch.object(service.Service, "_get_image")
     def test_run_iter(
-        self,
-        mock_get_image: mock.MagicMock,
-        mock_get_next_id: mock.MagicMock
+        self, mock_get_image: mock.MagicMock, mock_get_next_id: mock.MagicMock
     ) -> None:
         mock_get_next_id.return_value = self.image_id
         mock_get_image.return_value = self.image_msg
@@ -215,7 +211,7 @@ class TestTargetQueue(TestBase):
         height=70,
         shape=types.Shape.TRAPEZOID,
         alphanumeric="K",
-        image=TestBase.field_image
+        image=TestBase.field_image,
     )
 
     @mock.patch("service.requests.post")
@@ -237,7 +233,7 @@ class TestTargetQueue(TestBase):
         self.assertTrue(mock_post.called)
         self.assertTrue(retval)
         self.assertEqual(
-            mock_post.call_args_list[0][1].get('data'), target_proto.SerializeToString()
+            mock_post.call_args_list[0][1].get("data"), target_proto.SerializeToString()
         )
 
     @mock.patch("service.requests.post")
@@ -248,9 +244,8 @@ class TestTargetQueue(TestBase):
         mock_resp = self._mock_response(
             status=303,
             headers={
-                "location":
-                f"{self.master_host}:{self.master_port}/api/pipeline/images/{repeat_id}"
-            }
+                "location": f"{self.master_host}:{self.master_port}/api/pipeline/images/{repeat_id}"
+            },
         )
         mock_post.return_value = mock_resp
 
@@ -268,7 +263,6 @@ class TestTargetQueue(TestBase):
 
 
 class TestFinishProcessing(TestBase):
-
     @mock.patch("service.requests.post")
     def test_successful_procesing(self, mock_post: mock.MagicMock) -> None:
 

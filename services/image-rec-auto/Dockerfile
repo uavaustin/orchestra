@@ -41,7 +41,7 @@ COPY image-rec-auto/requirements.txt .
 RUN python3 -m pip install  -r common/requirements.txt \
     -r requirements.txt
 
-ARG HAWK_EYE_VERSION=0.0.2b0
+ARG HAWK_EYE_VERSION
 RUN wget https://github.com/uavaustin/hawk-eye/releases/download/v${HAWK_EYE_VERSION}/hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
     -O hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \
     && python3 -m pip install hawk_eye-${HAWK_EYE_VERSION}-py3-none-any.whl \

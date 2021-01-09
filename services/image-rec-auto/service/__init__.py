@@ -59,9 +59,7 @@ class Service:
         logging.info(f"retreived image in {t_2 - t_1:d} ms")
 
         # Getting targets in our set of blobs (if there are any).
-        targets, _ = find_targets.find_targets(
-            image, self.clf_model, self.det_model
-        )
+        targets, _ = find_targets.find_targets(image, self.clf_model, self.det_model)
 
         t_3 = util.curr_time()
         logging.info(f"{len(targets)} targets found in {t_3 - t_2:d} ms")
@@ -144,7 +142,7 @@ class Service:
         image_id: int,
         image_proto: imagery_pb2.Image,
         image: Image,
-        targets: List[types.Target]
+        targets: List[types.Target],
     ) -> bool:
         """
         Queue the target in the image rec pipeline.
