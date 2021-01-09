@@ -59,4 +59,9 @@ router.post('/api/mission-current', missionCurrent, timeout, async (ctx) => {
   ctx.status = 200;
 });
 
+router.post('/api/mode', timeout, async (ctx) => {
+  await ctx.plane.setMode(ctx.request.proto);
+  ctx.status = 200;
+});
+
 export default router;

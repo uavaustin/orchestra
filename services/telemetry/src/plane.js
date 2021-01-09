@@ -5,6 +5,7 @@ import logger from './common/logger';
 import MavlinkSocket from './mavlink-socket';
 import { receiveMission, sendMission, sendMissionCurrent } from './mission';
 import { degrees, modDegrees360, modDegrees180 } from './util';
+import { onHeartbeat, sendMode } from './mode';
 
 const ConnectionState = Object.freeze({
   NOT_CONNECTED: Symbol('not_connected'),
@@ -39,7 +40,8 @@ export default class Plane {
       alt: {},
       vel: {},
       speed: {},
-      battery: {}
+      battery: {},
+      mode: {}
     });
 
     // Will be assigned on each GLOBAL_POSITION_INT message.
@@ -190,6 +192,18 @@ export default class Plane {
     });
   }
 
+  async setMode(mode) {
+    await this._execTransaction(async () => {
+      this._cxnState = ConnectionState.WRITING;
+
+      try {
+        await sendMode(this._mav, mode);
+      } finally {
+        this._cxnState = ConnectionState.IDLE;
+      }
+    });
+  }
+
   // Add an async task to the queue.
   async _execTransaction(asyncTask) {
     return await new Promise((resolve, reject) => {
@@ -245,7 +259,8 @@ export default class Plane {
       'MISSION_CURRENT': this._onMissionCurrent.bind(this),
       'MISSION_ITEM': this._onMissionItem.bind(this),
       'VFR_HUD': this._onVfrHud.bind(this),
-      'SYS_STATUS': this._onSysStatus.bind(this)
+      'SYS_STATUS': this._onSysStatus.bind(this),
+      'HEARTBEAT': onHeartbeat.bind(this)
     };
 
     // Make every message definition .on
