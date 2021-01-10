@@ -33,11 +33,11 @@ test:
 ifeq "$(JETSON)" "true"
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE_L4T) -f Dockerfile.test \
 		--build-arg BASE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3 \
-		--build-arg HAWK_EYE_VERSION=$(HAWK_EYE_VERSION)
+		--build-arg HAWK_EYE_VERSION=$(HAWK_EYE_VERSION) \
 		 $(DOCKERFLAGS) ..
 
 	docker run -it --ipc=host --rm --runtime nvidia -v $(current_dir)/coverage:/test/coverage \
-		$(IMAGE_REC_AUTO_TEST_IMAGE)
+		$(IMAGE_REC_AUTO_TEST_IMAGE_L4T)
 else
 	docker build -t $(IMAGE_REC_AUTO_TEST_IMAGE) -f Dockerfile.test \
 		--build-arg BASE=pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime  \
