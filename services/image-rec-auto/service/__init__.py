@@ -25,9 +25,9 @@ class Service:
     def __init__(
         self,
         imagery_host: str,
-        imagery_port: str,
+        imagery_port: int,
         master_host: str,
-        master_port: str,
+        master_port: int,
         fetch_interval: int,
     ) -> None:
         """Create a new image-rec-auto service."""
