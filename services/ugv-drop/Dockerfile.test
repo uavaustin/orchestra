@@ -1,0 +1,35 @@
+FROM python:3.7-alpine
+
+WORKDIR /test
+
+# gcc and musl-dev are required for the aioredis dependency.
+RUN apk --no-cache add \
+    gcc \
+    musl-dev \
+    protobuf
+
+COPY common/python/requirements.txt common/requirements.txt
+COPY ugv-drop/requirements.txt .
+COPY ugv-drop/requirements-test.txt .
+
+RUN pip install \
+    -r common/requirements.txt \
+    -r requirements.txt \
+    -r requirements-test.txt
+
+COPY common/messages/imagery.proto \
+    common/messages/image_rec.proto \
+    common/messages/interop.proto \
+    common/messages/telemetry.proto \
+    messages/
+
+RUN mkdir dist && protoc --python_out=dist messages/*.proto && \
+    rm -rf messages && mv dist/messages messages
+
+COPY common/python common
+COPY ugv-drop/service service
+COPY ugv-drop/test test
+
+ENV PYTHONUNBUFFERED=TRUE
+
+CMD python -m pytest
