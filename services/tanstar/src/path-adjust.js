@@ -1,6 +1,15 @@
 // Manages path adjustment at highest level using Pathfinder
 
-import pf from './backend';
+
+// child processes
+const { spawn } = require('child_process');
+const pathfind = spawn();
+
+pathfind.stdout.on('path', ())
+
+
+
+
 
 /*
 1. Take in routed data for starting PF
@@ -24,6 +33,12 @@ export default class PathAdjust {
 
     this._rawPath = null;
     this._adjustedPath = null;
+
+    pathfind.spawn();
+  }
+
+  async spawnPathfind() {
+    pathfind.spawn();
   }
 
   async set(flyzones, obstacles, plane, raw_path) {
@@ -50,7 +65,10 @@ export default class PathAdjust {
   /** Get the pathfinder adjusted path */
   async getAdjusted() {
 
-    const adjusted_path = pf.getAdjustedPath(); // refer to pathfinder.js
+    pathfind.exec('pathfinder.exe --full'); // potentially worth forking instead later
+
+    adjusted_path =
+
     return adjusted_path;
   }
 
