@@ -1,4 +1,6 @@
-# Flags for docker when building images, meant to be overridden
+.DEFAULT_GOAL := all
+
+# Flags for docker when building images, meant to be overridden.
 DOCKERFLAGS :=
 
 IMAGE_UGV_DROP_IMAGE      := uavaustin/ugv-drop

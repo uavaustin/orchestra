@@ -10,7 +10,7 @@ RUN apk --no-cache add \
     protobuf
 
 COPY common/python/requirements.txt common/requirements.txt
-COPY image-rec-master/requirements.txt .
+COPY ugv-drop/requirements.txt .
 
 RUN pip install -r common/requirements.txt -r requirements.txt
 

@@ -42,6 +42,7 @@ class Service:
                     
                     # Double sleep time so there is less congestion.
                     sleep_time *= 2
+                    logging.info(f'received unexpected status code: {res.status_code}.')
                 else:
                     mission = InteropMission.FromString(res.content)
 
