@@ -45,6 +45,7 @@ export default class Plane {
     // Will be assigned on each GLOBAL_POSITION_INT message.
     this._interopTelem = null;
     this._cameraTelem = telemetry.CameraTelem.create({});
+    this._windCov = telemetry.WindCov.create({});
 
     // Will be assigned after mission current or first mission is
     // received.
@@ -97,6 +98,10 @@ export default class Plane {
     return this._interopTelem;
   }
 
+  /** Returns wind covariance estimates. */
+  getWindData() {
+    return this._windCov;
+  }
   /**
    * Get the raw mission from the plane.
    *
@@ -245,7 +250,8 @@ export default class Plane {
       'MISSION_CURRENT': this._onMissionCurrent.bind(this),
       'MISSION_ITEM': this._onMissionItem.bind(this),
       'VFR_HUD': this._onVfrHud.bind(this),
-      'SYS_STATUS': this._onSysStatus.bind(this)
+      'SYS_STATUS': this._onSysStatus.bind(this),
+      'WIND_COV': this._onWindCov.bind(this)
     };
 
     // Make every message definition .on
@@ -337,5 +343,18 @@ export default class Plane {
     ov.battery.voltage = fields.voltage_battery / 1000;
     ov.battery.current = fields.current_battery / 100;
     ov.battery.percentage = fields.battery_remaining;
+  }
+
+  async _onWindCov(fields) {
+    let windcov = this._windCov;
+
+    windcov.time = Date.now() / 1000;
+    windcov.wind_x = fields.wind_x;
+    windcov.wind_y = fields.wind_y;
+    windcov.wind_z = fields.wind_z;
+    windcov.var_horiz = fields.var_horiz;
+    windcov.wind_alt = fields.wind_alt;
+    windcov.horiz_acc = fields.horiz_accuracy;
+    windcov.vert_acc = fields.vert_accuracy;
   }
 }

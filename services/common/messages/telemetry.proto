@@ -115,3 +115,21 @@ message MissionCurrent {
     double time = 1;
     uint32 item_number = 2;
 }
+
+// Wind covariance estimate from the plane.
+message WindCov {
+    double time = 1;
+
+    // Following are all in m/s.
+    float wind_x = 2;
+    float wind_y = 3;
+    float wind_z = 4;
+
+    float var_horiz = 5;
+    float var_vert = 6;
+
+    // Following are in meters.
+    float wind_alt = 7;
+    float horiz_acc = 8;
+    float vert_acc = 9;
+}

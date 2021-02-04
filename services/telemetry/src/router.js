@@ -41,6 +41,10 @@ router.get('/api/overview', (ctx) => {
   ctx.proto = ctx.plane.getOverview();
 });
 
+router.get('/api/wind-data', (ctx) => {
+  ctx.proto = ctx.plane.getWindData();
+});
+
 router.get('/api/raw-mission', timeout, async (ctx) => {
   ctx.proto = await ctx.plane.getRawMission();
 });
