@@ -2,7 +2,7 @@ import koaProtobuf from 'koa-protobuf';
 import Router from 'koa-router';
 
 import logger from './common/logger';
-import { pathfinder } from './messages';
+//import { pathfinder } from './messages';
 
 const router = new Router();
 
@@ -32,7 +32,7 @@ router.get('/api/alive', (ctx) => {
 
 /* Pushes in request data to path-adjust */
 // !! Will deprecate with more robust proto messages later
-router.put('/api/request', request, timeout, (ctx) => {
+router.put('/api/request', request, timeout, async (ctx) => {
   await ctx.PathAdjust.set(ctx.request.proto);
   ctx.status = 200
 });
@@ -40,13 +40,13 @@ router.put('/api/request', request, timeout, (ctx) => {
 
 /* Returns response proto from path-adjust, pathfinder */
 // !! Will deprecate with more robust proto messages later
-router.get('/api/response', (ctx) => {
+router.get('/api/response', async (ctx) => {
   const adjusted = await ctx.PathAdjust.getAdjusted();
 
-  ctx.proto = pathfinder.Response.create({
-    success: True,
-    adjusted
-  });
+  //ctx.proto = pathfinder.Response.create({
+  //  success: True,
+  //  adjusted
+  //});
 });
 
 // This was my first attempt at fixing lines 35-50, but I know it's very wrong
@@ -90,14 +90,14 @@ router.put('/api/request', Request, timeout, (ctx) => {
 //});
 
 /* Returns adjusted mission data proto */
-router.get('/api/adjusted-mission', (ctx) => {
+router.get('/api/adjusted-mission', async (ctx) => {
   const adjusted = await ctx.PathAdjust.getAdjusted();
 
   // TODO: Update protos for more reponse patterns
-  ctx.proto = pathfinder.Response.create({
-    success: True,
-    adjusted
-  });
+  //ctx.proto = pathfinder.Response.create({
+  //  success: True,
+  //  adjusted
+  //});
 });
 
 export default router;

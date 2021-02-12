@@ -1,16 +1,5 @@
 // Manages path adjustment at highest level using Pathfinder
 
-
-// child processes
-const { spawn } = require('child_process');
-const pathfind = spawn();
-
-pathfind.stdout.on('path', ())
-
-
-
-
-
 /*
 1. Take in routed data for starting PF
 
@@ -22,6 +11,8 @@ pathfind.stdout.on('path', ())
 
 3. Channel PF from backend (WASM)
 */
+
+const { spawn } = require('child_process');
 
 export default class PathAdjust {
 
@@ -63,17 +54,21 @@ export default class PathAdjust {
   //}
 
   /** Get the pathfinder adjusted path */
-  async getAdjusted() {
+  async transformPath() {
 
-    pathfind.exec('pathfinder.exe --full'); // potentially worth forking instead later
+    // run pathfinder
+    const pathfind = spawn('cargo run -p pathfind'); // TODO: simplify CL with makefile
 
-    adjusted_path =
+    this._raw_path.pipe(pathfind.stdin) // TODO: pipe raw path into pathfind
+
+    pathfind.stdout.on('adjusted_path', (adjusted_path) => {
+      console.log(`pathfind stdout:\n${adjusted_path}`);
+    });
 
     return adjusted_path;
   }
 
-  async pathfind() {
-    this.set()
-    this.getAdjusted()
+  async getAdjusted() {
+    return this._adjustedPath
   }
 }
