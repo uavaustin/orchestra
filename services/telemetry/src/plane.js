@@ -251,7 +251,8 @@ export default class Plane {
       'MISSION_ITEM': this._onMissionItem.bind(this),
       'VFR_HUD': this._onVfrHud.bind(this),
       'SYS_STATUS': this._onSysStatus.bind(this),
-      'WIND_COV': this._onWindCov.bind(this)
+      'WIND_COV': this._onWindCov.bind(this),
+      'GPS_STATUS': this._bruh.bind(this)
     };
 
     // Make every message definition .on
@@ -264,6 +265,9 @@ export default class Plane {
     this._mav.on('ignored', (type) => {
       logger.debug(`Ignoring message ${type}`);
     });
+  }
+  async _bruh(fields) {
+    console.log(fields.satellites_visible); // eslint-disable-line
   }
 
   async _onAttitude(fields) {
