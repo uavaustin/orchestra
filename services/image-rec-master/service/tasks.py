@@ -102,8 +102,31 @@ async def queue_new_images(app):
             if len(ids) > 0:
                 tr = r.multi_exec()
                 tr.sadd('all-images', *ids)
-                tr.lpush('unprocessed-auto', *ids)
+                # tr.lpush('unprocessed-auto', *ids)
                 tr.lpush('unprocessed-manual', *ids)
+
+                # Geethika additions
+                # get max-auto-targets var, see if this has been hit:
+                # if yes, new images should be put into skipped-auto
+                curr_tar_cnt = int(await r.get('auto-target-count') or 0)
+                max_tars = app['max_auto_targets'] or -1
+                if max_tars != -1 and curr_tar_cnt >= max_tars:
+                    tr.lpush('skipped-auto', *ids)
+                else:
+                    tr.lpush('unprocessed-auto', *ids)
+
+                # if the limit is hit, then then all unprocessed and
+                # processing images should be moved to the skipped list.
+                # new task?
+
+                # Also, when an auto target is removed and no longer at the
+                # limit, the targets that were skipped should now go back into
+                # the processing list. add to remove_targets task
+
+                # The skipped-auto should actually be a list to preserve the
+                # order in which targets are processed once they go back,
+                # though the behavior should be the same when returning the
+                # list, and have it sorted by ID like it is now.
 
                 if len(ids) == 1:
                     logging.info(f'image {ids[0]} queued')

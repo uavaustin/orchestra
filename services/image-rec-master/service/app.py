@@ -42,7 +42,8 @@ async def handle_get_pipeline(request):
     get_set('processed-auto')
     get_set('retrying-auto')
     get_set('errored-auto')
-    get_set('skipped-auto')
+    # get_set('skipped-auto') # make this a list?
+    get_list('skipped-auto')
 
     # Manual image rec state.
     get_list('unprocessed-manual')
@@ -111,7 +112,6 @@ async def handle_process_next_auto_pipeline_image(request):
     """Start the processing window for the next auto image."""
     id_str = await request.app['redis'].rpoplpush('unprocessed-auto',
                                                   'processing-auto')
-
     if id_str:
         image_id = int(id_str)
         image = await _get_image(request, image_id)
@@ -210,6 +210,15 @@ async def handle_post_pipeline_target(request):
                     auto_count = int(await r.get('auto-target-count') or 0)
 
                     if auto_count >= request.app['max_auto_targets']:
+                        # do something different here
+                        # move unprocessed and process lists to skipped
+                        # unprocessed =
+                        # await get_int_list(r, 'unprocessed-auto')
+                        # processing = await get_int_list(r, 'processing-auto')
+                        # t = request.app['redis'].multi_exec()
+                        # t.lpush('skipped-auto', *unprocessed)
+                        # t.lpush('skipped-auto', *processing)
+                        # await t.execute()
                         return web.HTTPConflict()
 
                 # Check for uniqueness
@@ -328,6 +337,14 @@ async def handle_queue_pipeline_target_removal(request):
 
                 if odlc.autonomous:
                     tr.decr('auto-target-count')
+                    # if auto-target-count is < max, then move
+                    # first max - curr targets from skipped to processed
+                    # auto_count = int(await r.get('auto-target-count') or 0)
+                    # if auto_count - 1 < request.app['max_auto_targets']:
+                    #     diff = request.app['max_auto_targets'] - auto_count
+                    #     for i in range(1, diff):
+                    #         tr.rpoplpush('skipped-auto',
+                    #                      'processing-auto')
 
                 tr.lpush('unremoved-targets', target_id)
 

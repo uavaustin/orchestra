@@ -16,10 +16,25 @@ async def app(aiohttp_client, redis):
     app['http_client'] = ClientSession()
     app['imagery_url'] = 'http://imagery:1234'
     app['interop_url'] = 'http://interop-proxy:1234'
+    app['max_auto_targets'] = -1
 
     yield app
 
     await app['http_client'].close()
+
+
+@pytest.fixture
+async def app_skip(aiohttp_client, redis):
+    app_skip = web.Application()
+    app_skip['redis'] = redis
+    app_skip['http_client'] = ClientSession()
+    app_skip['imagery_url'] = 'http://imagery:1234'
+    app_skip['interop_url'] = 'http://interop-proxy:1234'
+    app_skip['max_auto_targets'] = 3
+
+    yield app_skip
+
+    await app_skip['http_client'].close()
 
 
 @pytest.fixture
@@ -94,6 +109,51 @@ async def test_queue_new_images_with_images_existing(app, redis, http_mock):
     assert await get_int_set(redis, 'all-images') == [1, 2]
     assert await get_int_list(redis, 'unprocessed-auto') == [1, 2]
     assert await get_int_list(redis, 'unprocessed-manual') == [1, 2]
+
+
+async def test_queue_new_images_skipping(app_skip, redis, http_mock):
+    available_images = AvailableImages()
+    available_images.id_list.extend([1, 2, 3])
+
+    http_mock.get('http://imagery:1234/api/available',
+                  body=available_images.SerializeToString(),
+                  headers={'Content-Type': 'application/x-protobuf'})
+
+    await service.tasks.queue_new_images(app_skip)
+
+    for i in range(1, 4):
+        odlc = Odlc()
+        odlc.type = Odlc.EMERGENT
+        odlc.pos.lat = 12.01
+        odlc.pos.lon = -13.51
+        odlc.autonomous = 1
+        odlc.description = 'test test'
+        odlc.image = b'test-image'
+        target = ('id', i, 'image_id', i + 1, 'odlc', odlc.SerializeToString(),
+                  'submitted', 0, 'errored', 0, 'removed', 0)
+
+        await redis.sadd('all-targets', i)
+        await redis.lpush('unsubmitted-targets', i)
+        await redis.hmset('target:' + str(i), *target)
+
+        http_mock.post('http://interop-proxy:1234/api/odlcs')
+
+        await service.tasks.submit_targets(app_skip)
+
+    available_images.id_list.extend([4])
+
+    http_mock.get('http://imagery:1234/api/available',
+                  body=available_images.SerializeToString(),
+                  headers={'Content-Type': 'application/x-protobuf'})
+
+    await service.tasks.queue_new_images(app_skip)
+
+    assert app_skip['max_auto_targets'] == 3
+    assert await get_int_set(redis, 'all-images') == [1, 2, 3, 4]
+    assert await get_int_list(redis, 'unprocessed-manual') == [4, 3, 2, 1]
+    assert await get_int_list(redis, 'unprocessed-auto') == [3, 2, 1]
+    assert await get_int_set(redis, 'submitted-targets') == [1, 2, 3]
+    assert await get_int_list(redis, 'skipped-auto') == [4]
 
 
 async def test_requeue_auto_images_no_error(app, redis):
