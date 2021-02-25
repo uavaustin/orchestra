@@ -1,6 +1,7 @@
 # Flags for docker when building images, meant to be overridden
 DOCKERFLAGS :=
 JETSON ?= "false"
+OPTIONS ?= -it
 HAWK_EYE_VERSION := 0.0.2b0
 
 IMAGE_REC_AUTO_IMAGE            := uavaustin/image-rec-auto
@@ -45,7 +46,7 @@ else
 		--build-arg HAWK_EYE_VERSION=$(HAWK_EYE_VERSION) \
 		$(DOCKERFLAGS) ..
 	
-	docker run -it --ipc=host --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run $(OPTIONS) --ipc=host --rm -v $(current_dir)/coverage:/test/coverage \
 		$(IMAGE_REC_AUTO_TEST_IMAGE)
 endif
 
