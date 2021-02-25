@@ -8,7 +8,7 @@
     "start": "node ./bin/start-service",
     "build": "babel src --out-dir lib",
     "build-msg": "mkdir -p lib && pbjs -t static-module --es6 --keep-case -o src/messages.js src/messages/*.proto",
-    "test": "jest",
+    "test": "jest --runInBand",
     "lint": "eslint src test --ignore-pattern src/messages.js"
   },
   "dependencies": {
