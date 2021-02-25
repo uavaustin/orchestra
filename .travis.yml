@@ -20,6 +20,7 @@ jobs:
     - env: SERVICE=dashboard
     - env: SERVICE=image-rec-master
     - env: SERVICE=grafana
+    - env: SERVICE=image-rec-auto
     - stage: test
       env: SERVICE_TEST=telemetry
       language: node_js
@@ -37,6 +38,9 @@ jobs:
       language: node_js
       node_js: '10'
     - env: SERVICE_TEST=image-rec-master
+      language: python
+      python: '3.7'
+    - env: SERVICE_TEST=image-rec-auto
       language: python
       python: '3.7'
 notifications:

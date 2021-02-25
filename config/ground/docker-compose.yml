@@ -105,6 +105,23 @@ services:
       - ./imagery:/opt/imagery
     restart: unless-stopped
 
+  image-rec-redis:
+    image: redis:alpine
+    command: redis-server --save "" --appendonly no
+    ports:
+      - '6379:6379'
+    networks:
+      - ground-net
+
+  image-rec-master:
+    image: uavaustin/image-rec-master
+    environment:
+      - REDIS_HOST=image-rec-redis
+    ports:
+      - '8082:8082'
+    networks:
+      - ground-net
+
 networks:
   ground-net:
 
