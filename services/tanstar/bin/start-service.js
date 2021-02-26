@@ -1,4 +1,3 @@
-
 import Service from '../src/service';
 
 // data for service creation is hard-coded (for now) because

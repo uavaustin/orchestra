@@ -4,8 +4,11 @@ import request from 'superagent';
 import addProtobuf from 'superagent-protobuf';
 import koaLogger from './common/koa-logger';
 import logger from './common/logger';
+import { telemetry, interop, pathfinder } from './messages';
+
 import router from './router';
-import { telemetry, interop } from './messages';
+import Pather from './pather'
+
 
 addProtobuf(request);
 
@@ -22,8 +25,9 @@ export default class Service {
   constructor(options) {
     this._port = options.port;
     this._serviceTimeout = options.serviceTimeout;
-    this._interopUrl =
-      `http://${options.interopProxyHost}:${options.interopProxyPort}`;
+
+    this._pather = null;
+    this._server = null;
   }
 
   /**
@@ -31,7 +35,9 @@ export default class Service {
    */
   async start(){
     logger.info('tanstar starting up');
-    this._server = await this._createApi();
+    this._pather = new Pather;
+    await this._pather.connect();
+    this._server = await this._createApi(this._pather);
     logger.info('up and running!');
   }
 
@@ -42,6 +48,7 @@ export default class Service {
     assert(this._server != null);
 
     logger.info('tanstar shutting down');
+    await this._pather.disconnect();
     await this._server.closeAsync();
     logger.info('tanstar shut down');
   }
@@ -49,8 +56,10 @@ export default class Service {
   /**
    * Sets up new Koa app using specified routes and port numbers.
    */
-  async _createApi(){
-    const app = new Koa();
+  async _createApi(pather){
+    let app = new Koa();
+
+    app.context.pather = pather;
 
     app.use(koaLogger());
 
@@ -71,25 +80,5 @@ export default class Service {
         server.close(() => resolve());
       })
     });
-  }
-
-  /**
-   * Retrieves stationary obstacle information from interop-proxy.
-   *
-   * @return An interop obstacle message with the time and the
-   *         stationary obstacles array. Null if unable get mission
-   *         data.
-   */
-  async _retrieveObstacles(){
-    const url = this._interopUrl + '/api/obstacles';
-    try {
-      const res = await request.get(url)
-                  .timeout(this._serviceTimeout)
-                  .proto(interop.Obstacles);
-      return res.body;
-    } catch (_err) {
-      logger.error('Unable to get mission data from interop-proxy');
-      return null;
-    }
   }
 }

@@ -11,6 +11,7 @@ RUN npm install
 
 COPY common/messages/interop.proto \
     common/messages/telemetry.proto \
+    common/messages/pathfinder.proto \
     src/messages/
 
 RUN npm run build-msg

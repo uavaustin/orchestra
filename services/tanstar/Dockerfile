@@ -11,11 +11,10 @@ COPY tanstar/package.json .
 
 RUN npm install
 
-COPY common/messages/telemetry.proto \
-     src/messages/
-
 COPY common/messages/interop.proto \
-      src/messages/
+  common/messages/pathfinder.proto \
+  common/messages/telemetry.proto \
+     src/messages/
 
 RUN npm run build-msg
 
