@@ -7,6 +7,8 @@ ALPINE_IMAGE    := alpine
 
 current_dir := $(shell pwd)
 
+OPTIONS ?= -it
+
 .PHONY: all
 all: image
 
@@ -17,7 +19,7 @@ image:
 .PHONY: test
 test: alpine
 	docker build -t $(PONG_TEST_IMAGE) -f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run $(OPTIONS) --rm -v $(current_dir)/coverage:/test/coverage \
 		-v /var/run/docker.sock:/var/run/docker.sock $(PONG_TEST_IMAGE)
 
 .PHONY: alpine

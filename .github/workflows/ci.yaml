@@ -1,0 +1,146 @@
+name: Orchestra
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service: [
+                    mavproxy,
+                    interop-proxy,
+                    telemetry,
+                    pong,
+                    forward-interop,
+                    imagery,
+                    image-rec-master,
+                    image-rec-auto,
+                    grafana
+                ]
+        steps:
+            - uses: actions/checkout@v2
+            - name: Building services
+              run: |
+                ./ci/script.sh
+              env:
+                SERVICE: ${{ matrix.service }}
+
+    test-interop-proxy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Setup environment
+              uses: actions/setup-elixir@v1
+              with:
+                elixir-version: '1.8'
+                otp-version: '20'
+            - name: Testing service
+              run: |
+                ./ci/script.sh
+              env:
+                SERVICE_TEST: interop-proxy
+                OPTIONS: "-i"
+
+    test-telemetry:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+
+          - name: Setup environment
+            uses: actions/setup-node@v1
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: telemetry
+              OPTIONS: "-i"
+
+    test-forward-interop:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-node@v1
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: forward-interop
+              OPTIONS: "-i"
+
+    test-pong:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-node@v1
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: pong
+              OPTIONS: "-i"
+
+    test-imagery:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-node@v1
+            with:
+              node-version: '12'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: imagery
+              OPTIONS: "-i"
+
+    test-image-rec-master:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-python@v2
+            with:
+              python-version: '3.8'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: image-rec-master
+              OPTIONS: "-i"
+
+    test-image-rec-auto:
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+  
+          - name: Setup environment
+            uses: actions/setup-python@v2
+            with:
+              python-version: '3.8'
+          - name: Testing service
+            run: |
+              ./ci/script.sh
+            env:
+              SERVICE_TEST: image-rec-auto
+              OPTIONS: "-i"

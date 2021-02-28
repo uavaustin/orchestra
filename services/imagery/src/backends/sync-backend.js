@@ -82,7 +82,7 @@ export default class SyncBackend {
     const { body: msg } =
       await request.get(this._syncUrl + '/api/available')
         .proto(imagery.AvailableImages)
-        .timeout(5000);
+        .timeout(3000);
 
     return msg.id_list;
   }

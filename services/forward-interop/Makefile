@@ -6,6 +6,8 @@ FORWARD_INTEROP_TEST_IMAGE := uavaustin/forward-interop-test
 
 current_dir := $(shell pwd)
 
+OPTIONS ?= "-it"
+
 .PHONY: all
 all: image
 
@@ -17,7 +19,7 @@ image:
 test:
 	docker build -t $(FORWARD_INTEROP_TEST_IMAGE) \
 		-f Dockerfile.test $(DOCKERFLAGS) ..
-	docker run -it --rm -v $(current_dir)/coverage:/test/coverage \
+	docker run $(OPTIONS) --rm -v $(current_dir)/coverage:/test/coverage \
 		$(FORWARD_INTEROP_TEST_IMAGE)
 
 .PHONY: clean

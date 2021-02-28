@@ -6,6 +6,8 @@
 # start with "/test/..."), we have to replace this with the path of
 # the service.
 
+# Submit to coveralls only on the Travis CI.
+
 handle_nodejs() {
   NODEJS_LCOV=services/"$SERVICE_TEST"/coverage/lcov.info
 

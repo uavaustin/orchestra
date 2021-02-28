@@ -67,7 +67,14 @@ fi
 if [ "$built" -eq 0 ]; then
     printf "\n\033[34mStarting tests...\033[0m\n\n"
 
-    docker run -it --rm --net=interop-proxy-test-net \
+    # CHeck for docker run options
+    if [ -z "$1" ]; then
+        flags="-it"
+    else
+        flags="$1"
+    fi
+
+    docker run ${flags} --rm --net=interop-proxy-test-net \
             -e INTEROP_URL=172.37.0.2 $INTEROP_PROXY_TEST_IMAGE
 
     result=$?

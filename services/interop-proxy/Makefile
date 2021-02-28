@@ -4,6 +4,8 @@ DOCKERFLAGS :=
 INTEROP_PROXY_IMAGE      := uavaustin/interop-proxy
 INTEROP_PROXY_TEST_IMAGE := uavaustin/interop-proxy-test
 
+OPTIONS ?= "-it"
+
 current_dir := $(shell pwd)
 
 .PHONY: all
@@ -16,7 +18,7 @@ image:
 .PHONY: test
 test:
 	DOCKERFLAGS=$(DOCKERFLAGS) INTEROP_PROXY_IMAGE=$(INTEROP_PROXY_IMAGE) \
-		INTEROP_PROXY_TEST_IMAGE=$(INTEROP_PROXY_TEST_IMAGE) ./test.sh
+		INTEROP_PROXY_TEST_IMAGE=$(INTEROP_PROXY_TEST_IMAGE) ./test.sh $(OPTIONS)
 
 .PHONY: clean
 clean:
