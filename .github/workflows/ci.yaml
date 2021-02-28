@@ -15,7 +15,7 @@ jobs:
                     forward-interop,
                     imagery,
                     image-rec-master,
-                    image-rec-auto
+                    image-rec-auto,
                     grafana
                 ]
         steps:
@@ -25,9 +25,6 @@ jobs:
                 ./ci/script.sh
               env:
                 SERVICE: ${{ matrix.service }}
-            - name: Clean up
-              run: |
-                ./ci/after-script.sh
 
     test-interop-proxy:
         runs-on: ubuntu-latest
@@ -45,9 +42,6 @@ jobs:
               env:
                 SERVICE_TEST: interop-proxy
                 OPTIONS: "-i"
-            - name: Clean up
-              run: |
-                ./ci/after-script.sh
 
     test-telemetry:
       runs-on: ubuntu-latest
@@ -64,9 +58,6 @@ jobs:
             env:
               SERVICE_TEST: telemetry
               OPTIONS: "-i"
-          - name: Clean up
-            run: |
-              ./ci/after-script.sh
 
     test-forward-interop:
       runs-on: ubuntu-latest
@@ -83,9 +74,6 @@ jobs:
             env:
               SERVICE_TEST: forward-interop
               OPTIONS: "-i"
-          - name: Clean up
-            run: |
-              ./ci/after-script.sh
 
     test-pong:
       runs-on: ubuntu-latest
@@ -102,9 +90,6 @@ jobs:
             env:
               SERVICE_TEST: pong
               OPTIONS: "-i"
-          - name: Clean up
-            run: |
-              ./ci/after-script.sh
 
     test-imagery:
       runs-on: ubuntu-latest
@@ -121,9 +106,6 @@ jobs:
             env:
               SERVICE_TEST: imagery
               OPTIONS: "-i"
-          - name: Clean up
-            run: |
-              ./ci/after-script.sh
 
     test-image-rec-master:
       runs-on: ubuntu-latest
@@ -140,9 +122,6 @@ jobs:
             env:
               SERVICE_TEST: image-rec-master
               OPTIONS: "-i"
-          - name: Clean up
-            run: |
-              ./ci/after-script.sh
 
     test-image-rec-auto:
       runs-on: ubuntu-latest
@@ -159,6 +138,3 @@ jobs:
             env:
               SERVICE_TEST: image-rec-auto
               OPTIONS: "-i"
-          - name: Clean up
-            run: |
-              ./ci/after-script.sh
