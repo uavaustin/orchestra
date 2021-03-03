@@ -65,6 +65,71 @@ class Service:
 
             pass
 
+""" Under Construction """
+
+
+
+
+
+@routes.get('/api/kinematics')
+async def updates(request):
+    """Updates location, velocity, and acceleration and other properties"""
+
+    #initialize telemetry data
+    lati = Position.lat
+    long = Position.lon
+    alti = Overview.alt
+    velX = Velocity.x
+    velY = Velocity.y
+    velZ = Velocity.z
+    acclX =
+    acclY =
+    acclZ =
+    #need to include readings for acceleration in telemetry
+
+    positCords = geoCord(lati, long, alti)
+    velVector = vector(velX, velY, velZ)
+    accelVector = vector(acclX, acclY, acclZ)
+    """ still need readings for these as well
+
+    origin = geoCord()
+    drag = float()
+    systemMass = float()
+    chuteArea = float()
+    deployTime = float()
+
+    """
+    #Updates properties of the plane for our UGVDropCalculator
+
+    updates = dropCalculations(velVector, accelVector, positCords, origin, drag, systemMass, chuteArea, deployTime)
+    updates.updateLocation()
+    updates.updateVelocity()
+    updates.updateAcceleration()
+    updates.updateAirDensity()
+    updates.updateChuteDepTime()
+
+    #Updates our initialized variables
+    velX = updates.vX
+    velY = updates.vY
+    velZ = updates.vZ
+
+    acclX = updates.aX
+    acclY = updates.aY
+    acclZ = updates.aZ
+    
+return _proto_response(request, msg)
+
+
+@routes.get('/api/projectilelocation')
+async def handle_alive(request):
+    """Send back text as a sanity check."""
+    return web.Response(text='Wazzup?\n')
+
+
+
+
+
+
 @routes.get('/api/droplocation')
 async def get_drop_location(request):
     """Return the drop location"""
@@ -138,14 +203,3 @@ async def get_drop_location(request):
 '''
 
     return _proto_response(request, msg)
-
-@routes.get('/api/projectilecentral')
-async def handle_alive(request):
-    """Send back text as a sanity check."""
-    return web.Response(text='Wazzup?\n')
-
-
-@routes.get('/api/projectilelocation')
-async def handle_alive(request):
-    """Send back text as a sanity check."""
-    return web.Response(text='Wazzup?\n')
