@@ -1,0 +1,8 @@
+[package]
+name = "path-service"
+version = "0.1.0"
+authors = ["chase"]
+edition = "2018"
+
+[dependencies]
+pathfinder-cli = { git = "https://github.com/uavaustin/pathfinder-cli"}

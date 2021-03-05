@@ -1,3 +1,25 @@
+# ----------
+# Rust stage
+# ----------
+
+FROM rust as builder
+
+WORKDIR /prod
+
+COPY tanstar/Cargo.toml .
+
+RUN cargo build --release --bin pathfinder
+
+FROM rust as runtime
+
+WORKDIR prod/
+
+COPY --from=builder /prod/target/release/pathfinder /usr/local/bin
+
+# ----------
+# Node stage
+# ----------
+
 FROM node:12-alpine
 
 ENV NODE_ENV=info \
@@ -6,6 +28,7 @@ ENV NODE_ENV=info \
 
 WORKDIR /prod
 
+COPY --from=builder /prod/target/release/pathfinder /usr/local/bin
 COPY common/nodejs/package.json src/common/
 COPY tanstar/package.json .
 
