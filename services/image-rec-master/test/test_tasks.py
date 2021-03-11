@@ -4,6 +4,7 @@ import pytest
 
 from messages.imagery_pb2 import AvailableImages
 from messages.interop_pb2 import Odlc
+from messages.image_rec_pb2 import PipelineTarget
 
 import service.tasks
 from service.util import get_int_list, get_int_set
@@ -126,7 +127,7 @@ async def test_queue_new_images_skipping(app_skip, redis, http_mock):
         odlc.type = Odlc.EMERGENT
         odlc.pos.lat = 12.01
         odlc.pos.lon = -13.51
-        odlc.autonomous = 1
+        odlc.autonomous = True
         odlc.description = 'test test'
         odlc.image = b'test-image'
         target = ('id', i, 'image_id', i + 1, 'odlc', odlc.SerializeToString(),
@@ -136,9 +137,11 @@ async def test_queue_new_images_skipping(app_skip, redis, http_mock):
         await redis.lpush('unsubmitted-targets', i)
         await redis.hmset('target:' + str(i), *target)
 
-        http_mock.post('http://interop-proxy:1234/api/odlcs')
+        # http_mock.post('http://interop-proxy:1234/api/odlcs')
 
         await service.tasks.submit_targets(app_skip)
+
+    assert await get_int_set(redis, 'submitted-targets') == [1, 2, 3]
 
     available_images.id_list.extend([4])
 
@@ -148,7 +151,18 @@ async def test_queue_new_images_skipping(app_skip, redis, http_mock):
 
     await service.tasks.queue_new_images(app_skip)
 
+    # resp = await http_mock.get(
+    #     'http://imagery:1234/api/pipeline/targets/3',
+    #     headers={'Content-Type':
+    #              'application/x-protobuf'})
+
+    # assert resp.status == 200
+
+    # msg = PipelineTarget.FromString(await resp.read())
+
+    # assert msg.odlc.autonomous is True
     assert app_skip['max_auto_targets'] == 3
+    assert await app_skip['redis'].get('auto-target-count') is None
     assert await get_int_set(redis, 'all-images') == [1, 2, 3, 4]
     assert await get_int_list(redis, 'unprocessed-manual') == [4, 3, 2, 1]
     assert await get_int_list(redis, 'unprocessed-auto') == [3, 2, 1]

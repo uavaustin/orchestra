@@ -108,12 +108,21 @@ async def queue_new_images(app):
                 # Geethika additions
                 # get max-auto-targets var, see if this has been hit:
                 # if yes, new images should be put into skipped-auto
-                curr_tar_cnt = int(await r.get('auto-target-count') or 0)
+                # curr_tar_cnt = len(await get_int_set(r, 'submitted-targets'))
                 max_tars = app['max_auto_targets'] or -1
-                if max_tars != -1 and curr_tar_cnt >= max_tars:
-                    tr.lpush('skipped-auto', *ids)
+                if max_tars != -1:
+                    curr_tar_cnt = int(await r.get('auto-target-count') or 0)
+                    if curr_tar_cnt >= max_tars:
+                        tr.lpush('skipped-auto', *ids)
+                    else:
+                        tr.lpush('unprocessed-auto', *ids)
                 else:
                     tr.lpush('unprocessed-auto', *ids)
+
+                # if max_tars != -1 and curr_tar_cnt >= max_tars:
+                #     tr.lpush('skipped-auto', *ids)
+                # else:
+                #     tr.lpush('unprocessed-auto', *ids)
 
                 # if the limit is hit, then then all unprocessed and
                 # processing images should be moved to the skipped list.
