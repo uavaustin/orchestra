@@ -117,10 +117,16 @@ services:
     image: uavaustin/image-rec-master
     environment:
       - REDIS_HOST=image-rec-redis
+      - IMAGERY_HOST=imagery-ground
     ports:
       - '8082:8082'
+    depends-on:
+      - interop-proxy
+      - imagery-ground
+      - image-rec-redis
     networks:
       - ground-net
+    restart: unless-stopped
 
 networks:
   ground-net:
