@@ -1,1 +1,27 @@
-{"time":0,"flyzones":[{"alt_msl_max":0,"alt_msl_min":200,"boundary":[{"lat":0,"lon":0},{"lat":100,"lon":200},{"lat":200,"lon":0}]}],"obstacles":[{"lat":100,"lon":50},100,10]}
+{
+  "time":0,
+  "flyzones":[{
+    "alt_msl_max":0,
+    "alt_msl_min":200,
+    "boundary":[{
+      "lat":0,
+      "lon":0
+    },
+    {
+      "lat":100,
+      "lon":200
+    },
+    {
+      "lat":200,
+      "lon":0
+    }]
+  }],
+  "obstacles":[{
+    "pos":{
+      "lat":100,
+      "lon":50
+    },
+    "height":100,
+    "radius":10
+    }]
+}

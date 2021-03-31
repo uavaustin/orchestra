@@ -35,10 +35,46 @@ router.get('/api/alive', (ctx) => {
 //router.get('/api/pather-alive', async (ctx) => {
 //  ctx.body = ctx.pather.getStatus();
 //});
+router.post('/api/mission', mission, async (ctx) => {
+  await ctx.pather.setRawPath(ctx.request.proto);
+  ctx.status = 200;
+});
+
+router.get('/api/mission', async (ctx) => {
+  const mission = await ctx.pather.getRawPath();
+  ctx.proto = pathfinder.Mission.create({
+    time: Date.now(),
+    waypoints: mission.waypoints
+  });
+});
+
+router.post('/api/plane', plane, async (ctx) => {
+  await ctx.pather.setPlane(ctx.request.proto);
+  ctx.status = 200;
+});
+
+router.get('/api/plane', async (ctx) => {
+  const plane = await ctx.pather.getPlane();
+  ctx.proto = pathfinder.Plane.create({
+    time: Date.now(),
+    pos: plane.pos,
+    altitude: plane.altitude
+  });
+});
 
 router.post('/api/flight-field', field, async (ctx) => {
   await ctx.pather.setFlightField(ctx.request.proto);
   ctx.status = 200;
+});
+
+router.get('/api/flight-field', async (ctx) => {
+  const flyz = await ctx.pather.getFlyzones();
+  const obstac = await ctx.pather.getObstacles();
+  ctx.proto = pathfinder.FlightField.create({
+    time: Date.now(),
+    flyzones: flyz,
+    obstacles: obstac
+  });
 });
 
 //router.get('/api/field', timeout, async (ctx) => {

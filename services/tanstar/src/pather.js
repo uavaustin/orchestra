@@ -51,9 +51,9 @@ export default class Pather {
     'Pather is alive!'
   }
 
-  async setFlightField(flyzones, obstacles) {
-    this._flyzones = flyzones;
-    this._obstacles = obstacles;
+  async setFlightField(FlightField) {
+    this._flyzones = FlightField.flyzones;
+    this._obstacles = FlightField.obstacles;
   }
 
   async setPlane(plane) {
@@ -65,7 +65,15 @@ export default class Pather {
   }
 
   async getFlightField() {
-    return (this._flyzones, this._obstacles);
+    return [this._flyzones, this._obstacles];
+  }
+
+  async getFlyzones() {
+    return (this._flyzones);
+  }
+
+  async getObstacles() {
+    return (this._obstacles);
   }
 
   async getPlane() {
