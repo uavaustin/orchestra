@@ -1,31 +1,21 @@
 FROM rust
-WORKDIR /test/rust
-COPY . .
+WORKDIR /test
 RUN cargo install --git https://github.com/uavaustin/pathfinder-cli.git --branch clap-cli
 
 # ------------------------------------------------------------------------------
 
-FROM node:12-alpine
-
-ENV NODE_ENV=test
-
-WORKDIR /test
-
-COPY --from=0 /test/rust .
-
-COPY common/nodejs/package.json src/common/
-COPY tanstar/package.json .
-
-RUN npm install
-
-COPY common/messages/interop.proto \
-    common/messages/telemetry.proto \
-    common/messages/pathfinder.proto \
-    src/messages/
-
-RUN npm run build-msg
-
-COPY common/nodejs src/common
-COPY tanstar .
-
-CMD npm test
+#FROM node:12-alpine
+#ENV NODE_ENV=test
+#WORKDIR /test
+#COPY --from=0 /test/ .
+#COPY common/nodejs/package.json src/common/
+#COPY tanstar/package.json .
+#RUN npm install
+#COPY common/messages/interop.proto \
+#    common/messages/telemetry.proto \
+#    common/messages/pathfinder.proto \
+#    src/messages/
+#RUN npm run build-msg
+#COPY common/nodejs src/common
+#COPY tanstar .
+#CMD npm test
