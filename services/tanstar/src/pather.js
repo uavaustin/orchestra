@@ -5,7 +5,10 @@
 import queue from 'async/queue';
 import { pathfinder } from './messages';
 
-const { spawn } = require('child_process');
+const execFile = require('child_process').execFile;
+const spawn = require('child_process').spawn;
+
+//const fs = require('fs');
 
 const ConnectionState = Object.freeze({
   NOT_CONNECTED: Symbol('not_connected'),
@@ -15,10 +18,8 @@ const ConnectionState = Object.freeze({
 
 export default class Pather {
 
-  /** Create a new PathAdjust **/
+  /** Create a new Pather **/
   constructor() {
-    this._pathfinderState = ConnectionState.NOT_CONNNECTED;
-    this._avoidanceSystemState = ConnectionState.NOT_CONNNECTED;
     //pathfind.spawn();
     //avoidanceSys.spawn();
 
@@ -42,8 +43,36 @@ export default class Pather {
 
   }
 
+  async execPathfinder() {
+    //const pathfinder = execFile('pathfinder', [], (error, stdout, sterr)); // may need path variable
+
+    //const args = [
+    //  ""
+    //  ""
+    //]
+
+    const childPathfinder = execFile('pathfinder', function (err, stdout, stderr) {
+      this._adjustedPath = stdout;
+      this._errorMessage = (err, stderr);
+    });
+
+    var bufIn = Buffer.from([this._flightField, this._plane, this._rawPath]);
+    childPathfinder.stdin.write(bufIn);
+
+    // TODO: cargo build pathfinder in docker build
+  }
+
+  // TODO: add spawn for streaming data in case too large for dump
+
+  //async ExecLookout() {
+  //  lookout.exec();
+  //}
+
   // TODO: create connection mechanics
-  connect() {};
+  connect() {
+    // spawn pathfinder
+    // spawn VA
+  };
 
   disconnect() {};
 
@@ -86,10 +115,6 @@ export default class Pather {
 
   async getAdjusted() {
     return this._adjustedPath
-  }
-
-  async spawnPathfind() {
-    pathfind.spawn();
   }
 
   /** Get the pathfinder adjusted path */
