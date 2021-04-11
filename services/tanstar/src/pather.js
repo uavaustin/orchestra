@@ -119,6 +119,20 @@ export default class Pather {
 
   /** Get the pathfinder adjusted path */
   async transformPath() {
+    // Run cycle:
+
+    // Convert flightField, plane, and rawPath (as Mission proto) protobufs into hexadecimal strings
+
+    // Send the message "[FlightField]\n[Plane]\n[Mission]\n", where the bracketed parts are
+    // the individual protos converted into hexadecimal. The brackets and quotations shouldn't
+    // be sent and "\n" designates a newline character.
+
+    // Wait for pathfinder-cli to return the adjusted path as a Mission proto in the format
+    // "[Mission]\n" (similarly to the sending format above).
+    //   Note: pathfinder-cli should close after returning the adjusted path.
+
+    // End run cycle
+    
 
     // run pathfinder
     const pathfind = spawn('cargo run -p pathfind'); // TODO: simplify CL with makefile
