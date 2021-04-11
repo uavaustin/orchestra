@@ -82,9 +82,9 @@ async def updates(request):
     velX = Velocity.x
     velY = Velocity.y
     velZ = Velocity.z
-    acclX =
-    acclY =
-    acclZ =
+    acclX = 0
+    acclY = -9.81
+    acclZ = 0
     #need to include readings for acceleration in telemetry
 
     positCords = geoCord(lati, long, alti)
@@ -116,7 +116,7 @@ async def updates(request):
     acclX = updates.aX
     acclY = updates.aY
     acclZ = updates.aZ
-    
+
 return _proto_response(request, msg)
 
 
@@ -135,7 +135,7 @@ async def get_drop_location(request):
     """Return the drop location"""
     tr = request.app['redis'].multi_exec()
 
-#This means nothing right now
+#This is just for reference and does NOT apply for our service 
 '''
     def get_set(key):
         tr.smembers(key)
