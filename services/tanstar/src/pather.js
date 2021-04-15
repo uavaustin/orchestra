@@ -39,8 +39,9 @@ export default class Pather {
     });
 
     this._rawPath = null;
-    this._adjustedPath = null;
 
+    this._adjustedPath = null;
+    this._pathfinderError = null;
   }
 
   // TODO: add spawn for streaming data in case too large for dump
@@ -123,20 +124,20 @@ export default class Pather {
 
 
     // run pathfinder
-    await execPathfinder();
+    await execPathfinder(inputHex);
   }
 
-  execPathfinder() {
+  execPathfinder(inputHex) {
     const childPathfinder = execFile('pathfinder-cli', function (err, stdout, stderr) {
       this._adjustedPath = stdout;
       this._errorMessage = (err, stderr);
     });
 
-    var bufIn = Buffer.from([this._flightField, this._plane, this._rawPath]).toString('hex');
+    var bufIn = Buffer.from(inputHex).toString('hex');
     childPathfinder.stdin.write(bufIn);
 
-    this._adjustedPath = ;
-
+    this._adjustedPath = stdout;
+    this._pathfinderError = stderr;
   }
 
   async fieldToHex() {
