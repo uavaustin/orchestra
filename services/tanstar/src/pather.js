@@ -128,7 +128,7 @@ export default class Pather {
   }
 
   execPathfinder(inputHex) {
-    const childPathfinder = execFile('pathfinder-cli', function (err, stdout, stderr) {
+    const childPathfinder = exec('pathfinder-cli', function (err, stdout, stderr) {
       this._adjustedPath = stdout;
       this._errorMessage = (err, stderr);
     });
@@ -136,8 +136,9 @@ export default class Pather {
     var bufIn = Buffer.from(inputHex).toString('hex');
     childPathfinder.stdin.write(bufIn);
 
-    this._adjustedPath = stdout;
     this._pathfinderError = stderr;
+
+    return = stdout;
   }
 
   async fieldToHex() {
