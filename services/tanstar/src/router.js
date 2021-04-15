@@ -48,6 +48,16 @@ router.get('/api/mission', async (ctx) => {
   });
 });
 
+router.get('/api/adjusted', async (ctx) => {
+  await ctx.pather.setRawPath(ctx.request.proto);
+  await ctx.pather.transformPath();
+  const adjusted = await ctx.pather.getAdjusted();
+  ctx.proto = pathfinder.Mission.create({
+    time: Date.now(),
+    waypoints: adjusted.waypoints
+  });
+});
+
 router.post('/api/plane', plane, async (ctx) => {
   await ctx.pather.setPlane(ctx.request.proto);
   ctx.status = 200;

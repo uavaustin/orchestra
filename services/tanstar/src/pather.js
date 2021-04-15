@@ -123,15 +123,7 @@ export default class Pather {
 
 
     // run pathfinder
-    const pathfind = spawn('cargo run -p pathfind'); // TODO: simplify CL with makefile
-
-    this._raw_path.pipe(pathfind.stdin) // TODO: pipe raw path into pathfind
-
-    pathfind.stdout.on('adjusted_path', (adjusted_path) => {
-      console.log(`pathfind stdout:\n${adjusted_path}`);
-    });
-
-    return adjusted_path;
+    await execPathfinder();
   }
 
   execPathfinder() {
@@ -143,7 +135,8 @@ export default class Pather {
     var bufIn = Buffer.from([this._flightField, this._plane, this._rawPath]).toString('hex');
     childPathfinder.stdin.write(bufIn);
 
-    // TODO: cargo build pathfinder in docker build
+    this._adjustedPath = ;
+
   }
 
   async fieldToHex() {
@@ -153,6 +146,9 @@ export default class Pather {
     this._plane;
 
     this._rawPath;
+
+    // format for PF input here
+    // hexed = ;
 
     return hexed;
   }

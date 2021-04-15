@@ -54,6 +54,17 @@ test('return mission 1', async () => {
     expect(res.body.waypoints).toEqual(mission1.waypoints);
 });
 
+test('return mission 1 adjusted', async () => {
+  let res = await request('http://localhost:5000')
+    .get('/api/mission')
+    .proto(pathfinder.Mission);
+
+    expect(res.status).toEqual(200);
+    console.log(res.body);
+
+    expect(res.body.waypoints).toEqual(); // TODO: fill expected
+});
+
 test('upload plane 1', async () => {
   const msg = pathfinder.Plane.create(plane1);
   console.log(msg);
