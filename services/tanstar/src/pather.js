@@ -43,25 +43,6 @@ export default class Pather {
 
   }
 
-  async execPathfinder() {
-    //const pathfinder = execFile('pathfinder', [], (error, stdout, sterr)); // may need path variable
-
-    //const args = [
-    //  ""
-    //  ""
-    //]
-
-    const childPathfinder = execFile('pathfinder', function (err, stdout, stderr) {
-      this._adjustedPath = stdout;
-      this._errorMessage = (err, stderr);
-    });
-
-    var bufIn = Buffer.from([this._flightField, this._plane, this._rawPath]);
-    childPathfinder.stdin.write(bufIn);
-
-    // TODO: cargo build pathfinder in docker build
-  }
-
   // TODO: add spawn for streaming data in case too large for dump
 
   //async ExecLookout() {
@@ -123,6 +104,9 @@ export default class Pather {
 
     // Convert flightField, plane, and rawPath (as Mission proto) protobufs into hexadecimal strings
 
+    console.log(this._rawPath);
+    // hexedFields = this.fieldsToHex();
+
     // Send the message "[FlightField]\n[Plane]\n[Mission]\n", where the bracketed parts are
     // the individual protos converted into hexadecimal. The brackets and quotations shouldn't
     // be sent and "\n" designates a newline character.
@@ -131,8 +115,12 @@ export default class Pather {
     // "[Mission]\n" (similarly to the sending format above).
     //   Note: pathfinder-cli should close after returning the adjusted path.
 
+    // hexedMission = this.intoPathfinder(hexedFields);
+
+    // this.missionToProto(hexedMission);
+
     // End run cycle
-    
+
 
     // run pathfinder
     const pathfind = spawn('cargo run -p pathfind'); // TODO: simplify CL with makefile
@@ -144,6 +132,29 @@ export default class Pather {
     });
 
     return adjusted_path;
+  }
+
+  execPathfinder() {
+    const childPathfinder = execFile('pathfinder-cli', function (err, stdout, stderr) {
+      this._adjustedPath = stdout;
+      this._errorMessage = (err, stderr);
+    });
+
+    var bufIn = Buffer.from([this._flightField, this._plane, this._rawPath]).toString('hex');
+    childPathfinder.stdin.write(bufIn);
+
+    // TODO: cargo build pathfinder in docker build
+  }
+
+  async fieldToHex() {
+
+    this.flightField;
+
+    this._plane;
+
+    this._rawPath;
+
+    return hexed;
   }
 
 }
