@@ -130,14 +130,15 @@ async def test_queue_new_images_skipping(app_skip, redis, http_mock):
         odlc.autonomous = True
         odlc.description = 'test test'
         odlc.image = b'test-image'
-        target = ('id', i, 'image_id', i + 1, 'odlc', odlc.SerializeToString(),
+        target = ('id', i, 'image_id', i + 1, 'odlc',
+                  odlc.SerializeToString(),
                   'submitted', 0, 'errored', 0, 'removed', 0)
 
         await redis.sadd('all-targets', i)
         await redis.lpush('unsubmitted-targets', i)
         await redis.hmset('target:' + str(i), *target)
 
-        # http_mock.post('http://interop-proxy:1234/api/odlcs')
+        http_mock.post('http://interop-proxy:1234/api/odlcs')
 
         await service.tasks.submit_targets(app_skip)
 
@@ -151,18 +152,7 @@ async def test_queue_new_images_skipping(app_skip, redis, http_mock):
 
     await service.tasks.queue_new_images(app_skip)
 
-    # resp = await http_mock.get(
-    #     'http://imagery:1234/api/pipeline/targets/3',
-    #     headers={'Content-Type':
-    #              'application/x-protobuf'})
-
-    # assert resp.status == 200
-
-    # msg = PipelineTarget.FromString(await resp.read())
-
-    # assert msg.odlc.autonomous is True
     assert app_skip['max_auto_targets'] == 3
-    assert await app_skip['redis'].get('auto-target-count') is None
     assert await get_int_set(redis, 'all-images') == [1, 2, 3, 4]
     assert await get_int_list(redis, 'unprocessed-manual') == [4, 3, 2, 1]
     assert await get_int_list(redis, 'unprocessed-auto') == [3, 2, 1]

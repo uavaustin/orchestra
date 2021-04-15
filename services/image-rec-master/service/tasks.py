@@ -283,6 +283,12 @@ async def _post_odlc(app, odlc):
         sent = Odlc.FromString(odlc)
         returned = Odlc.FromString(content)
 
+        # autonomous target submitted, so increment auto-target-count
+        tr = app['redis'].multi_exec()
+        if sent.autonomous:
+            tr.incr('auto-target-count')
+        await tr.execute()
+
         returned.image = sent.image
         return returned.id, returned.SerializeToString()
 
