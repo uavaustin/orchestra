@@ -344,20 +344,6 @@ async def handle_queue_pipeline_target_removal(request):
                 if odlc.autonomous:
                     tr.decr('auto-target-count')
 
-                # if auto-target-count is < max, then move
-                # first max - curr targets from skipped to processed
-                auto_count = int(await r.get('auto-target-count') or 0)
-                curr_count = request.app['max_auto_targets']
-
-                if curr_count != -1:
-                    if auto_count < curr_count:
-                        diff = request.app['max_auto_targets'] - auto_count
-                        num_skip = len(await get_int_set(r, 'skipped-auto'))
-                        num_unskip = diff if diff <= num_skip else num_skip
-                        for i in range(1, num_unskip + 1):
-                            tr.rpoplpush('skipped-auto',
-                                         'processing-auto')
-
                 tr.lpush('unremoved-targets', target_id)
 
                 await tr.execute()

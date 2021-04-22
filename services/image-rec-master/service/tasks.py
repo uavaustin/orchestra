@@ -395,6 +395,20 @@ async def remove_targets(app):
         else:
             break
 
+    # if auto-target-count is < max, then move
+    # first max - curr targets from skipped to processed
+    auto_count = int(await r.get('auto-target-count') or 0)
+    curr_count = app['max_auto_targets']
+
+    if curr_count != -1:
+        if auto_count < curr_count:
+            diff = app['max_auto_targets'] - auto_count
+            num_skip = len(await get_int_set(r, 'skipped-auto'))
+            num_unskip = diff if diff <= num_skip else num_skip
+            for i in range(1, num_unskip + 1):
+                tr.rpoplpush('skipped-auto',
+                             'processing-auto')
+
 
 async def _delete_odlc(app, odlc_id):
     url = app['interop_url'] + f'/api/odlcs/{odlc_id}'

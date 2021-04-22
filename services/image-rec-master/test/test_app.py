@@ -21,13 +21,13 @@ async def app_client(aiohttp_client, redis):
     return await aiohttp_client(app)
 
 
-@pytest.fixture
-async def app_client_skip(aiohttp_client, redis):
-    app_skip = web.Application()
-    app_skip.router.add_routes(routes)
-    app_skip['redis'] = redis
-    app_skip['max_auto_targets'] = 3
-    return await aiohttp_client(app_skip)
+# @pytest.fixture
+# async def app_client_skip(aiohttp_client, redis):
+#     app_skip = web.Application()
+#     app_skip.router.add_routes(routes)
+#     app_skip['redis'] = redis
+#     app_skip['max_auto_targets'] = 3
+#     return await aiohttp_client(app_skip)
 
 
 async def test_alive(app_client):
@@ -410,39 +410,39 @@ async def test_queue_target_removal(app_client, redis):
     assert resp.status == 409
 
 
-async def test_queue_target_removal_skip(app_client_skip, redis):
-    # add max_auto_targets targets, then post another, then remove one
-    targets = []
-    shapes = [Odlc.SQUARE, Odlc.STAR, Odlc.CIRCLE, Odlc.CROSS]
-    colors = [Odlc.RED, Odlc.BLUE, Odlc.BLACK, Odlc.ORANGE]
+# async def test_queue_target_removal_skip(app_client_skip, redis):
+#     # add max_auto_targets targets, then post another, then remove one
+#     targets = []
+#     shapes = [Odlc.SQUARE, Odlc.STAR, Odlc.CIRCLE, Odlc.CROSS]
+#     colors = [Odlc.RED, Odlc.BLUE, Odlc.BLACK, Odlc.ORANGE]
 
-    for i in range(4):
-        target = PipelineTarget()
-        target.odlc.shape = shapes[i]
-        target.odlc.background_color = colors[i]
-        target.odlc.autonomous = True
-        target.id = i
-        targets.append(target)
+#     for i in range(4):
+#         target = PipelineTarget()
+#         target.odlc.shape = shapes[i]
+#         target.odlc.background_color = colors[i]
+#         target.odlc.autonomous = True
+#         target.id = i
+#         targets.append(target)
 
-    # Submit the target up to the cap.
-    for i in range(3):
-        resp = await app_client_skip.post('/api/pipeline/targets',
-                                          data=targets[i].SerializeToString())
-        assert resp.status == 201
+#     # Submit the target up to the cap.
+#     for i in range(3):
+#         resp = await app_client_skip.post('/api/pipeline/targets',
+#                                           data=targets[i].SerializeToString())
+#         assert resp.status == 201
 
-    # Post another, should be moved to skip
-    resp = await app_client_skip.post('/api/pipeline/targets',
-                                      data=targets[3].SerializeToString())
-    assert resp.status == 204
-    assert await get_int_list(redis, 'skipped-auto') == [0]
+#     # Post another, should be moved to skip
+#     resp = await app_client_skip.post('/api/pipeline/targets',
+#                                       data=targets[3].SerializeToString())
+#     assert resp.status == 204
+#     assert await get_int_list(redis, 'skipped-auto') == [0]
 
-    # Remove one
-    resp = await app_client_skip.post('/api/pipeline/targets/1/queue-removal')
-    assert resp.status == 204
+#     # Remove one
+#     resp = await app_client_skip.post('/api/pipeline/targets/1/
+#                                       queue-removal')
+#     assert resp.status == 204
 
-    # Check contents of processing-auto
-    assert await get_int_list(redis, 'processing-auto') == [0, 3, 2]
-
+#     # Check contents of processing-auto
+#     assert await get_int_list(redis, 'processing-auto') == [0, 3, 2]
 
 async def test_queue_target_removal_no_exist(app_client):
     resp = await app_client.post('/api/pipeline/targets/1/queue-removal')
