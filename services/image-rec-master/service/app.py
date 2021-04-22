@@ -42,7 +42,8 @@ async def handle_get_pipeline(request):
     get_set('processed-auto')
     get_set('retrying-auto')
     get_set('errored-auto')
-    get_set('skipped-auto')
+    # get_set('skipped-auto') # make this a list?
+    get_list('skipped-auto')
 
     # Manual image rec state.
     get_list('unprocessed-manual')
@@ -111,7 +112,6 @@ async def handle_process_next_auto_pipeline_image(request):
     """Start the processing window for the next auto image."""
     id_str = await request.app['redis'].rpoplpush('unprocessed-auto',
                                                   'processing-auto')
-
     if id_str:
         image_id = int(id_str)
         image = await _get_image(request, image_id)
@@ -210,7 +210,22 @@ async def handle_post_pipeline_target(request):
                     auto_count = int(await r.get('auto-target-count') or 0)
 
                     if auto_count >= request.app['max_auto_targets']:
-                        return web.HTTPConflict()
+                        # do something different here
+                        # move unprocessed and process lists to skipped
+                        unprocessed = await get_int_list(r, 'unprocessed-auto')
+                        processing = await get_int_list(r, 'processing-auto')
+                        t = r.multi_exec()
+
+                        for i in range(1, len(unprocessed)):
+                            t.lpush('skipped-auto', unprocessed[i])
+                        for j in range(1, len(processing)):
+                            t.lpush('skipped-auto', processing[j])
+
+                        t.lpush('skipped-auto', image_id)
+
+                        await t.execute()
+                        return web.HTTPNoContent()
+                        # return web.HTTPConflict()
 
                 # Check for uniqueness
                 if odlc.autonomous and odlc.type == Odlc.STANDARD:
