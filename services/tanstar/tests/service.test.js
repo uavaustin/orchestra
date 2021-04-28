@@ -1,9 +1,9 @@
 import addProtobuf from 'superagent-protobuf';
 import request from 'supertest';
 
-import flightField1 from './fixtures/flight-field1.json';
-import plane1 from './fixtures/plane1.json';
-import mission1 from './fixtures/mission1.json';
+import flightField1 from './fixtures/test1/flight-field1.json';
+import plane1 from './fixtures/test1/plane1.json';
+import mission1 from './fixtures/test1/mission1.json';
 
 import Service from '../src/service';
 import { pathfinder } from '../src/messages';
@@ -33,8 +33,8 @@ test('service is alive', async () => {
 
 test('upload mission 1', async () => {
   const msg = pathfinder.Mission.create(mission1);
-  console.log(msg);
-  console.log(msg.waypoints);
+  //console.log(msg);
+  //console.log(msg.waypoints);
 
   let res = await request('http://localhost:5000')
   .post('/api/mission')
@@ -49,7 +49,7 @@ test('return mission 1', async () => {
     .proto(pathfinder.Mission);
 
     expect(res.status).toEqual(200);
-    console.log(res.body);
+    //console.log(res.body);
 
     expect(res.body.waypoints).toEqual(mission1.waypoints);
 });
@@ -60,14 +60,13 @@ test('return mission 1 adjusted', async () => {
     .proto(pathfinder.Mission);
 
     expect(res.status).toEqual(200);
-    console.log(res.body);
 
-    expect(res.body.waypoints).toEqual(); // TODO: fill expected
+    expect(res.body.waypoints).toEqual(mission1.waypoints);
 });
 
 test('upload plane 1', async () => {
   const msg = pathfinder.Plane.create(plane1);
-  console.log(msg);
+  //console.log(msg);
 
   let res = await request('http://localhost:5000')
     .post('/api/plane')
@@ -83,7 +82,7 @@ test('return plane 1', async () => {
     .proto(pathfinder.Plane);
 
   expect(res.status).toEqual(200);
-  console.log(res.body);
+  //console.log(res.body);
 
   expect(res.body.altitude).toEqual(plane1.altitude);
   expect(res.body.pos).toEqual(plane1.pos);
@@ -93,7 +92,7 @@ test('return plane 1', async () => {
 
 test('upload flight field 1', async () => {
   const msg = pathfinder.FlightField.create(flightField1);
-  console.log(msg);
+  //console.log(msg);
 
 
   let res = await request('http://localhost:5000')
@@ -109,7 +108,7 @@ test('return flight field 1', async () => {
     .proto(pathfinder.FlightField);
 
   expect(res.status).toEqual(200);
-  console.log(res.body);
+  //console.log(res.body);
 
   expect(res.body.flyzones).toEqual(flightField1.flyzones);
   expect(res.body.obstacles).toEqual(flightField1.obstacles);
