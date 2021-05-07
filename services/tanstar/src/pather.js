@@ -5,10 +5,9 @@
 import queue from 'async/queue';
 import { pathfinder } from './messages';
 
-const execFile = require('child_process').execFile;
-const spawn = require('child_process').spawn;
+const exec = require('child_process').exec;
 
-const protobuf = require('protobufjs');
+const protobuf = require('protobufjs'); // TODO: Use koa instead
 
 //const fs = require('fs');
 
@@ -19,48 +18,6 @@ const ConnectionState = Object.freeze({
 });
 
 export default class Pather {
-
-  // Converts protobuf fields into hexadecimal and returns them in an array
-  static async fieldsToHex(fields) {
-    // Create pathfinderjs objects
-    // TODO: Put this somewhere else so these aren't created every time
-    const pathfinder = await protobuf.load('src/messages/pathfinder.proto');
-    const FlightField = pathfinder.lookupType('pathfinder.FlightField');
-    const Plane = pathfinder.lookupType('pathfinder.Plane');
-    const Mission = pathfinder.lookupType('pathfinder.Mission');
-
-    // format for PF input here
-    const hexed = [
-          Buffer.from(FlightField.encode(fields[0]).finish(), 'hex'),
-          Buffer.from(Plane.encode(fields[1]).finish(), 'hex'),
-          Buffer.from(Mission.encode(fields[2]).finish(), 'hex')
-    ];
-
-    return hexed;
-  }
-
-  // Convert and return a set of protobufs encoded in hexadecimal into protobufs
-  // Expects an array: [FlightField, Plane, Mission].
-  static async hexToFields(hex) {
-    // Create pathfinderjs objects
-    // TODO: Put this somewhere else so these aren't created every time
-    const pathfinder = await protobuf.load('src/messages/pathfinder.proto');
-    const FlightField = pathfinder.lookupType('pathfinder.FlightField');
-    const Plane = pathfinder.lookupType('pathfinder.Plane');
-    const Mission = pathfinder.lookupType('pathfinder.Mission');
-
-    // Convert hexadecimal messages into bytes
-    const flightFieldBytes = Buffer.from(hex[0], 'latin1');
-    const planeBytes = Buffer.from(hex[1], 'latin1');
-    const missionBytes = Buffer.from(hex[2], 'latin1');
-
-    // Decode bytes into protobufs
-    const flightField = FlightField.decode(flightFieldBytes);
-    const plane = Plane.decode(planeBytes);
-    const mission = Mission.decode(missionBytes);
-
-    return [flightField, plane, mission];
-  }
 
   /** Create a new Pather **/
   constructor() {
@@ -150,20 +107,19 @@ export default class Pather {
     // Convert flightField, plane, and rawPath (as Mission proto) protobufs into hexadecimal strings
 
     console.log(this._rawPath);
-    hexedFields = this.fieldsToHex([this._flightField, this._plane, this._rawPath]);
+    const hexedFields = this.fieldsToHex();
 
     // Send the message "[FlightField]\n[Plane]\n[Mission]\n", where the bracketed parts are
     // the individual protos converted into hexadecimal. The brackets and quotations shouldn't
     // be sent and "\n" designates a newline character.
-
-    hexedMission = await this.execPathfinder(hexedFields);
-
     // Wait for pathfinder-cli to return the adjusted path as a Mission proto in the format
     // "[Mission]\n" (similarly to the sending format above).
     //   Note: pathfinder-cli should close after returning the adjusted path.
 
+    const hexedMission = await this.execPathfinder(hexedFields);
+
     // TODO: Convert output to proto
-    //this.missionToProto(hexedMission);
+    this.missionHexToField(hexedMission);
 
     // End run cycle
 
@@ -178,11 +134,31 @@ export default class Pather {
       this._errorMessage = (err, stderr);
     });
 
-    var bufIn = Buffer.from(inputHex).toString('hex');
+    var bufIn = Buffer.from(inputHex, 'hex');
     childPathfinder.stdin.write(bufIn);
+  }
 
-    this._pathfinderError = stderr;
+  // Converts protobuf fields into hexadecimal and returns them in an array
+  fieldsToHex() {
+    // format for PF input here
+    const hexed = [
+          Buffer.from(pathfinder.FlightField.encode(this._flightField).finish(), 'hex'),
+          Buffer.from(pathfinder.Plane.encode(this._plane).finish(), 'hex'),
+          Buffer.from(pathfinder.Mission.encode(this._rawPath).finish(), 'hex')
+    ];
 
-    return stdout;
+    return hexed;
+  }
+
+  // Convert and return a set of protobufs encoded in hexadecimal into protobufs
+  // Expects an array: [FlightField, Plane, Mission].
+  missionHexToField(missionHex) {
+    // Convert hexadecimal messages into bytes
+    const missionBytes = Buffer.from(missionHex, 'latin1');
+
+    // Decode bytes into protobufs
+    const mission = pathfinder.Mission.decode(missionBytes);
+
+    this._adjustedPath = mission;
   }
 }

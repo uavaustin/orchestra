@@ -1,6 +1,8 @@
-FROM rust
+FROM rust:alpine
 WORKDIR /test
-RUN cargo install --git https://github.com/uavaustin/pathfinder-cli.git --branch clap-cli
+RUN apk add build-base #'cc' needed for prost in pathfinder-cli
+RUN apk add protoc #docker-alpine not supported by prost's built-in compilers
+RUN cargo install --git https://github.com/uavaustin/pathfinder-cli.git --branch clap-cli --root .
 
 # ------------------------------------------------------------------------------
 
