@@ -210,22 +210,20 @@ async def handle_post_pipeline_target(request):
                     auto_count = int(await r.get('auto-target-count') or 0)
 
                     if auto_count >= request.app['max_auto_targets']:
-                        # do something different here
-                        # move unprocessed and process lists to skipped
+                        # Move unprocessed and process lists to skipped
                         unprocessed = await get_int_list(r, 'unprocessed-auto')
                         processing = await get_int_list(r, 'processing-auto')
                         t = r.multi_exec()
 
-                        for i in range(1, len(unprocessed)):
-                            t.lpush('skipped-auto', unprocessed[i])
-                        for j in range(1, len(processing)):
-                            t.lpush('skipped-auto', processing[j])
+                        for i in range(0, len(unprocessed)):
+                            t.brpoplpush('unprocessed-auto', 'skipped-auto')
+                        for j in range(0, len(processing)):
+                            t.brpoplpush('processing-auto', 'skipped-auto')
 
                         t.lpush('skipped-auto', image_id)
 
                         await t.execute()
                         return web.HTTPNoContent()
-                        # return web.HTTPConflict()
 
                 # Check for uniqueness
                 if odlc.autonomous and odlc.type == Odlc.STANDARD:

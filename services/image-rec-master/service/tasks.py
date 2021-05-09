@@ -76,7 +76,7 @@ from .util import get_int_list, get_int_set, watch_keys
 
 
 # Queue new images into the all-images, unprocessed-auto, and
-# unprocessed-manual queues. (skipping not implemented).
+# unprocessed-manual queues. (skipping implemented, needs checking).
 async def queue_new_images(app):
     try:
         url = app['imagery_url'] + '/api/available'
@@ -105,10 +105,8 @@ async def queue_new_images(app):
                 # tr.lpush('unprocessed-auto', *ids)
                 tr.lpush('unprocessed-manual', *ids)
 
-                # Geethika additions
-                # get max-auto-targets var, see if this has been hit:
+                # Get value max-auto-targets var, see if this has been hit:
                 # if yes, new images should be put into skipped-auto
-                # curr_tar_cnt = len(await get_int_set(r, 'submitted-targets'))
                 max_tars = app['max_auto_targets'] or -1
                 if max_tars != -1:
                     curr_tar_cnt = int(await r.get('auto-target-count') or 0)
@@ -118,24 +116,6 @@ async def queue_new_images(app):
                         tr.lpush('unprocessed-auto', *ids)
                 else:
                     tr.lpush('unprocessed-auto', *ids)
-
-                # if max_tars != -1 and curr_tar_cnt >= max_tars:
-                #     tr.lpush('skipped-auto', *ids)
-                # else:
-                #     tr.lpush('unprocessed-auto', *ids)
-
-                # if the limit is hit, then then all unprocessed and
-                # processing images should be moved to the skipped list.
-                # new task?
-
-                # Also, when an auto target is removed and no longer at the
-                # limit, the targets that were skipped should now go back into
-                # the processing list. add to remove_targets task
-
-                # The skipped-auto should actually be a list to preserve the
-                # order in which targets are processed once they go back,
-                # though the behavior should be the same when returning the
-                # list, and have it sorted by ID like it is now.
 
                 if len(ids) == 1:
                     logging.info(f'image {ids[0]} queued')
@@ -283,7 +263,7 @@ async def _post_odlc(app, odlc):
         sent = Odlc.FromString(odlc)
         returned = Odlc.FromString(content)
 
-        # autonomous target submitted, so increment auto-target-count
+        # Autonomous target submitted, so increment auto-target-count
         tr = app['redis'].multi_exec()
         if sent.autonomous:
             tr.incr('auto-target-count')
@@ -359,7 +339,15 @@ async def remove_targets(app):
     while True:
         try:
             odlc = await r.hget(target_key, 'odlc')
-            odlc_id = Odlc.FromString(odlc).id
+            # Parse the odlc message
+            parsed_odlc = Odlc.FromString(odlc)
+            odlc_id = parsed_odlc.id
+            # If autonomous target, decrement auto target count
+            if parsed_odlc.autonomous:
+                tr = app['redis'].multi_exec()
+                tr.decr('auto-target-count')
+                await tr.execute()
+
         except aioredis.RedisError as e:
             logging.error(format_error('redis error', str(e)))
             await asyncio.sleep(0.1)
@@ -395,19 +383,21 @@ async def remove_targets(app):
         else:
             break
 
-    # if auto-target-count is < max, then move
-    # first max - curr targets from skipped to processed
+    # If auto-target-count is now < max, then move
+    # First (max - curr #) auto targets from skipped to processing
     auto_count = int(await r.get('auto-target-count') or 0)
     curr_count = app['max_auto_targets']
 
     if curr_count != -1:
         if auto_count < curr_count:
+            tr = r.multi_exec()
             diff = app['max_auto_targets'] - auto_count
-            num_skip = len(await get_int_set(r, 'skipped-auto'))
+            num_skip = len(await get_int_list(r, 'skipped-auto'))
             num_unskip = diff if diff <= num_skip else num_skip
             for i in range(1, num_unskip + 1):
                 tr.rpoplpush('skipped-auto',
                              'processing-auto')
+            await tr.execute()
 
 
 async def _delete_odlc(app, odlc_id):

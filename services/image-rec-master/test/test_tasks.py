@@ -605,3 +605,46 @@ async def test_remove_targets_unsubmitted(app, redis, http_mock):
         b'id': b'5', b'image_id': b'6', b'odlc': odlc.SerializeToString(),
         b'submitted': b'0', b'errored': b'0', b'removed': b'1'
     }
+
+
+async def test_remove_targets_skipping(app_skip, redis, http_mock):
+    for i in range(0, 9, 3):
+        odlc = Odlc()
+        odlc.id = i
+        odlc.autonomous = True
+        odlc.type = Odlc.OFF_AXIS
+        odlc.image = b'test-image'
+        target = ('id', i + 1, 'image_id', i + 2, 'odlc',
+                  odlc.SerializeToString(),
+                  'submitted', 1, 'errored', 0, 'removed', 0)
+
+        await redis.incr('auto-target-count')
+        await redis.sadd('all-targets', i + 1)
+        await redis.sadd('submitted-targets', i + 1)
+        await redis.lpush('unremoved-targets', i + 1)
+        await redis.hmset('target:' + str(i + 1), *target)
+
+    available_images = AvailableImages()
+    available_images.id_list.extend([9])
+
+    http_mock.get('http://imagery:1234/api/available',
+                  body=available_images.SerializeToString(),
+                  headers={'Content-Type': 'application/x-protobuf'})
+
+    await service.tasks.queue_new_images(app_skip)
+
+    assert await get_int_list(redis, 'skipped-auto') == [9]
+    assert await get_int_set(redis, 'submitted-targets') == [1, 4, 7]
+
+    http_mock.delete('http://interop-proxy:1234/api/odlcs/0')
+
+    await service.tasks.remove_targets(app_skip)
+
+    assert await get_int_set(redis, 'all-targets') == [1, 4, 7]
+    assert await get_int_set(redis, 'submitted-targets') == [1, 4, 7]
+    assert await get_int_set(redis, 'errored-targets') == []
+    assert await get_int_set(redis, 'removed-targets') == [1]
+    assert await get_int_list(redis, 'unremoved-targets') == [7, 4]
+    assert await get_int_list(redis, 'removing-targets') == []
+    assert await redis.get('auto-target-count') == b'2'
+    assert await get_int_list(redis, 'processing-auto') == [9]
