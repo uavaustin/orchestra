@@ -1,2 +1,4 @@
 # Ignoring volumes created by docker-compose
 data/
+interop-volumes/
+influxdb/
