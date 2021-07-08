@@ -13,6 +13,8 @@ gphoto2.GPhoto2 = jest.fn(() => {
 nock('http://camera:1234')
   .get('/ctrl/session')
   .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
+  .get('/ctrl/mode?action=to_cap')
+  .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }))
   .get('/ctrl/session?action=quit')
   .reply(200, JSON.stringify({ code: 0, desc: '', msg: '' }));
 
@@ -21,7 +23,8 @@ const options = [
   { port: 8081, backend: 'gphoto2', telemetryHost: 'telemetry',
     telemetryPort: 5000, captureInterval: 4000 },
   { port: 8081, backend: 'z-cam-e1', cameraHost: 'camera', cameraPort: 1234,
-    telemetryHost: 'telemetry', telemetryPort: 5000, captureInterval: 4000 },
+    telemetryHost: 'telemetry', telemetryPort: 5000, captureInterval: 4000,
+    extendedConfiguration: false },
   { port: 8081, backend: 'file' },
   { port: 8081, backend: 'sync', imagerySyncHost: 'imagery',
     imagerySyncPort: 8082 }
