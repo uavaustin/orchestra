@@ -76,7 +76,8 @@ from .util import get_int_list, get_int_set, watch_keys
 
 
 # Queue new images into the all-images, unprocessed-auto, and
-# unprocessed-manual queues. (skipping implemented, needs checking).
+# unprocessed-manual queues. Also queue new images into skipped-auto
+# if auto target limit has been hit.
 async def queue_new_images(app):
     try:
         url = app['imagery_url'] + '/api/available'
@@ -102,18 +103,25 @@ async def queue_new_images(app):
             if len(ids) > 0:
                 tr = r.multi_exec()
                 tr.sadd('all-images', *ids)
-                # tr.lpush('unprocessed-auto', *ids)
                 tr.lpush('unprocessed-manual', *ids)
 
-                # Get value max-auto-targets var, see if this has been hit:
-                # if yes, new images should be put into skipped-auto
                 max_tars = app['max_auto_targets'] or -1
                 if max_tars != -1:
                     curr_tar_cnt = int(await r.get('auto-target-count') or 0)
                     if curr_tar_cnt >= max_tars:
+                        # Auto target cap has been hit
                         tr.lpush('skipped-auto', *ids)
                     else:
-                        tr.lpush('unprocessed-auto', *ids)
+                        # Queue auto images into unprocessed-auto until
+                        # limit is hit, then put the rest in skipped-auto
+                        free_spaces = max_tars - curr_tar_cnt
+                        if len(ids) < free_spaces:
+                            free_spaces = len(ids)
+
+                        for i in range(0, free_spaces):
+                            tr.lpush('unprocessed-auto', ids[i])
+                        for j in range(free_spaces, len(ids)):
+                            tr.lpush('skipped-auto', ids[j])
                 else:
                     tr.lpush('unprocessed-auto', *ids)
 

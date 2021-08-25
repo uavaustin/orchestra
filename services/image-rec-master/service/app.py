@@ -42,7 +42,6 @@ async def handle_get_pipeline(request):
     get_set('processed-auto')
     get_set('retrying-auto')
     get_set('errored-auto')
-    # get_set('skipped-auto') # make this a list?
     get_list('skipped-auto')
 
     # Manual image rec state.

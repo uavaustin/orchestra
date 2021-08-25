@@ -113,6 +113,8 @@ async def test_queue_new_images_with_images_existing(app, redis, http_mock):
 
 
 async def test_queue_new_images_skip_one(app_skip, redis, http_mock):
+    # Queue and submit max_auto_targets targets, then try to submit
+    # another (the last one should be queued into skipped-auto)
     available_images = AvailableImages()
     available_images.id_list.extend([1, 2, 3])
 
@@ -161,6 +163,8 @@ async def test_queue_new_images_skip_one(app_skip, redis, http_mock):
 
 
 async def test_queue_new_images_skip_many(app_skip, redis, http_mock):
+    # Submit max_auto_targets targets, then try to submit 2 more,
+    # which should be moved into skipped-auto
     available_images = AvailableImages()
     available_images.id_list.extend([1, 2, 3])
 
@@ -608,6 +612,7 @@ async def test_remove_targets_unsubmitted(app, redis, http_mock):
 
 
 async def test_remove_targets_skipping(app_skip, redis, http_mock):
+    # Submit max_auto_targets targets, then try queueing another one
     for i in range(0, 9, 3):
         odlc = Odlc()
         odlc.id = i
@@ -636,6 +641,7 @@ async def test_remove_targets_skipping(app_skip, redis, http_mock):
     assert await get_int_list(redis, 'skipped-auto') == [9]
     assert await get_int_set(redis, 'submitted-targets') == [1, 4, 7]
 
+    # Remove a target, which should move the skipped target to processing
     http_mock.delete('http://interop-proxy:1234/api/odlcs/0')
 
     await service.tasks.remove_targets(app_skip)
