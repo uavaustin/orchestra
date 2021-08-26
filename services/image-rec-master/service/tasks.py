@@ -76,7 +76,8 @@ from .util import get_int_list, get_int_set, watch_keys
 
 
 # Queue new images into the all-images, unprocessed-auto, and
-# unprocessed-manual queues. (skipping not implemented).
+# unprocessed-manual queues. Also queue new images into skipped-auto
+# if auto target limit has been hit.
 async def queue_new_images(app):
     try:
         url = app['imagery_url'] + '/api/available'
@@ -102,8 +103,27 @@ async def queue_new_images(app):
             if len(ids) > 0:
                 tr = r.multi_exec()
                 tr.sadd('all-images', *ids)
-                tr.lpush('unprocessed-auto', *ids)
                 tr.lpush('unprocessed-manual', *ids)
+
+                max_tars = app['max_auto_targets'] or -1
+                if max_tars != -1:
+                    curr_tar_cnt = int(await r.get('auto-target-count') or 0)
+                    if curr_tar_cnt >= max_tars:
+                        # Auto target cap has been hit
+                        tr.lpush('skipped-auto', *ids)
+                    else:
+                        # Queue auto images into unprocessed-auto until
+                        # limit is hit, then put the rest in skipped-auto
+                        free_spaces = max_tars - curr_tar_cnt
+                        if len(ids) < free_spaces:
+                            free_spaces = len(ids)
+
+                        for i in range(0, free_spaces):
+                            tr.lpush('unprocessed-auto', ids[i])
+                        for j in range(free_spaces, len(ids)):
+                            tr.lpush('skipped-auto', ids[j])
+                else:
+                    tr.lpush('unprocessed-auto', *ids)
 
                 if len(ids) == 1:
                     logging.info(f'image {ids[0]} queued')
@@ -251,6 +271,12 @@ async def _post_odlc(app, odlc):
         sent = Odlc.FromString(odlc)
         returned = Odlc.FromString(content)
 
+        # Autonomous target submitted, so increment auto-target-count
+        tr = app['redis'].multi_exec()
+        if sent.autonomous:
+            tr.incr('auto-target-count')
+        await tr.execute()
+
         returned.image = sent.image
         return returned.id, returned.SerializeToString()
 
@@ -321,7 +347,15 @@ async def remove_targets(app):
     while True:
         try:
             odlc = await r.hget(target_key, 'odlc')
-            odlc_id = Odlc.FromString(odlc).id
+            # Parse the odlc message
+            parsed_odlc = Odlc.FromString(odlc)
+            odlc_id = parsed_odlc.id
+            # If autonomous target, decrement auto target count
+            if parsed_odlc.autonomous:
+                tr = app['redis'].multi_exec()
+                tr.decr('auto-target-count')
+                await tr.execute()
+
         except aioredis.RedisError as e:
             logging.error(format_error('redis error', str(e)))
             await asyncio.sleep(0.1)
@@ -356,6 +390,22 @@ async def remove_targets(app):
             await asyncio.sleep(0.1)
         else:
             break
+
+    # If auto-target-count is now < max, then move
+    # First (max - curr #) auto targets from skipped to processing
+    auto_count = int(await r.get('auto-target-count') or 0)
+    curr_count = app['max_auto_targets']
+
+    if curr_count != -1:
+        if auto_count < curr_count:
+            tr = r.multi_exec()
+            diff = app['max_auto_targets'] - auto_count
+            num_skip = len(await get_int_list(r, 'skipped-auto'))
+            num_unskip = diff if diff <= num_skip else num_skip
+            for i in range(1, num_unskip + 1):
+                tr.rpoplpush('skipped-auto',
+                             'processing-auto')
+            await tr.execute()
 
 
 async def _delete_odlc(app, odlc_id):
